@@ -544,7 +544,12 @@ END_VAR
 
 VAR
 	SerialNumber: INT;
-END_VAR]]></Declaration>
+END_VAR
+
+
+// some online chnages and test push commits
+// some online chnages and test push commits
+// some online chnages and test push commits]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF (NOT bInitDone) THEN
 	// Set init done to TRUE. Set to false during init if needed

@@ -131,13 +131,11 @@
     <Folder Include="ECC\TrackClient\Enums" />
     <Folder Include="ECC\TrackClient\Station Control" />
     <Folder Include="GVLs" />
+    <Folder Include="ReadConfigFile" />
     <Folder Include="POUs" />
     <Folder Include="VISUs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DUTs\DUT_STRUCT_VARIABLES.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="ECC\Basic\ADS Comm\E_ADS_Comm_State.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -1208,10 +1206,13 @@
     <Compile Include="PlcTask.TcTTO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\FB_ReadFile.TcPOU">
+    <Compile Include="POUs\MAIN.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\MAIN.TcPOU">
+    <Compile Include="ReadConfigFile\DUT_STRUCT_VARIABLES.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ReadConfigFile\FB_ReadFile.TcPOU">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

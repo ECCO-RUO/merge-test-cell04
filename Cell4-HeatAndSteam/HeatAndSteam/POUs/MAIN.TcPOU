@@ -17,20 +17,9 @@ VAR
 	bInitDone 				: BOOL;
 	
 	// read config file
-	fbReadFile					:FB_ReadFile;
+	fbReadFile				:FB_ReadFile;
 	
 END_VAR
-
-(*
-	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
-*)
-(*
-	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
-*)
-(*
-	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
-*)
-
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// read config file

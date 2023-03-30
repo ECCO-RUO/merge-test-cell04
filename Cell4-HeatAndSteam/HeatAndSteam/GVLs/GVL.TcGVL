@@ -12,10 +12,9 @@ END_VAR
 VAR_GLOBAL
 	bLogToOutputWindow	: BOOL;		// if TRUE it will log all logs to file AND to output window
 	
-	// vars for JSON & HTTP GET response
-	sString						:ARRAY[0..15] OF STRING(255);
-	//	jsonFileResult 				:STRING(501);
-	sVars						:DUT_STRUCT_VARIABLES;
+	// read config file
+	sString				:ARRAY[0..15] OF STRING(255);
+	sVars				:DUT_STRUCT_VARIABLES;
 END_VAR]]></Declaration>
   </GVL>
 </TcPlcObject>

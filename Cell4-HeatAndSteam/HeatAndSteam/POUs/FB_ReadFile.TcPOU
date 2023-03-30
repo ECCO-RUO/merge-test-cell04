@@ -46,7 +46,15 @@ VAR CONSTANT
 	cMax					:UDINT := 15;
 END_VAR
 
-]]></Declaration>
+(*
+	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
+*)
+(*
+	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
+*)
+(*
+	TEST OF ONLINE CHANGES WITH MERGE BRANCHES
+*)]]></Declaration>
     <Implementation>
       <ST><![CDATA[CASE iStep OF
 	

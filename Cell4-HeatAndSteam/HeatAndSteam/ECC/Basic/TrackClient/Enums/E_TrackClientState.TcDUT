@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_TrackClientState" Id="{b60d2662-79b2-4aab-a541-4d064d00aa4f}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TrackClientState :
+(
+	Disconnected := 0,
+	(* Connect *)
+	Connecting,
+	GetNamespaceIndex,
+	Connected,
+	(* Execute function *)
+	GetHandle,
+	Execute,
+	ReleaseHandle,
+	(* Disconnect *)	
+	Disconnecting,
+	Error
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

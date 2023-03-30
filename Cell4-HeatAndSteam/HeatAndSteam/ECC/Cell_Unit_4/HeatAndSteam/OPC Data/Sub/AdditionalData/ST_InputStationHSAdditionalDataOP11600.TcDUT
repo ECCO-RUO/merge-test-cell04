@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSAdditionalDataOP11600" Id="{8a95d514-54fb-4306-bc25-2f4f6b00cdbe}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSAdditionalDataOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Initial Temperature'}
+	TempInitial					: REAL := 20.0;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

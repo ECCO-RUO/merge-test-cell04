@@ -1,0 +1,415 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_BufferControl" Id="{ca25be04-2cd0-41b1-af7b-8bc09a6b7f8d}" SpecialFunc="None">
+    <Declaration><![CDATA[/// Controls pre-buffer and post-buffer on stations
+FUNCTION_BLOCK FB_BufferControl
+VAR_IN_OUT
+	stMMBuffer : ARRAY[1..MM_MAX_BUFFER_INDEX] OF ST_MMBuffer;
+END_VAR
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	iBufferSize			: UINT := MM_MAX_BUFFER_INDEX;
+	sBufferType			: STRING(4); //Pre / Post
+	aBufferCmdID 		: ARRAY [1..MM_MAX_BUFFER_INDEX] OF UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+ ]]></ST>
+    </Implementation>
+    <Method Name="M_AddVehicle" Id="{8c854a31-b99c-4c8f-b75f-2b2e183bc9a6}">
+      <Declaration><![CDATA[/// Adds a new vehicle to the buffer, taking up an additional space in the buffer
+/// Returns FALSE if not able to add the vehicle!
+METHOD PUBLIC M_AddVehicle : BOOL
+VAR_INPUT
+	iVehicleID			: UINT;
+	iTicket				: UINT;
+	iTicketSize			: UINT;
+	iPriority			: UINT;
+	iMoveCmdID			: UINT;
+END_VAR
+VAR
+	i					: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF ( (iVehicleID > 0) AND (iMoveCmdID > 0) AND (sBufferType = 'Pre' OR sBufferType = 'Post' ) ) THEN
+	// Find first empty space in buffer
+	IF sBufferType = 'Pre' THEN
+		FOR i := 1 TO (iBufferSize) BY 1 DO
+			IF (aBufferCmdID[i] = 0) THEN
+				aBufferCmdID[i] := iMoveCmdID;
+	
+				stMMBuffer[i].nReservedVehicleID := iVehicleID;
+				stMMBuffer[i].nCurrentVehicleID := iVehicleID;
+				stMMBuffer[i].nTicket := iTicket;
+				stMMBuffer[i].nTicketSize := iTicketSize;
+				stMMBuffer[i].CurrentPriority := iPriority;						
+				
+				M_AddVehicle := TRUE;
+				
+				F_LogLine('TC_BUFCTRL: Vehicle added in Pre buffer : %d', iVehicleID);
+				RETURN;
+				
+			END_IF
+		END_FOR
+	ELSIF sBufferType = 'Post' THEN
+		FOR i := (iBufferSize) TO 1 BY -1 DO
+			IF (aBufferCmdID[i] = 0) THEN
+				aBufferCmdID[i] := iMoveCmdID;
+	
+				stMMBuffer[i].nReservedVehicleID := iVehicleID;
+				stMMBuffer[i].nCurrentVehicleID := iVehicleID;
+				stMMBuffer[i].nTicket := iTicket;
+				stMMBuffer[i].nTicketSize := iTicketSize;
+				stMMBuffer[i].CurrentPriority := iPriority;						
+				
+				M_AddVehicle := TRUE;
+				
+				F_LogLine('TC_BUFCTRL: Vehicle added in Post buffer : %d', iVehicleID);
+				RETURN;
+				
+			END_IF
+		END_FOR
+	END_IF	
+ELSE
+	// No vehicle to remove
+	M_AddVehicle := FALSE;
+	RETURN;
+	
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ClearAll" Id="{2624f930-4ca4-4004-9740-15199b3d4c99}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i	: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+FOR i:=1 TO MM_MAX_BUFFER_INDEX DO
+	IF stMMBuffer[i].bPresent THEN
+		stMMBuffer[i].CurrentPriority := 0;
+		stMMBuffer[i].nCurrentVehicleID := 0;
+		stMMBuffer[i].nReservedVehicleID := 0;
+		stMMBuffer[i].nTicket := 0;
+		stMMBuffer[i].nTicketSize := 0;
+		aBufferCmdID[i] := 0;
+	END_IF
+END_FOR
+	
+F_Logfile('BFCtrl - All data cleared!');
+
+M_ClearAll := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsEmpty" Id="{dfc005a6-93bf-45e2-aa85-5b31f112a1f2}">
+      <Declaration><![CDATA[METHOD PUBLIC M_IsEmpty : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (sBufferType = 'Pre' AND (stMMBuffer[1].nCurrentVehicleID = 0)) OR (sBufferType = 'Post' AND ( stMMBuffer[iBufferSize].nCurrentVehicleID = 0))THEN
+	M_IsEmpty := TRUE;
+	
+ELSE
+	M_IsEmpty := FALSE;
+	
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsFull" Id="{cad6bfd9-c058-4d58-95a3-2f82759d3792}">
+      <Declaration><![CDATA[METHOD PUBLIC M_IsFull : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (sBufferType = 'Pre' AND (stMMBuffer[iBufferSize].nCurrentVehicleID > 0)) OR (sBufferType = 'Post' AND ( stMMBuffer[1].nCurrentVehicleID > 0))THEN
+	M_IsFull := TRUE;
+	
+ELSE
+	M_IsFull := FALSE;
+	
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_RemoveVehicle" Id="{4cb5c102-a6d1-4fe1-87ee-3aa5e223369e}">
+      <Declaration><![CDATA[/// Removes a vehicle from the buffer, freeing up one space in the buffer
+/// Returns the vehicle ID of the removed vehicle (0 if not able to remove the vehicle (if buffer is empty) )
+METHOD PUBLIC M_RemoveVehicle : UINT
+VAR_INPUT
+	iVehicleID			: UINT;
+//	iTicket				: UINT;
+//	iTicketSize			: UINT;
+//	iPriority			: UINT;
+//	iMoveCmdID			: UINT;
+END_VAR
+VAR
+	i					: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (stMMBuffer[1].nCurrentVehicleID > 0 AND sBufferType = 'Pre') OR (stMMBuffer[iBufferSize].nCurrentVehicleID > 0 AND sBufferType = 'Post') THEN
+	
+	IF sBufferType = 'Pre' THEN
+		// Save ID of vehicle to remove
+		M_RemoveVehicle := stMMBuffer[1].nCurrentVehicleID;
+		
+		// Re-arrange values in array
+		FOR i := 1 TO (MM_MAX_BUFFER_INDEX - 1) BY 1 DO
+			stMMBuffer[i].CurrentPriority := stMMBuffer[i+1].CurrentPriority;
+			stMMBuffer[i].nCurrentVehicleID := stMMBuffer[i+1].nCurrentVehicleID;
+			stMMBuffer[i].nReservedVehicleID := stMMBuffer[i+1].nReservedVehicleID;
+			stMMBuffer[i].nTicket := stMMBuffer[i+1].nTicket;
+			stMMBuffer[i].nTicketSize := stMMBuffer[i+1].nTicketSize;
+			stMMBuffer[i].stLocation := stMMBuffer[i+1].stLocation;
+			aBufferCmdID[i] := aBufferCmdID[i+1];
+		END_FOR
+		
+		F_LogLine('TC_BUFCTRL: Vehicle removed from Pre buffer : %d', M_RemoveVehicle);
+	ELSIF sBufferType = 'Post' THEN
+		// Save ID of vehicle to remove
+		M_RemoveVehicle := stMMBuffer[iBufferSize].nCurrentVehicleID;
+		
+		// Re-arrange values in array
+		FOR i := iBufferSize TO 2 BY -1 DO
+			stMMBuffer[i] := stMMBuffer[i-1];
+			aBufferCmdID[i] := aBufferCmdID[i-1];
+		END_FOR
+		stMMBuffer[1].CurrentPriority := stMMBuffer[MM_MAX_BUFFER_INDEX].CurrentPriority;
+		stMMBuffer[1].nCurrentVehicleID := stMMBuffer[MM_MAX_BUFFER_INDEX].nCurrentVehicleID;
+		stMMBuffer[1].nReservedVehicleID := stMMBuffer[MM_MAX_BUFFER_INDEX].nReservedVehicleID;
+		stMMBuffer[1].nTicket := stMMBuffer[MM_MAX_BUFFER_INDEX].nTicket;
+		stMMBuffer[1].nTicketSize := stMMBuffer[MM_MAX_BUFFER_INDEX].nTicketSize;
+		stMMBuffer[1].stLocation := stMMBuffer[MM_MAX_BUFFER_INDEX].stLocation;
+		aBufferCmdID[1] := aBufferCmdID[MM_MAX_BUFFER_INDEX];
+		
+		F_LogLine('TC_BUFCTRL: Vehicle removed from Post buffer : %d', M_RemoveVehicle);
+	END_IF
+ELSE
+	// No vehicle to remove
+	M_RemoveVehicle := 0;
+	
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_iBufferSize" Id="{b4dac4d2-07fe-47da-a0d2-a9c514295d7a}">
+      <Declaration><![CDATA[/// Sets/gets buffer size. Size is limited to MM_MAX_BUFFER_INDEX
+PROPERTY PUBLIC P_iBufferSize : UINT]]></Declaration>
+      <Get Name="Get" Id="{7b9a4a37-949f-49bb-96c2-e6d659576cd2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_iBufferSize := iBufferSize;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{4d852e84-fa51-47b1-b5d7-5bd55bd8f881}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+iBufferSize := LIMIT(0, P_iBufferSize, MM_MAX_BUFFER_INDEX);
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_iCurrentVehicleCmdID" Id="{d72ee9d3-2df9-4276-a3ad-5777523731cd}">
+      <Declaration><![CDATA[PROPERTY P_iCurrentVehicleCmdID : UINT]]></Declaration>
+      <Get Name="Get" Id="{5ab6956b-9f58-4d5b-9ca6-00a978fcb834}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF sBufferType = 'Pre' THEN
+	P_iCurrentVehicleCmdID := aBufferCmdID[1];
+ELSIF sBufferType = 'Post' THEN
+	P_iCurrentVehicleCmdID := aBufferCmdID[iBufferSize];
+ELSE
+	P_iCurrentVehicleCmdID := 0;
+END_IF]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_iCurrentVehicleID" Id="{ca75e3d0-aede-466c-8498-707157974d46}">
+      <Declaration><![CDATA[PROPERTY P_iCurrentVehicleID : UINT]]></Declaration>
+      <Get Name="Get" Id="{b490b81e-bbf6-4e2b-b03b-e08430c5880d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF sBufferType = 'Pre' THEN
+	P_iCurrentVehicleID := stMMBuffer[1].nCurrentVehicleID;
+ELSIF sBufferType = 'Post' THEN
+	P_iCurrentVehicleID := stMMBuffer[iBufferSize].nCurrentVehicleID;
+ELSE
+	P_iCurrentVehicleID := 0;
+END_IF
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_iCurrentVehicleTicket" Id="{d0f9b5ff-de8a-4a2f-bd74-c5cf2bd38700}">
+      <Declaration><![CDATA[PROPERTY P_iCurrentVehicleTicket : UINT]]></Declaration>
+      <Get Name="Get" Id="{fb053a1f-866c-44df-8d68-a8a634eb79c3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF sBufferType = 'Pre' THEN
+	P_iCurrentVehicleTicket := stMMBuffer[1].nTicket;
+ELSIF sBufferType = 'Post' THEN
+	P_iCurrentVehicleTicket := stMMBuffer[iBufferSize].nTicket;
+ELSE
+	P_iCurrentVehicleTicket := 0;
+END_IF
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_sBufferType" Id="{d6941836-2c3c-43aa-bde2-86e231f0315b}">
+      <Declaration><![CDATA[PROPERTY P_sBufferType : STRING]]></Declaration>
+      <Set Name="Set" Id="{f1798c01-0bee-44ab-94b9-f43aba44425b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sBufferType := P_sBufferType;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_BufferControl">
+      <LineId Id="51" Count="0" />
+      <LineId Id="44" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.M_AddVehicle">
+      <LineId Id="26" Count="1" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="76" Count="2" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="126" Count="1" />
+      <LineId Id="52" Count="1" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="99" Count="10" />
+      <LineId Id="128" Count="1" />
+      <LineId Id="110" Count="2" />
+      <LineId Id="97" Count="1" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="40" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.M_ClearAll">
+      <LineId Id="7" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="41" Count="4" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.M_IsEmpty">
+      <LineId Id="23" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="11" Count="3" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.M_IsFull">
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.M_RemoveVehicle">
+      <LineId Id="19" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="97" Count="4" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="60" Count="6" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="102" Count="4" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="83" Count="1" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="54" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_iBufferSize.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_iBufferSize.Set">
+      <LineId Id="6" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_iCurrentVehicleCmdID.Get">
+      <LineId Id="5" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_iCurrentVehicleID.Get">
+      <LineId Id="5" Count="1" />
+      <LineId Id="8" Count="3" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_iCurrentVehicleTicket.Get">
+      <LineId Id="5" Count="1" />
+      <LineId Id="8" Count="3" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BufferControl.P_sBufferType.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

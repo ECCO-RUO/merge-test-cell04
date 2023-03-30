@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_GetSafetyTemp" Id="{fa4c8c83-e933-4d44-bd14-93ec1760ef88}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetSafetyTemp
+VAR_INPUT
+	rInterval			: REAL := 10.0;		// [sec]
+END_VAR
+VAR_OUTPUT
+	rSafetyTemp			: REAL;				// [deg]
+	bError				: BOOL;				// error flag (indicator: error occured)
+	nErrID				: UDINT;			// last error ID 
+END_VAR
+VAR
+	tonInterval			: Tc2_Standard.TON;
+	fbSafetyTemp		: TC2_EtherCAT.FB_EcCoESdoRead;
+	sSafetyNetID AT %I*	: AMSADDR;			// Map to Safety module 'AdsAddr'
+	iSafetyTemp			: INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Interval timer
+tonInterval(IN := NOT tonInterval.Q, PT := REAL_TO_TIME(rInterval * 1000.0));
+
+// Read value
+fbSafetyTemp(	sNetId:= F_CreateAmsNetId(sSafetyNetID.netId), 
+				nSlaveAddr:= sSafetyNetID.port, 
+				nIndex:= 16#F984, 	// Device Info Data C1
+				nSubIndex:= 16#2, 	// Temperature C1
+				pDstBuf:= ADR(iSafetyTemp), 
+				cbBufLen:= SIZEOF(iSafetyTemp), 
+				bExecute:= tonInterval.Q, 
+				tTimeout:= T#5S,  
+				bBusy=> , 
+				bError=> bError, 
+				nErrId=> nErrID	);
+
+// scale output
+rSafetyTemp := INT_TO_REAL(iSafetyTemp);
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetSafetyTemp">
+      <LineId Id="17" Count="0" />
+      <LineId Id="32" Count="2" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="66" Count="3" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="40" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

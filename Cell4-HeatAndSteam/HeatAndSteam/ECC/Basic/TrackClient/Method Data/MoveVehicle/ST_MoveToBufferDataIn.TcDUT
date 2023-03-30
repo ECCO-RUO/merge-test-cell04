@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToBufferDataIn" Id="{5c61bfbd-5033-4b56-be05-7accfda8be61}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_MoveToBufferDataIn :
+STRUCT
+	eInputType					: UINT;										(* The vehicle/vehicles that will be moved. *)
+	sInput						: STRING(30);								(* Depending on the input type, the input can be the ID of a vehicle, last, article, last type, cell or station. *)
+	sStationID					: STRING(30);								(* The ID of the station that will be moved to. *)
+	eStationBufferType			: UINT; // E_MMStationBuffer;				(* Select pre or post buffer *)
+	nIndex						: USINT;									(* Buffer index *)
+	eDirection					: BYTE;										(* 0: BiDirectional, 1: Forward, 2: Backward *)
+	nFollowID					: UINT := 0;
+	fVelocity					: REAL;
+	fAcceleration				: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

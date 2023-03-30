@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputCellConfigurationGeneral" Id="{3b012f08-f669-4061-9f38-47fb5c8a12dd}">
+    <Declaration><![CDATA[/// Specialized Config for SOR cell
+TYPE ST_OutputCellConfigurationGeneral :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Dummy (for making struct visible on OPC UA'}
+	Dummy						: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

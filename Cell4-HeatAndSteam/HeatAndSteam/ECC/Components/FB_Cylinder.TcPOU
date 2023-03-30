@@ -1,0 +1,444 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_Cylinder" Id="{76f07ef5-72dd-42f4-b50b-035df6ec57e3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Cylinder EXTENDS FB_Basic
+VAR_INPUT
+	eCmd			: E_Cylinder_Cmd;
+END_VAR
+VAR_OUTPUT
+	eSta			: E_Cylinder_Sta;
+END_VAR
+VAR
+	B1				: FB_DI;		// Activated/forward reed sensor
+	B2 				: FB_DI;		// Not Activated/reverse reed sensor
+	K1 				: FB_DO;		// Activate valve coil forward
+	K2 				: FB_DO;		// Activate valve coil reverse
+	bUseB1			: BOOL;
+	bUseB2			: BOOL;
+	tonB1Delay		: TON;
+	tonB2Delay		: TON;
+END_VAR
+VAR PERSISTENT
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'B1 sensor delay'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	tB1Delay		: TIME := T#5S;	// Delay forward reached (B1/K1) 
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'B2 sensor delay'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	tB2Delay		: TIME := T#5S;	// Delay reverse reached (B2/K2)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Run parent FB
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="M_Activate" Id="{bc58b8e1-7ebc-4ce0-90b3-9bbd664514ec}">
+      <Declaration><![CDATA[METHOD PUBLIC M_Activate : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[eCmd := E_Cylinder_Cmd.Cyl_Cmd_Fwd;
+M_Activate := (eSta = E_Cylinder_Sta.Cyl_Sta_Fwd);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_AutoMode" Id="{f3c3faa8-a1c6-41ea-b97d-f647460ddf5e}">
+      <Declaration><![CDATA[METHOD PROTECTED M_AutoMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Digital outputs automatic mode
+// Executed from parent FB_Basic
+
+IF (eCmd = Cyl_Cmd_Fwd) THEN
+	rAutoValue := 1;
+ELSIF (eCmd = Cyl_Cmd_Rev) THEN
+	rAutoValue := -1;
+ELSE
+	rAutoValue := 0;
+END_IF
+
+IF (P_bEnable) THEN
+	rActualValue := rAutoValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Deactivate" Id="{e20a81bf-0a7a-4924-a750-d92c6d351d85}">
+      <Declaration><![CDATA[METHOD PUBLIC M_Deactivate : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[eCmd := E_Cylinder_Cmd.Cyl_Cmd_Rev;
+M_Deactivate := (eSta = E_Cylinder_Sta.Cyl_Sta_Rev);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorHandling" Id="{c0abc965-5b82-4556-9a3a-b2d09f3ee6c8}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorHandling : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{0721dbbe-00c5-46bc-bd51-2adb62b32c82}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Nothing to init
+bInitDone := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsActivated" Id="{cc032dea-9878-43de-aa5b-3df5a774f11c}">
+      <Declaration><![CDATA[METHOD PUBLIC M_IsActivated : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_IsActivated := (eSta = E_Cylinder_Sta.Cyl_Sta_Fwd);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsDeactivated" Id="{5e647a1a-7df9-4bff-b5d4-e8d374172339}">
+      <Declaration><![CDATA[METHOD PUBLIC M_IsDeactivated : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_IsDeactivated := (eSta = E_Cylinder_Sta.Cyl_Sta_Rev);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsStopped" Id="{34b60468-9388-440a-bcdf-9f9093b6ce62}">
+      <Declaration><![CDATA[METHOD PUBLIC M_IsStopped : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_IsStopped := (eCmd = Cyl_Cmd_None);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ManualMode" Id="{43414a4c-861b-4b4f-b91a-67bf4e5eef7f}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ManualMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Cylinder manual mode
+// Executed from parent FB_Basic
+
+// rManualValue set from e.g. HMI
+// 1 => activate cylinder
+
+rManualValue := LIMIT(-1, rManualValue, 1);
+
+IF (P_bEnable) THEN
+	rActualValue := rManualValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+
+B1.bValue;
+B2.bValue;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{9b27a5b8-0bc3-4214-ae7a-52d2e5e43f0e}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Feedback
+B1();
+B2();
+IF (bUseB1 AND bUseB2 AND NOT bTestMode) THEN
+	// Use both reed sensors
+	tonB1Delay(IN := B1.bValue, PT := tB1Delay);
+	tonB2Delay(IN := B2.bValue, PT := tB2Delay);
+ELSIF (bUseB1 AND NOT bUseB2 AND NOT bTestMode) THEN
+	// Only use B1 (Forward) reed sensor
+	tonB1Delay(IN := B1.bValue, PT := tB1Delay);
+	tonB2Delay(IN := K2.bValue, PT := tB2Delay);
+ELSIF (NOT bUseB1 AND bUseB2 AND NOT bTestMode) THEN
+	// Only use B2 (Reverse) reed sensor
+	tonB1Delay(IN := K1.bValue, PT := tB1Delay);
+	tonB2Delay(IN := B2.bValue, PT := tB2Delay);
+ELSE
+	// Don't use any reed sensors
+	tonB1Delay(IN := K1.bValue, PT := tB1Delay);
+	tonB2Delay(IN := K2.bValue, PT := tB2Delay);
+END_IF
+
+IF (tonB1Delay.Q AND NOT tonB2Delay.Q) THEN
+	eSta := Cyl_Sta_Fwd;
+ELSIF (tonB2Delay.Q AND NOT tonB1Delay.Q) THEN
+	eSta := Cyl_Sta_Rev;
+ELSIF (tonB1Delay.Q AND tonB2Delay.Q) THEN
+	eSta := Cyl_Sta_Err;
+ELSE
+	eSta := Cyl_Sta_None;
+END_IF
+
+
+// Command outputs
+K1.P_bEnable := P_bEnable;
+K2.P_bEnable := P_bEnable;
+IF (rActualValue >= 1) THEN
+	K1.bValue := TRUE;
+	K2.bValue := FALSE;
+ELSIF (rActualValue <= -1) THEN
+	K1.bValue := FALSE;
+	K2.bValue := TRUE;	
+ELSE
+	K1.bValue := FALSE;
+	K2.bValue := FALSE;	
+END_IF
+
+K1();
+K2();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stop" Id="{df03f213-bfc9-4c7a-8246-3207a5826962}">
+      <Declaration><![CDATA[METHOD PUBLIC M_Stop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[eCmd := E_Cylinder_Cmd.Cyl_Cmd_None;
+M_Stop := (NOT K1.bValue AND NOT K2.bValue);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bUseB1" Id="{afe33219-bf28-4030-b077-40b4ad8d3f44}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bUseB1 : BOOL]]></Declaration>
+      <Get Name="Get" Id="{7c12be1d-687f-4faf-b2ae-27e0c0205246}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bUseB1 := bUseB1;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0d8c2169-a79f-4966-b997-f8e6a60e72fa}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bUseB1 := P_bUseB1;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bUseB2" Id="{f6597364-b12b-4beb-ba1b-3521827a7a4b}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bUseB2 : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6eb9048d-0856-4a86-89b0-19621ad13124}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bUseB2 := bUseB2;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e1aa8c24-56dd-440c-afc8-5f689e0fd4a6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bUseB2 := P_bUseB2;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rB1Delay" Id="{c396674b-3ec5-441c-be2e-4a65665ec319}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rB1Delay : REAL]]></Declaration>
+      <Get Name="Get" Id="{d01d290a-cf11-459f-baca-e876ab20d81d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+P_rB1Delay := (TIME_TO_REAL(tB1Delay) / 1000.0);
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{b0366ec4-c59e-406b-9a99-55623f52defe}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+tB1Delay := REAL_TO_TIME(P_rB1Delay * 1000.0);
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rB2Delay" Id="{9808acc3-5cbc-4b6b-9041-e80494f668c8}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rB2Delay : REAL]]></Declaration>
+      <Get Name="Get" Id="{db690f0c-af9a-43e6-9769-ffedba692134}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+P_rB2Delay := (TIME_TO_REAL(tB2Delay) / 1000.0);
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{337875c4-2d06-423c-8af2-b53c95d0fc4c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+tB2Delay := REAL_TO_TIME(P_rB2Delay * 1000.0);
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_Cylinder">
+      <LineId Id="75" Count="2" />
+      <LineId Id="74" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_Activate">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_AutoMode">
+      <LineId Id="12" Count="1" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="14" Count="2" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="17" Count="4" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_Deactivate">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_ErrorHandling">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_Init">
+      <LineId Id="11" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_IsActivated">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_IsDeactivated">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_IsStopped">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_ManualMode">
+      <LineId Id="9" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="11" Count="7" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="26" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_Run">
+      <LineId Id="11" Count="1" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="104" Count="1" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="106" Count="1" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="108" Count="1" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="110" Count="1" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="112" Count="8" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="15" Count="2" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="40" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.M_Stop">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_bUseB1.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_bUseB1.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_bUseB2.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_bUseB2.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_rB1Delay.Get">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_rB1Delay.Set">
+      <LineId Id="5" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_rB2Delay.Get">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cylinder.P_rB2Delay.Set">
+      <LineId Id="5" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

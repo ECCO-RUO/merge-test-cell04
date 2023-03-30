@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_RemovePathSegmentData" Id="{269a4887-4ff4-4bdc-af7f-603652fab68d}">
+    <Declaration><![CDATA[TYPE ST_RemovePathSegmentData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_RemovePathSegment';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 2;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_RemovePathSegmentDataIn;
+	stOutput					: ST_RemovePathSegmentDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

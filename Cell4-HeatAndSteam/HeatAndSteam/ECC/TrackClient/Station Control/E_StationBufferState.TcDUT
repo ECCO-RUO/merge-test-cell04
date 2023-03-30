@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_StationBufferState" Id="{407dc16a-cc0d-4750-9322-8078f0c6b160}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_StationBufferState :
+(
+	Idle := 0,
+	CheckBuffer,
+	StartMove,
+	WaitMove
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

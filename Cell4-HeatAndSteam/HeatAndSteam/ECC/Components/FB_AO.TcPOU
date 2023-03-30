@@ -1,0 +1,245 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_AO" Id="{9fa16736-27ea-49ed-9af0-0ab83936e0b7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_AO EXTENDS FB_Basic
+VAR_INPUT
+	rValue		: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	fbLinTrafo	: FB_LIN_TRAFO;
+
+// HW
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Output I/O signal (RAW)'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	AnalogOutput AT %Q* : INT;	// Value to IO module
+	State AT %I* : UINT := 8;	// State from Ethercat module
+	AdsAdrr AT %I* : AMSADDR;	// ADS address from EtherCAT module
+
+END_VAR
+VAR PERSISTENT
+	rScaleMax	: LREAL := 100;
+	rScaleMin	: LREAL := -100;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Run parent FB
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="M_AutoMode" Id="{f245e704-90a3-4179-bdbf-fea1e18317d9}">
+      <Declaration><![CDATA[METHOD PROTECTED M_AutoMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog output automatic mode
+// Executed from parent FB_Basic
+
+rAutoValue := rValue;
+
+IF (P_bEnable) THEN
+	rActualValue := rAutoValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorHandling" Id="{b90a5d88-3655-4424-b22a-6f9fbf89bc41}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorHandling : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Error handling
+IF (bCmdEnable) THEN
+	IF (NOT P_bManualMode) THEN
+		// Hardware errors
+		IF (NOT F_ECat_OK(State)) THEN
+			// EtherCAT state
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_ECat_Not_OP;
+		END_IF
+	END_IF
+	
+ELSE
+	bStaError := FALSE;
+	bStaWarning := FALSE;
+	eStaErrorID := E_ComponentErrors.OK;
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{c1fbf982-fcb3-4fe8-9448-51448a4266ec}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Init
+
+bCmdEnable := TRUE;
+bInitDone := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ManualMode" Id="{01072cf1-5ded-4d0c-87a3-457c4656934d}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ManualMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog Output manual mode
+// Executed from parent FB_Basic
+
+rManualValue := LIMIT(rScaleMin, rManualValue, rScaleMax);
+
+IF (P_bEnable) THEN
+	rActualValue := rManualValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{cb71e432-a3f6-4619-8861-41ef5909bb16}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog outputs run
+// Executed from parent FB_Basic
+
+// Update IO 
+
+fbLinTrafo(	rIN := rActualValue,
+			rIN_MIN := rScaleMin,
+			rIN_MAX := rScaleMax,
+			rOUT_MIN := -32767,
+			rOUT_MAX := 32767,
+			rOUT => ,
+			bERROR =>	);
+
+AnalogOutput := LREAL_TO_INT(fbLinTrafo.rOUT);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_rScaleMax" Id="{626bd2db-faa4-488f-82cf-def3763b97dd}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rScaleMax : LREAL]]></Declaration>
+      <Get Name="Get" Id="{8e58ad9b-f723-4e56-82f6-a6e6a191ed94}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rScaleMax := rScaleMax;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{38490acd-4738-4c83-91f3-a2f0f15f59ce}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[rScaleMax := P_rScaleMax;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rScaleMin" Id="{223a6fcb-d15f-4664-b482-5b8e05776893}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rScaleMin : LREAL]]></Declaration>
+      <Get Name="Get" Id="{271fe616-64ef-4a2e-8ca1-53279acbf0be}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rScaleMin := rScaleMin;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0e13791c-87cf-4dd5-94ce-e54323023eb1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[rScaleMin := P_rScaleMin;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_AO">
+      <LineId Id="15" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="151" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.M_AutoMode">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="18" Count="2" />
+      <LineId Id="12" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.M_ErrorHandling">
+      <LineId Id="6" Count="1" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="8" Count="4" />
+      <LineId Id="33" Count="1" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="53" Count="5" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.M_Init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_AO.M_ManualMode">
+      <LineId Id="8" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="22" Count="2" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.M_Run">
+      <LineId Id="6" Count="2" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="19" Count="6" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="29" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.P_rScaleMax.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.P_rScaleMax.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.P_rScaleMin.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AO.P_rScaleMin.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

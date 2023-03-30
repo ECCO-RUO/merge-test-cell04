@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="U_EMS_HS_Write" Id="{85a1e226-7f8f-41bb-b4a5-ac16c19541ec}">
+    <Declaration><![CDATA[TYPE U_EMS_HS_Write :
+UNION
+	aWords					: ARRAY [1..8] OF WORD;
+	stVars					: ST_EMS_HS_Write;
+
+END_UNION
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

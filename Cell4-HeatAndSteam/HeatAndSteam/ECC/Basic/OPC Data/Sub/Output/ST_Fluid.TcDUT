@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_Fluid" Id="{1572871b-4263-40ef-8d4a-ead6bfbfd2d7}">
+    <Declaration><![CDATA[TYPE ST_Fluid :
+STRUCT
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

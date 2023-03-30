@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_MaterialType" Id="{e38ecb34-183a-4c79-bb19-009b18578244}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_MaterialType :
+(
+	Undefined := 0,
+	None,
+	Upper
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

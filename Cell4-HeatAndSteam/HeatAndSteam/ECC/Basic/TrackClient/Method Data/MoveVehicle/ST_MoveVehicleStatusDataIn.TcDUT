@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveVehicleStatusDataIn" Id="{3803fd8b-1bb8-4cde-93bc-9eebac4f5602}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_MoveVehicleStatusDataIn :
+STRUCT
+	iCommandID					: UINT;													// The command ID for this command
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

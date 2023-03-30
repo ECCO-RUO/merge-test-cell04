@@ -1,0 +1,1301 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_HeatAndSteamIN" Id="{1607c58a-89a9-4f37-b6d6-4b28b58878a7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HeatAndSteamIN EXTENDS FB_Station_Basic
+VAR_INPUT
+	stReservation			: ST_ReservationData;		// Reservation on station
+	sDistanceInDevice		: REAL;
+	stVehicleDataStaion		: ST_ReadVehicleData ; //Data for vehicle on station in
+END_VAR
+VAR_OUTPUT
+	fVelocityCal			: REAL;
+	fTemperatureCal			: REAL;
+	fSteamCal				: REAL;
+	fAirCal					: REAL;
+	fTimeCal				: REAL;
+END_VAR
+VAR_IN_OUT
+	// Inputs
+	stJobDataIn				: ST_InputStationHSJobData;
+	stConfigIn				: ST_InputStationHSConfiguration;
+	stUpcomingConfigIn		: ST_InputStationHSUpcomingConfiguration;
+	stControlIn				: ST_InputStationHSControl;
+	stAdditionalDataIn		: ST_InputStationHSAdditionalData;
+	// Outputs
+	stJobDataOut			: ST_OutputStationHSJobData;
+	stConfigOut				: ST_OutputStationHSCurrentConfiguration;
+	stUpcomingConfigOut		: ST_OutputStationHSUpcomingConfiguration;
+	stOperationalDataOut	: ST_OutputStationHSOperationalData;
+	stSustainabilityData	: ST_OutputStationHSSustainabilityData;
+	stAdditionalDataOut		: ST_OutputStationHSAdditionalData;
+	aVehiclesStationFIFO	: ARRAY[1..10] OF ST_VehicleInHS;
+END_VAR 
+VAR
+	eSeq					: E_HSStationINSeq;
+	eSeq_old				: E_HSStationINSeq;
+	bStateChange_OS			: BOOL;
+		
+	fbHS_Driver				: FB_EMS_HS;
+	stHSDriverWrite			: ST_EMS_HS_Write;
+	stHSDriverRead			: ST_EMS_HS_Read;
+	
+	sWarningError			: ARRAY [1..21] OF STRING; // Delete when alarm section is agreed.
+	bStationReadyIn			: BOOL;
+	OperationOK				: BOOL;
+	bTestActive				: BOOL;
+	
+	bSkipVehicle			: BOOL;
+	iNextJobStation			: UINT;
+	iNextJobStationOld		: UINT;
+	
+
+// Start up
+	sCarrierID				: STRING; // Current carrier ID
+	nCheckValid				: UINT;
+	bTestBool				: BOOL;
+	
+	diStateTimer			: DINT;
+	tonIdleTimer			: TON;
+	i						: INT;
+	iVehicleInFIFO			: UINT;
+END_VAR
+
+VAR CONSTANT
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^( stModeStateIn := stModeStateIn,
+		stModeStateOut := stModeStateOut,
+		stOEE := stOEE,
+		stErrorWarning := stErrorWarning);
+
+		
+IF bInitDone THEN
+	M_ErrorWarning();
+END_IF
+		
+M_Init();
+
+//Automatic reset when operation complete
+IF (eCommand <> ePMLCommand_Start AND eCurrentState = E_PMLState.ePMLState_Complete) THEN
+	bResetLocal := TRUE;
+END_IF
+
+//Station in ready -> Cell -> TrackClient
+//bStationReadyIn := eCurrentState = E_PMLState.ePMLState_Idle;
+
+//Job Data
+M_JobDataHandling();
+
+//Line controller request
+M_ConfigurationHandling();
+
+//Device driver
+M_DeviceDriver();
+
+// Operational Data
+M_OperationalDataHandling();
+
+
+]]></ST>
+    </Implementation>
+    <Method Name="M_Aborted" Id="{2e1d9756-4249-4d1d-b1fd-0ca5bda1f94b}">
+      <Declaration><![CDATA[/// Static state "Aborted"
+/// Trigged by "StateCompleted" when in "Aborting" state
+/// Requires "Clear" to go to "Clearing" state 
+{attribute 'object_name' := 'M_Aborted'}
+METHOD M_Aborted
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Aborting" Id="{7a6500e4-19ad-46d4-8959-24e6e943e0a5}">
+      <Declaration><![CDATA[/// Dynamic state "Aborting"
+/// Trigged by "Abort" command
+/// Requires "StateCompleted" to go to "Aborted" state 
+{attribute 'object_name' := 'M_Aborting'}
+METHOD M_Aborting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Stop all moving parts
+(* STOP all OPSTIONS and Track - Clear alarms og gå til Complete*)
+eSeq := E_HSStationINSeq.Idle;
+
+stHSDriverWrite.rSetFanSpeed := 0;
+stHSDriverWrite.rSetTemp := 0;
+stHSDriverWrite.stCommands.REMOTE_STOP := TRUE;
+stHSDriverWrite.stCommands.REMOTE_START := FALSE;
+
+
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CalculatedVelocity" Id="{12fc5e00-3370-4426-8132-969f5bdb0432}">
+      <Declaration><![CDATA[(*Calculated velocity for needed operation
+
+ TFinal=(TMachine∗cT+SMachine∗cS+AMachine∗cA)∗t+TInital
+ TFinal = Final estimated upper temperature
+ TMachine = Temperature of the heat radiation of the device
+ SMachine = Steam level in the device
+ AMachine = Air flow in the device
+ TInitial = initial temperature of the upper
+ t = Time upper spends in device
+ cT = weighted factor transferring heat radiation to the upper temperature
+ cS = weighted factor for the influence the steam level has to the upper temeperature
+ cA = weighted factor for the influence the air flow has to the upper temeperature
+*)
+METHOD M_CalculatedVelocity : REAL
+VAR_INPUT
+	fTFinal			: REAL;
+	fTInital		: REAL;
+	fTMachine		: REAL;
+	fSMachine		: REAL;
+	fAMachine		: REAL;
+	fcT				: REAL;
+	fcS				: REAL;
+	fcA				: REAL;
+	fTravelLength	: REAL; //Length of travel from beginning to end of path
+END_VAR
+VAR
+	fTimeSet		: REAL;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Check settings
+IF fcT = 0 THEN
+	fcT := 0.0000059;
+END_IF
+IF fcS = 0 THEN
+	fcS := 0.00000045;
+END_IF
+IF fcA = 0 THEN
+	fcA := 0.000068;
+END_IF
+
+
+//Calculate time needed in device
+//t = ( (TFinal) / (TMachine * cT + SMachine * cS + AMachine * cA) ) - TInitial
+fTimeSet := (fTFinal - fTInital) / ((fTMachine * fcT) + (fSMachine * fcS) + (fAMachine * fcA));
+//Velocity needed with current setting
+M_CalculatedVelocity := fTravelLength/fTimeSet;
+
+//Check velocity
+IF M_CalculatedVelocity >= 0.001 AND M_CalculatedVelocity <= 2.0 THEN
+	; //Ok
+ELSE
+	M_CalculatedVelocity := -1; // Not ok
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ClearAll" Id="{2485433c-aa6d-4c86-a130-e11cdbbcb8e2}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF eCurrentState = E_PMLState.ePMLState_Aborted THEN
+	eSeq := E_HSStationINSeq.Idle;
+	bSkipVehicle := FALSE;
+	
+	iNextJobStation := 0;
+	iNextJobStationOLD := 0;
+	
+	F_Logfile('ST1 - All data cleared!');
+	
+	M_ClearAll := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Clearing" Id="{59f78acb-e76d-4140-bd7f-e71af265897b}">
+      <Declaration><![CDATA[/// Dynamic state "Clearing"
+/// Trigged by "Clear" command "Aborted" state
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Clearing'}
+METHOD M_Clearing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* Clear all OPSTIONS and Track - Clear alarms og gå til Complete*)
+
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Complete" Id="{35a7d6e8-1a26-4437-bf17-a0fbd8e5654a}">
+      <Declaration><![CDATA[/// Static state "Complete"
+/// Trigged by "StateCompleted" when in "Completing" state
+/// Requires "Reset" to go to "Resetting" state 
+{attribute 'object_name' := 'M_Complete'}
+METHOD M_Complete
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Completing" Id="{7a1f8278-cdc3-4913-8c8a-4448bc623594}">
+      <Declaration><![CDATA[/// Dynamic state "Completing"
+/// Trigged by "StageCompleted" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Complete" state 
+{attribute 'object_name' := 'M_Completing'}
+METHOD M_Completing
+
+VAR
+	
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+
+M_StateComplete(); 
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ConfigurationHandling" Id="{a8ae8ca1-da08-4aad-860a-e70965e4dc2e}">
+      <Declaration><![CDATA[METHOD M_ConfigurationHandling
+VAR_INPUT
+END_VAR
+VAR
+	sTempSTring		: STRING(200);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Is updated from operator/HMI
+IF (stConfigIn.ChangeRequest <> stConfigOut.ChangeStatus) AND (stConfigIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('ConfigChange request - Old request: ', TO_STRING(stConfigOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stConfigIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' ConfigType: ');
+	F_LogFile(CONCAT(sTempString, stConfigIn.ConfigurationType)); 
+	
+	// Change request from Line Controller
+	IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusCurrentConfiguration = stConfigOut.DataChange) THEN
+		stConfigOut.ChangeAcknowledge := stConfigIn.ChangeRequest;
+		stConfigOut.DataChange := stConfigOut.DataChange + 1;
+	
+		// Check Configuration Type
+		IF (F_StringCompNoCase(stConfigIn.ConfigurationType, 'OP11600')) THEN	
+			// Update output job data
+			stConfigOut.ConfigurationType := stConfigIn.ConfigurationType;
+			stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+			stConfigOut.OP11600 := stConfigIn.OP11600;
+			
+			// Signal that job data has been written		
+			stConfigOut.ChangeStatus := stConfigIn.ChangeRequest;
+			
+			// Signal that output job data has been updated
+			stConfigOut.DataChange := stConfigOut.DataChange + 1;
+	
+		ELSE
+			// Wrong configuration data type!
+			stConfigOut.ConfigurationType := '';
+			stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+	
+			// Signal that configuration data has been written		
+			stConfigOut.ChangeStatus := stConfigIn.ChangeRequest;
+			
+			// Signal that output configuration data has been updated
+			stConfigOut.DataChange := stConfigOut.DataChange + 1;
+	
+		END_IF
+	END_IF
+END_IF
+
+
+// Upcoming Configuration
+IF (stUpcomingConfigIn.ChangeRequest <> stUpcomingConfigOut.ChangeStatus) AND (stUpcomingConfigIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('Upcoming ConfigChange request - Old request: ', TO_STRING(stUpcomingConfigOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stUpcomingConfigIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' ConfigType: ');
+	F_LogFile(CONCAT(sTempString, stUpcomingConfigIn.ConfigurationType)); 	
+
+	// Change request from Line Controller
+	IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusUpcomingConfiguration = stUpcomingConfigOut.DataChange) THEN
+		stUpcomingConfigOut.ChangeAcknowledge := stUpcomingConfigIn.ChangeRequest;
+		stUpcomingConfigOut.DataChange := stUpcomingConfigOut.DataChange + 1;
+	
+		// Check Configuration Type
+		IF (F_StringCompNoCase(stUpcomingConfigIn.ConfigurationType, 'OP11600')) THEN	
+			// Update configuration data
+			stUpcomingConfigOut.ConfigurationType := stUpcomingConfigIn.ConfigurationType;
+			stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+			stUpcomingConfigOut.OP11600 := stUpcomingConfigIn.OP11600;
+	
+			// Signal that configuration data has been written		
+			stUpcomingConfigOut.ChangeStatus := stUpcomingConfigIn.ChangeRequest;
+			
+			// Signal that output configuration data has been updated
+			stUpcomingConfigOut.DataChange := stUpcomingConfigOut.DataChange + 1;
+			
+		ELSE
+			// Wrong configuration data type!
+			stUpcomingConfigOut.ConfigurationType := '';
+			stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+	
+			// Signal that configuration data has been written		
+			stUpcomingConfigOut.ChangeStatus := stUpcomingConfigIn.ChangeRequest;
+			
+			// Signal that output configuration data has been updated
+			stUpcomingConfigOut.DataChange := stUpcomingConfigOut.DataChange + 1;
+	
+		END_IF
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_DeviceDriver" Id="{34bb24fa-1e3a-4e9c-8ce7-1edbbf0f620d}">
+      <Declaration><![CDATA[METHOD M_DeviceDriver
+VAR_INPUT
+END_VAR
+VAR
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+fbHS_Driver.P_bSimulationMode := stControlIn.General.SimulationMode;
+fbHS_Driver.P_stCellCommandData := stHSDriverWrite;
+fbHS_Driver();
+stHSDriverRead := fbHS_Driver.P_stCellStatusData;
+
+//Set device using idle setting
+IF (eCurrentState = E_PMLState.ePMLState_Idle AND (aVehiclesStationFIFO[1].sCarrierID = '')) THEN
+	stHSDriverWrite.rSetTemp := stControlIn.OP11600.IdleTemperature;
+	stHSDriverWrite.rSetSteamReq := 0;
+	stHSDriverWrite.rSetFanSpeed := stControlIn.OP11600.IdleFanSpeed;
+END_IF
+
+//Start timer until ModeState = Stop
+IF eCurrentState = E_PMLState.ePMLState_Idle THEN
+	tonIdleTimer.IN := ( (stReservation.nTicket = 0) AND (aVehiclesStationFIFO[1].sCarrierID = '') );
+
+	IF tonIdleTimer.Q THEN
+		bStopLocal := TRUE;
+		
+		F_Logfile('STAT1: Idle timer timed out, stop local');
+	END_IF
+ELSE
+	tonIdleTimer.IN := FALSE;
+END_IF
+
+tonIdleTimer(IN:= , PT:= TO_TIME(stControlIn.General.StationIdleTime * 60000), Q=> , ET=> );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorWarning" Id="{ad2a9632-2f9d-4b5b-b1b6-618d58bfec61}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorWarning
+VAR_INPUT
+END_VAR
+VAR
+	bDataChange:BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= stHSDriverRead.stAlarms.TEMP_PROBE_FAULT, 
+	iErrorWarningType:= 2, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 0, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 2, 
+	iNativeID:= 0, 
+	sNativeMessage:= 'Temperatur probe fault');
+	
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= stHSDriverRead.stAlarms.FAULT_INVERTER, 
+	iErrorWarningType:= 2, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 1, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 2, 
+	iNativeID:= 1, 
+	sNativeMessage:= 'Fault inverter');
+
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= stHSDriverRead.stAlarms.ENERGY_METER_COM_ERROR, 
+	iErrorWarningType:= 1, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 6, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 1, 
+	iNativeID:= 6, 
+	sNativeMessage:= 'Energy meter comm. error');
+	
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= stHSDriverRead.eMachStatus = E_EMS_HS_Status.ALARM, 
+	iErrorWarningType:= 2, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 16, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 2, 
+	iNativeID:= 0, 
+	sNativeMessage:= 'Device in Alarm');
+	
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= NOT stHSDriverRead.stStates.REMOTE_MODE, 
+	iErrorWarningType:= 1, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 17, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 1, 
+	iNativeID:= 0, 
+	sNativeMessage:= 'Device in Local mode');
+	
+bDataChange S= 
+M_ErrorWarningObj(arErrorWaringData:= stErrorWarning.ErrorWarningData,
+	bActive:= stHSDriverRead.stStates.ALARM_IN_PROGRESS, 
+	iErrorWarningType:= 1, 
+	diErrorWarningID:= E_AlarmCategory.OP11600 + 18, 
+	sDeviceID:= 'OP11600',
+	iSeverity:= 1, 
+	iNativeID:= 0, 
+	sNativeMessage:= 'Deivce Alarm in progress');
+
+
+stErrorWarning.DataChange := stErrorWarning.DataChange + TO_UINT(bDataChange);
+bDataChange := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Execute" Id="{e3f5e3e1-2595-4870-8f48-64220cd34364}">
+      <Declaration><![CDATA[/// Static state "Execute"
+/// Trigged by "StageCompleted" when in "Starting" state
+/// Trigged by "StageCompleted" when in "Unholding" state
+/// Trigged by "StageCompleted" when in "Unsuspending" state
+/// Requires "Hold" command to go to "Holding" state 
+/// Requires "Suspend" command to go to "Suspending" state 
+/// Requires "StageCompleted" to go to "Completing" state 
+{attribute 'object_name' := 'M_Execute'}
+METHOD M_Execute
+VAR
+	i		: UINT;
+	sTempString : STRING(200);
+	fTMachineMid : REAL;
+	fSMachineMid : REAL;
+	fAMachineMid : REAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Sequence
+//Run current cycle duration timer
+IF diStateTImer < 1000000 THEN
+	diStateTimer := diStateTimer + g_iPLCScan_MS;
+END_IF
+
+//New Vehicle in device fifo location
+FOR i := 1 TO 9 DO
+	IF (aVehiclesStationFIFO[i+1].sCarrierID = '') THEN
+		EXIT;
+	END_IF
+END_FOR
+iVehicleInFIFO := i;
+
+CASE eSeq OF
+	E_HSStationINSeq.Idle:
+		diStateTimer := 0;
+		
+		IF bVehicleReadyAtInput OR bSkipVehicle THEN
+			eSeq := E_HSStationINSeq.NewJob;
+			
+			F_Logfile('STAT1: Vehicle ready');
+		END_IF
+	
+	E_HSStationINSeq.NewJob:		
+		//Check for other vehicles in device				
+		IF iVehicleInFIFO = 1 THEN //New vehicle is only vehicle in FIFO
+			IF bSkipVehicle THEN
+				eSeq := E_HSStationINSeq.ReceiveNextVehicle;
+				F_LogFile('STAT1: Skip job - No other carriers in device');
+			ELSE
+				eSeq := E_HSStationINSeq.SetSettingsOnDevice;//No items in FIFO
+				F_LogFile('STAT1: new job - No other carriers in device');
+			END_IF
+			
+		ELSIF iVehicleInFIFO > 1 THEN //More vehicles in FIFO
+			eSeq := E_HSStationINSeq.CheckVehiclesVelocity;				
+			F_LogFile(CONCAT('STAT1: new job - Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+		END_IF
+
+	E_HSStationINSeq.CheckVehiclesVelocity:
+		IF iVehicleInFIFO > 1 AND NOT bSkipVehicle THEN
+			IF ( (aVehiclesStationFIFO[iVehicleInFIFO-1].fCalculatedTIA > fTimeCal) ) THEN
+				IF bStateChange_OS THEN
+					sTempString := (CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+					sTempString := CONCAT(sTempString, ', Calc. TIA: ');
+					sTempString := CONCAT(sTempString, TO_STRING(fTimeCal));
+					sTempString := CONCAT(sTempString, ', Faster than: ');
+					sTempString := CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].sCarrierID));
+					sTempString := CONCAT(sTempString, ', With TIA: ');
+					F_LogFile(CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].fCalculatedTIA)));
+				END_IF
+			ELSE
+				eSeq := E_HSStationINSeq.CheckVehiclesSettings;
+						
+				sTempString := CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(sCarrierID));
+				sTempString := CONCAT(sTempString, ', Calc. TIA: ');
+				sTempString := CONCAT(sTempString, TO_STRING(fTimeCal));
+				F_Logfile(CONCAT(sTempString, ', Velocity OK to enter'));
+			END_IF
+		ELSIF iVehicleInFIFO <= 1 THEN
+			eSeq := E_HSStationINSeq.SetSettingsOnDevice;//No items in FIFO
+			F_LogFile('STAT1: No other carriers in device');
+		ELSIF bSkipVehicle THEN // Skip vehicle - interpolate velocity with previous vehicle
+			IF (aVehiclesStationFIFO[iVehicleInFIFO-1].fCalculatedTIA > 0) THEN
+				aVehiclesStationFIFO[iVehicleInFIFO].fVelocity := LIMIT(0.001,(sDistanceInDevice / aVehiclesStationFIFO[iVehicleInFIFO-1].fCalculatedTIA), 1);
+			ELSE
+				aVehiclesStationFIFO[iVehicleInFIFO].fVelocity := 1;
+			END_IF
+			fVelocityCal := aVehiclesStationFIFO[iVehicleInFIFO].fVelocity; //set velocity
+			eSeq := E_HSStationINSeq.ReceiveNextVehicle;
+			F_LogFile(CONCAT('STAT1: Skip, vehicle vel. set to: ', REAL_TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].fVelocity)));
+		END_IF
+	
+	E_HSStationINSeq.CheckVehiclesSettings:
+		fTMachineMid:= stJobDataOut.OP11600.TemperatureMax + stJobDataOut.OP11600.TemperatureMin;
+		IF fTMachineMid > 0 THEN
+			fTMachineMid := fTMachineMid/2;
+		END_IF
+		
+		fSMachineMid:= stJobDataOut.OP11600.SteamMax + stJobDataOut.OP11600.SteamMin;
+		IF fSMachineMid > 0 THEN
+			fSMachineMid := fSMachineMid/2;
+		END_IF
+		
+		fAMachineMid:= stJobDataOut.OP11600.AirMax + stJobDataOut.OP11600.AirMin;
+		IF fAMachineMid > 0 THEN
+			fAMachineMid := fAMachineMid/2;
+		END_IF
+		FOR i := 1 TO 10 DO
+			IF (aVehiclesStationFIFO[i].sCarrierID <> '') THEN
+				
+				IF (fTMachineMid) > aVehiclesStationFIFO[i].JobData.TemperatureMax OR
+					(fTMachineMid) < aVehiclesStationFIFO[i].JobData.TemperatureMin OR
+					(fSMachineMid) > aVehiclesStationFIFO[i].JobData.SteamMax OR
+					(fSMachineMid) < aVehiclesStationFIFO[i].JobData.SteamMin OR
+					(fAMachineMid) > aVehiclesStationFIFO[i].JobData.AirMax OR
+					(fAMachineMid) < aVehiclesStationFIFO[i].JobData.AirMin THEN
+					
+						IF bStateChange_OS THEN
+							sTempString := (CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+							F_LogFIle(CONCAT(sTempString, ', Check settings failed to enter'));
+						END_IF
+						
+						EXIT; //End loop - at least 1 vehicle cannot accomodate settings
+				END_IF
+			ELSE
+				sTempString := (CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+				F_LogFIle(CONCAT(sTempString, ', Check settings OK to enter'));
+				
+				eSeq := E_HSStationINSeq.SetSettingsOnDevice;
+				EXIT; //End reached
+			END_IF
+		END_FOR
+
+	E_HSStationINSeq.SetSettingsOnDevice: (* Temperature limits 80-180C, Steam limits 0-10, Air flow limits 1500-3000*) 
+
+		stHSDriverWrite.rSetTemp := LIMIT(80, fTemperatureCal, 180);
+		stHSDriverWrite.rSetSteamReq := TO_DINT(LIMIT(0, fSteamCal, 10));
+		stHSDriverWrite.rSetFanSpeed := LIMIT(1500, fAirCal, 3000);
+		stHSDriverWrite.stCommands.REMOTE_START := TRUE;
+		stHSDriverWrite.stCommands.REMOTE_STOP := FALSE;
+		eSeq := E_HSStationINSeq.WaitForDeviceReady;
+		
+		sTempString := (CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+		F_LogFIle(CONCAT(sTempString, ', Set settings on Barrera'));
+		
+	E_HSStationINSeq.WaitForDeviceReady:	
+		//Wait for temperature reached
+		IF (bTestActive OR (stHSDriverRead.rActTempVal >= stHSDriverWrite.rSetTemp - 10 AND stHSDriverRead.rActTempVal <= stHSDriverWrite.rSetTemp + 10) ) THEN
+			eSeq := E_HSStationINSeq.ReceiveNextVehicle;
+			
+			sTempString := (CONCAT('STAT1: Vehicle with Carrier ID: ', TO_STRING(aVehiclesStationFIFO[iVehicleInFIFO].sCarrierID)));
+			F_LogFIle(CONCAT(sTempString, ', Temp and steam setpoint reacehd'));
+		END_IF
+	
+	E_HSStationINSeq.ReceiveNextVehicle:
+		//Let cell release next vehicle with defined velocity
+		eSeq := E_HSStationINSeq.Done;
+		
+			F_LogFile('STAT1: ready next vehicle');
+		
+	E_HSStationINSeq.Done:
+				 
+		 // Set job state to LC
+		IF (stJobDataOut.JobState <> 3) AND NOT bSkipVehicle THEN
+			stJobDataOut.JobState := 3; //(0: Undefined, 1: Idle, 2: Executing, 3: Completed)
+			stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+			IF (NOT bSkipVehicle) THEN
+				M_OEEProductProcessed(TRUE);
+			END_IF
+		END_IF
+	
+		// Completed operation
+		IF (iNextJobStation = 1 OR iNextJobStation = 2 OR bSkipVehicle)  THEN
+			// Signal to Track system that operation(s) are completed - vehicle is already gone on this machine
+			IF iNextJobStation = 1 OR iNextJobStation = 2 THEN
+				F_LogFile(CONCAT('Cell4 - DONE(iNextJobStation = 1 or 2), Step: ', TO_STRING(eSeq)));
+			ELSIF bSkipVehicle THEN
+				F_LogFile(CONCAT('Cell4 - DONE(Skipped), Step: ', TO_STRING(eSeq)));
+			END_IF
+			
+			iNextJobStation := 0;
+			
+			
+			eSeq := E_HSStationINSeq.Idle;
+			M_StateComplete();
+		END_IF
+END_CASE
+
+
+bStateChange_OS := eSeq <> eSeq_Old;
+eSeq_Old := eSeq;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ExternalStart" Id="{0d880282-feb4-469b-bb85-5120481da814}">
+      <Declaration><![CDATA[METHOD M_ExternalStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bStartLocal := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Held" Id="{3ca66de1-f146-4815-8045-b0615e2848ed}">
+      <Declaration><![CDATA[/// Static state "Held"
+/// Trigged by "StateCompleted" when in "Holding" state
+/// Requires "Unhold" command to go to "Unholding" state 
+{attribute 'object_name' := 'M_Held'}
+METHOD M_Held
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Holding" Id="{29ffc8b2-8dcd-422b-bf66-5dedac900db1}">
+      <Declaration><![CDATA[/// Dynamic state "Holding"
+/// Trigged by "Hold" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Held" state 
+{attribute 'object_name' := 'M_Holding'}
+METHOD M_Holding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Idle" Id="{274ff147-d95b-4661-a1a2-deea7eba89ec}">
+      <Declaration><![CDATA[/// Static state "Idle"
+/// Trigged by "StateCompleted" when in "Resetting" state
+/// Requires "Start" command to go to "Starting" state 
+{attribute 'object_name' := 'M_Idle'}
+METHOD M_Idle
+
+VAR
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Set job state to LC
+IF (stJobDataOut.JobState <> 1) THEN
+	stJobDataOut.JobState := 1;//(0: Undefined, 1: Idle, 2: Executing, 3: Completed)
+	stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+END_IF
+
+//Handle nextjobstation request
+//IF (bVehicleReadyAtInput) THEN
+	IF iNextJobStation <> iNextJobStationOld THEN
+		f_LogFile(CONCAT('NextJobStation request: ', TO_STRING(iNextJobStation)));
+		
+		M_SetVelocity();
+		
+		//Skip Carrier
+		IF iNextJobStation = 1 THEN
+			bSkipVehicle := TRUE;
+			bStartLocal := TRUE;
+			iNextJobStation := 0;
+		ELSIF iNextJobStation = 2 THEN
+			;//Wait for start from LC
+		END_IF
+	END_IF
+//END_IF
+
+iNextJobStationOld := iNextJobStation;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{bc6fe2f8-3616-4b1d-8518-9994c5a852bd}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL;
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (NOT bInitDone) THEN
+	// Call method in base FB
+	SUPER^.M_Init();
+		
+	//Set ip to Barrera Heat and steam
+	fbHS_Driver.P_ModbusIPBarrera := '10.38.190.221';
+
+// Specify operational data
+	stOperationalDataOut.OP11600.DeviceData[1] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+1,			'Temperature',		E_Units._degC	);
+	stOperationalDataOut.OP11600.DeviceData[2] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+2,			'Steam',			E_Units.None	);
+	stOperationalDataOut.OP11600.DeviceData[3] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+3,			'Fan speed',		E_Units._RPM	);
+	stOperationalDataOut.OP11600.DeviceData[4] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+4,			'Power',			E_Units._KW	);
+	stOperationalDataOut.OP11600.DeviceData[5] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+5,			'Energy',			E_Units._KWh	);
+	stOperationalDataOut.OP11600.DeviceData[6] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+6,			'Running hours',	E_Units._hour	);
+	stOperationalDataOut.OP11600.DeviceData[7] := F_NewDeviceDataX(	'HS',				'Heat & Steam',
+																	11600+7,			'Running minutes',	E_Units._min	);
+
+	bInitDone := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_JobDataHandling" Id="{e77d1d36-7ccd-45a7-8fba-b87378e32a19}">
+      <Declaration><![CDATA[METHOD M_JobDataHandling
+VAR_INPUT
+END_VAR
+VAR
+	sTempString : STRING(200);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Job Data to device
+IF (stJobDataIn.ChangeRequest <> stJobDataOut.ChangeStatus) AND (stJobDataIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('NewJobdata request - Old request: ', TO_STRING(stJobDataOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' JobDataType: ');
+	sTempString := CONCAT(sTempString, stJobDataIn.JobDataType); 	
+
+	// Change request from Line Controller
+	// Check if LC allows data output change
+	IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusJobData = stJobDataOut.DataChange) THEN
+// NOTE: Changed to match new LC software!!! - Hack!				
+//		stJobDataOut.ChangeAcknowledge := stJobDataIn.ChangeRequest;
+//		stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+	
+		// Next job station (operator decision)
+		iNextJobStation := stJobDataIn.NextJobStation;
+	
+		// Check Job Type
+		IF (F_StringCompNoCase(stJobDataIn.JobDataType, 'OP11600')) THEN	
+	
+			// Update output job data
+			stJobDataOut.OP11600 := stJobDataIn.OP11600;
+			stJobDataOut.JobDataType := stJobDataIn.JobDataType;
+	
+			// Signal that job data has been written		
+// NOTE: Changed to match new LC software!!! - Hack!				
+			stJobDataOut.ChangeAcknowledge := stJobDataIn.ChangeRequest;
+			stJobDataOut.ChangeStatus := stJobDataIn.ChangeRequest;
+			
+			// Set job state to Idle
+			stJobDataOut.JobState := 1;
+			
+			// Signal that output job data has been updated
+			stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+	
+		ELSE
+	
+			// Update output job data
+			stJobDataOut.JobDataType := '';
+	
+			// Signal that job data has been written		
+// NOTE: Changed to match new LC software!!! - Hack!				
+			stJobDataOut.ChangeAcknowledge := stJobDataIn.ChangeRequest;
+			stJobDataOut.ChangeStatus := stJobDataIn.ChangeRequest;
+			
+			// Signal that output job data has been updated
+			stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+	
+		END_IF
+	END_IF
+	
+	sTempString := CONCAT(sTempString, ', TTarget: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureTarget));
+	sTempString := CONCAT(sTempString, ', TMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureMin));
+	sTempString := CONCAT(sTempString, ', TMax: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureMax));
+	sTempString := CONCAT(sTempString, ', SMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.SteamMin));
+	sTempString := CONCAT(sTempString, ', SMax: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.SteamMax));
+	sTempString := CONCAT(sTempString, ', AMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.AirMin));
+	sTempString := CONCAT(sTempString, ', AMax: ');
+	F_LogFile(CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.AirMax)));
+END_IF
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_OperationalDataHandling" Id="{47e5b6fe-6205-4079-b349-f421ef49b211}">
+      <Declaration><![CDATA[METHOD PROTECTED M_OperationalDataHandling
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check if LC allows data output change
+IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusOperationalData = stOperationalDataOut.DataChange) THEN
+	// Heat and Steam
+	stOperationalDataOut.OP11600.DeviceData[1].Value := stHSDriverRead.rActTempVal;
+	stOperationalDataOut.OP11600.DeviceData[2].Value := stHSDriverRead.rActSteamReq;
+	stOperationalDataOut.OP11600.DeviceData[3].Value := (BIT_TO_REAL(stHSDriverRead.stStates.MACHINE_READY_TO_WORK) * stHSDriverRead.rActFanReq);
+	stOperationalDataOut.OP11600.DeviceData[4].Value := stHSDriverRead.rInstPower;
+	stOperationalDataOut.OP11600.DeviceData[5].Value := stHSDriverRead.rEnergyCons;
+	stOperationalDataOut.OP11600.DeviceData[6].Value := stHSDriverRead.iRunningHrs;
+	stOperationalDataOut.OP11600.DeviceData[7].Value := stHSDriverRead.iRunningMins;
+	
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Resetting" Id="{947c7e04-f764-489e-8270-011411ea7919}">
+      <Declaration><![CDATA[/// Dynamic state "Resetting"
+/// Trigged by "Reset" command when in "Stopped" state
+/// Requires "StateCompleted" to go to "Idle" state 
+{attribute 'object_name' := 'M_Resetting'}
+METHOD M_Resetting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();
+
+//Update jobdata
+IF NOT bSkipVehicle THEN
+	stJobDataOut.DataChange := stJobDataOut.DataChange +1;
+	stJobDataOut.JobState	:= 1; //(0: Undefined, 1: Idle, 2: Executing, 3: Completed)
+END_IF
+bSkipVehicle := FALSE;
+
+// Reset next job station value before entering Idle state
+iNextJobStation := 0;
+iNextJobStationOld := 0;
+
+//Set idle settings - station empty
+IF (aVehiclesStationFIFO[1].sCarrierID = '') THEN
+	stHSDriverWrite.rSetTemp := stControlIn.OP11600.IdleTemperature;
+	stHSDriverWrite.rSetSteamReq := 0;
+	stHSDriverWrite.rSetFanSpeed := stControlIn.OP11600.IdleFanSpeed;
+	stHSDriverWrite.stCommands.REMOTE_START := TRUE;
+	stHSDriverWrite.stCommands.REMOTE_STOP := FALSE;
+END_IF
+
+bResetLocal := FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_SetVelocity" Id="{a520b51f-010d-451f-8aac-4def4ccd8d90}">
+      <Declaration><![CDATA[METHOD PRIVATE M_SetVelocity : REAL;
+VAR_INPUT
+END_VAR
+VAR
+	sTempString	:STRING(200);
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Calculate velocity
+IF stJobDataIn.NextJobStation = 2 THEN
+
+	// Calculate velocity and machine temperature
+	F_CalcValuesHeatSteam(	rTempFinal:= stJobDataIn.OP11600.TemperatureTarget, 
+							rTempInitial:= stAdditionalDataIn.OP11600.TempInitial, 
+							rCT:= stJobDataIn.OP11600.Profile[1], 
+							rCS:= stJobDataIn.OP11600.Profile[2], 
+							rCA:= stJobDataIn.OP11600.Profile[3], 
+							rMachineLength:= sDistanceInDevice, 
+							rTimeMin:= stJobDataIn.OP11600.TimeMin, 
+							rTimeMax:= stJobDataIn.OP11600.TimeMax, 
+							rTempMin:= stJobDataIn.OP11600.TemperatureMin, 
+							rTempMax:= stJobDataIn.OP11600.TemperatureMax, 
+							rSteamMin:= stJobDataIn.OP11600.SteamMin, 
+							rSteamMax:= stJobDataIn.OP11600.SteamMax, 
+							rAirMin:= stJobDataIn.OP11600.AirMin, 
+							rAirMax:= stJobDataIn.OP11600.AirMax, 
+							rVelocity=> fVelocityCal, 
+							rTempMachine=> fTemperatureCal, 
+							rSteamMachine=> fSteamCal,
+							rAirMachine=> fAirCal,
+							rTimeMachine=> fTimeCal 	);
+
+ELSE
+	fVelocityCal := 1;
+	sTempString := CONCAT('STAT1: SetVelocity - fixed velocity due to skip: ', TO_STRING(fVelocityCal));
+	F_Logfile(sTempString);
+
+END_IF		
+
+M_SetVelocity := fVelocityCal;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_SetVelocity_OLD" Id="{d14311b2-4f7a-4572-a0bb-fc7e3f28c86a}">
+      <Declaration><![CDATA[METHOD PRIVATE M_SetVelocity_OLD : REAL;
+VAR_INPUT
+END_VAR
+VAR
+	sTempString	:STRING(200);
+	fTMachineMid : REAL;
+	fSMachineMid : REAL;
+	fAMachineMid : REAL;
+	sTempVelocity:STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Calculate velocity
+IF stJobDataIn.NextJobStation = 2 THEN (* Temperature limits 80-180C, Steam limits 0-10, Air flow limits 1500-3000*)
+
+	IF ( (stJobDataIn.OP11600.Profile[1] = 0.0) AND
+		 (stJobDataIn.OP11600.Profile[2] = 0.0) AND
+		 (stJobDataIn.OP11600.Profile[3] = 0.0) ) THEN
+		// Use min time in machine and max device allowed settings from job data
+		F_Logfile('SetVelocity - COeffs ZERO, use MAX settings and MIN time');
+		
+		//Calculate time needed in machine
+		IF (stJobDataIn.OP11600.TimeMin > 0) THEN
+			fCalcTimeInDevice := stJobDataIn.OP11600.TimeMin;
+		ELSIF (stJobDataIn.OP11600.TimeMax > 0) THEN
+			fCalcTimeInDevice := stJobDataIn.OP11600.TimeMax;
+		ELSE
+			// Default valie 2 minutes
+			fCalcTimeInDevice := 120;
+		END_IF
+		
+		fCalcTimeInDeviceLimits := fCalcTimeInDevice;
+
+	ELSE
+		F_Logfile('SetVelocity - COeffs OK, Calculate velocity');
+
+		fTMachineMid:= stJobDataIn.OP11600.TemperatureMax + stJobDataIn.OP11600.TemperatureMin;
+		IF fTMachineMid > 0 THEN
+			fTMachineMid := fTMachineMid/2;
+		END_IF
+		
+		fSMachineMid:= stJobDataIn.OP11600.SteamMax + stJobDataIn.OP11600.SteamMin;
+		IF fSMachineMid > 0 THEN
+			fSMachineMid := fSMachineMid/2;
+		END_IF
+		
+		fAMachineMid:= stJobDataIn.OP11600.AirMax + stJobDataIn.OP11600.AirMin;
+		IF fAMachineMid > 0 THEN
+			fAMachineMid := fAMachineMid/2;
+		END_IF
+	
+		M_SetVelocity := M_CalculatedVelocity(
+								fTFinal:= stJobDataIn.OP11600.TemperatureTarget, 
+								fTInital:= 20, //where to get initial temperature?? 
+								fTMachine:= LIMIT(80, fTMachineMid, 180), 
+								fSMachine:= LIMIT(0, fSMachineMid, 10), 
+								fAMachine:= LIMIT(1500, fAMachineMid, 3000), 
+								fcT:= stJobDataIn.OP11600.Profile[1], 
+								fcS:= stJobDataIn.OP11600.Profile[2], 
+								fcA:= stJobDataIn.OP11600.Profile[3], 
+								fTravelLength:= sDistanceInDevice);
+	
+		sTempString := CONCAT('SetVelocity - Vel. Calc raw: ', TO_STRING(M_SetVelocity));
+						
+		//Velocity limit on MagneMotion
+		M_SetVelocity := LIMIT(0.001, M_SetVelocity, 2); 
+		
+		//Calculate time needed in machine
+		fCalcTimeInDevice := sDistanceInDevice / M_SetVelocity;
+		
+		//Check with limits
+		fCalcTimeInDeviceLimits := LIMIT(stJobDataIn.OP11600.TimeMin, fCalcTimeInDevice, stJobDataIn.OP11600.TimeMax);
+
+	END_IF
+	
+	//Calculated velocity with time limits
+	fVelocityCalLimits := sDistanceInDevice / fCalcTimeInDeviceLimits;
+	
+	M_SetVelocity := LIMIT(0.001, fVelocityCalLimits, 2);
+	
+	sTempString := CONCAT(sTempString, ', Velocity Calc: ');
+	sTempString := CONCAT(sTempString, TO_STRING(M_SetVelocity));
+	sTempString := CONCAT(sTempString, ', Time in machine: ');
+	sTempString := CONCAT(sTempString, TO_STRING(fCalcTimeInDeviceLimits));
+	F_Logfile(sTempString);
+ELSE
+	M_SetVelocity := 1;
+	sTempString := CONCAT('SetVelocity - fixed velocity due to skip: ', TO_STRING(M_SetVelocity));
+	F_Logfile(sTempString);
+END_IF		
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Starting" Id="{3885a3e6-21f7-4a58-84f9-1035a0de314a}">
+      <Declaration><![CDATA[/// Dynamic state "Starting"
+/// Trigged by "Start" command when in "Idle" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Starting'}
+METHOD M_Starting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Starting production mode
+
+//Update jobdata
+IF stJobDataOut.JobState <> 2 AND NOT bSkipVehicle THEN
+	stJobDataOut.DataChange := stJobDataOut.DataChange +1;
+	stJobDataOut.JobState := 2; //(0: Undefined, 1: Idle, 2: Executing, 3: Completed)
+END_IF
+
+// Start execute sequence
+iNextJobStation := 0;
+bStartLocal := FALSE;
+eCommand := E_PML_Command.Undefined;
+eSeq := E_HSStationINSeq.Idle;
+
+//Wait for Carrier ID on station are different than last carrierID and CarrierID appears in FIFO
+IF (stVehicleDataStaion.stVehicle.sCarrierID <> '') (*AND stVehicleDataStaion.stVehicle.sCarrierID <> sCarrierID*) (*AND NOT bSkipVehicle*) THEN
+	FOR i := 1 TO 10 DO
+		IF stVehicleDataStaion.stVehicle.sCarrierID = aVehiclesStationFIFO[i].sCarrierID THEN
+			sCarrierID := stVehicleDataStaion.stVehicle.sCarrierID; //Update for comparison
+			M_StateComplete();
+			EXIT;
+		END_IF
+	END_FOR
+//ELSIF bSkipVehicle THEN
+//	M_StateComplete();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopped" Id="{47fbc8fe-f7a6-4708-8a87-2b543a173949}">
+      <Declaration><![CDATA[/// Static state "Stopped"
+/// Trigged by "StateCompleted" when in "Stopping" state
+/// Requires "Reset" command to go to "Resetting" state 
+{attribute 'object_name' := 'M_Stopped'}
+METHOD M_Stopped
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF stReservation.nTicket <> 0 THEN
+	bResetLocal := TRUE;
+	
+	F_Logfile('STAT1: Reservation list updated, reset local');
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopping" Id="{07b17467-ad4c-4750-b993-bc26413ee551}">
+      <Declaration><![CDATA[/// Dynamic state "Stopping"
+/// Trigged by "Stop" command
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Stopping'}
+METHOD M_Stopping
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+stHSDriverWrite.rSetFanSpeed := 0;
+stHSDriverWrite.rSetTemp := 0;
+stHSDriverWrite.stCommands.REMOTE_STOP := TRUE;
+stHSDriverWrite.stCommands.REMOTE_START := FALSE;
+bStopLocal := FALSE;
+
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspended" Id="{0a419267-85c8-41f9-8752-e4cab1255bfc}">
+      <Declaration><![CDATA[/// Static state "Suspended"
+/// Trigged by "StateCompleted" when in "Suspending" state
+/// Requires "Unsuspend" command to go to "Unsuspending" state 
+{attribute 'object_name' := 'M_Suspended'}
+METHOD M_Suspended
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspending" Id="{bf3809ca-39e9-444e-8018-78bcbe50d0af}">
+      <Declaration><![CDATA[/// Dynamic state "Suspending"
+/// Trigged by "Suspend" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Suspended" state 
+{attribute 'object_name' := 'M_Suspending'}
+METHOD M_Suspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unholding" Id="{eb4ecaae-50f1-466a-813b-4161a2c55fc5}">
+      <Declaration><![CDATA[/// Dynamic state "Unholding"
+/// Trigged by "Unhold" command when in "Held" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unholding'}
+METHOD M_Unholding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unsuspending" Id="{3210df68-cb0c-4b2f-abef-a74c214b392c}">
+      <Declaration><![CDATA[/// Dynamic state "Unsuspending"
+/// Trigged by "Unsuspend" command when in "Suspended" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unsuspending'}
+METHOD M_Unsuspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bSkipVehicle" Id="{3e561214-aa5d-4bf3-a94d-80b7b3530174}">
+      <Declaration><![CDATA[PROPERTY P_bSkipVehicle : BOOL]]></Declaration>
+      <Get Name="Get" Id="{72910c7c-97bb-4b16-91af-8f7c6cf0d819}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bSkipVehicle := bSkipVehicle;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e1f1f6be-acee-4296-baef-bf4f6920b51e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSkipVehicle := P_bSkipVehicle;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_HeatAndSteamIN">
+      <LineId Id="3" Count="32" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Aborted">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Aborting">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_CalculatedVelocity">
+      <LineId Id="3" Count="22" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_ClearAll">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Clearing">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Complete">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Completing">
+      <LineId Id="3" Count="4" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_ConfigurationHandling">
+      <LineId Id="3" Count="81" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_DeviceDriver">
+      <LineId Id="3" Count="26" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_ErrorWarning">
+      <LineId Id="3" Count="62" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Execute">
+      <LineId Id="3" Count="172" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_ExternalStart">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Held">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Holding">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Idle">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Init">
+      <LineId Id="3" Count="23" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_JobDataHandling">
+      <LineId Id="3" Count="10" />
+      <LineId Id="73" Count="2" />
+      <LineId Id="16" Count="11" />
+      <LineId Id="76" Count="2" />
+      <LineId Id="29" Count="12" />
+      <LineId Id="79" Count="2" />
+      <LineId Id="43" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_OperationalDataHandling">
+      <LineId Id="3" Count="11" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Resetting">
+      <LineId Id="3" Count="22" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_SetVelocity">
+      <LineId Id="3" Count="31" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_SetVelocity_OLD">
+      <LineId Id="3" Count="77" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Starting">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Stopped">
+      <LineId Id="3" Count="4" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Stopping">
+      <LineId Id="3" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Suspended">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Suspending">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Unholding">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.M_Unsuspending">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.P_bSkipVehicle.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamIN.P_bSkipVehicle.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

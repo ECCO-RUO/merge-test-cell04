@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationStationHS" Id="{bc53507d-05d2-44e9-818d-6c01f6fcbd96}">
+    <Declaration><![CDATA[TYPE ST_InputStationStationHS :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station mode and state'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	ModeState			: ST_InputModeState;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station job data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	JobData				: ST_InputStationHSJobData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	CurrentConfiguration: ST_InputStationHSConfiguration;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	UpcomingConfiguration: ST_InputStationHSUpcomingConfiguration;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Control				: ST_InputStationHSControl;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	AdditionalData		: ST_InputStationHSAdditionalData;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

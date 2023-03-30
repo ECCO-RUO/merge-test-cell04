@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToDecisionPointData" Id="{20952513-da38-4e83-92d5-a72206cb8374}">
+    <Declaration><![CDATA[TYPE ST_MoveToDecisionPointData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_MoveVehicleToStationDecisionPoint2';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 7;
+	iNoOfOutputArgs				: BYTE := 3;
+	stInput						: ST_MoveToDecisionPointDataIn;
+	stOutput					: ST_MoveToDecisionPointDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

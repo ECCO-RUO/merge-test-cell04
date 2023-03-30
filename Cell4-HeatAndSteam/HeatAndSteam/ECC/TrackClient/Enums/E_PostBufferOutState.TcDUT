@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_PostBufferOutState" Id="{141d1345-d4e2-4270-92e3-6f992c14bc3a}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_PostBufferOutState :
+(
+	Waiting := 0,
+	CheckBuffer,
+	FindVehicles,
+	SetTrafficLightRed,	
+	Outfeed,
+	OutfeedStation,
+	WaitOutfeedStation,
+	SetTrafficLightGreen,
+	CheckBufferSpace,
+	Acumulate
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

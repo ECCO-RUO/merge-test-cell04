@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ReadVehicleData_OLD" Id="{49ba94e4-1fdc-47b8-8937-4b437c22ed71}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_ReadVehicleData_OLD :
+STRUCT
+//	stReadListReturnInfo		: ARRAY [1..1] OF ST_UAReadListReturnInfo;
+//	stVehicle					: ST_StatusVehicle;
+
+	// Array must have the same number as the amount of elements in the status strucuture! 
+	stReadListReturnInfo		: ARRAY [1..8] OF ST_UAReadListReturnInfo;
+	nVehicleID					: UINT;
+	bVehiclePresent				: BOOL;
+	nState						: UINT; 
+	nPathID						: UINT;
+	fPosition					: REAL;
+	nTargetPathID				: UINT;
+	fTargetPosition				: REAL;
+	fVelocity					: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

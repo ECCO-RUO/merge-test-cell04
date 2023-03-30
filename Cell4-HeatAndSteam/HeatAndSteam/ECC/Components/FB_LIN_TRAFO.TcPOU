@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_LIN_TRAFO" Id="{9793af68-0f78-47f6-8416-3c2a009f22a8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_LIN_TRAFO
+VAR_INPUT
+	rIN			: LREAL;		(* input value*)
+	rIN_MIN		: LREAL;		(* minimum input value *)
+	rIN_MAX		: LREAL;		(* maximum input value *)
+	rOUT_MIN	: LREAL;		(* corresponding minimum output value *)
+	rOUT_MAX	: LREAL;		(* corresponding maximum output value *)
+END_VAR
+VAR_OUTPUT
+	rOUT		: LREAL;		(* output value *)
+	bERROR		: BOOL;			(* error: IN_MIN = IN_MAX or IN out of interval *)
+END_VAR
+
+VAR
+	rA			: LREAL;
+	rB			: LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+IF rIN_MIN<> rIN_MAX
+AND rOUT_MIN<>rOUT_MAX THEN
+	(*	A=(Y2-Y1)/(X2-X1) 		*)
+	rA:=(rOUT_MAX-rOUT_MIN)/(rIN_MAX-rIN_MIN);
+	(* 	B=Y2-A*X2 			*)
+	rB:=rOUT_MAX-rA*rIN_MAX;
+
+	(* Y=A*X+b *)
+	rOUT:=rA*rIN+rB;
+
+	IF rOUT_MIN<rOUT_MAX THEN
+		IF rOUT<rOUT_MIN THEN
+			rOUT:=rOUT_MIN;
+		ELSIF rOUT>rOUT_MAX THEN
+			rOUT:=rOUT_MAX;
+		END_IF
+	ELSE
+		IF rOUT>rOUT_MIN THEN
+			rOUT:=rOUT_MIN;
+		ELSIF rOUT<rOUT_MAX THEN
+			rOUT:=rOUT_MAX;
+		END_IF
+	END_IF
+
+	bERROR:=FALSE;
+ELSE
+	bERROR:=TRUE;
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_LIN_TRAFO">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToScannerData" Id="{75889eab-be99-4f1e-b9b7-cc6ae7f8ac4c}">
+    <Declaration><![CDATA[TYPE ST_MoveToScannerData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_MoveVehicleToScanner2';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 4;
+	iNoOfOutputArgs				: BYTE := 3;
+	stInput						: ST_MoveToScannerDataIn;
+	stOutput					: ST_MoveToScannerDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

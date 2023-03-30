@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputTransportConfiguration" Id="{dac3ac19-63bc-41a4-93cc-754cd3d3252e}">
+    <Declaration><![CDATA[TYPE ST_OutputTransportConfiguration :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Dummy (for making struct visible on OPC UA'}
+	Dummy						: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

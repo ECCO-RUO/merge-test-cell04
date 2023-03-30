@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_PLC_Basic" Id="{4aca9f48-e71a-4ef0-9d12-ae339ff48375}" SpecialFunc="None">
+    <Declaration><![CDATA[/// Generic FB for all ECC PLC's
+FUNCTION_BLOCK FB_PLC_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	rCPUTemp				: REAL;
+	rSafetyTemp				: REAL;
+	sSerialIPC				: STRING;					// IPC serial number
+	sSerialMB				: STRING;					// Mainboard serial number
+	rCPULoadPLC				: REAL;						// CPU load for the PLC runtime
+	rCPULoad				: REAL;						// CPU load for the system
+	rCPUFrequency			: REAL;						// CPU frequency	
+END_VAR
+VAR
+// HW
+	License_State	AT %I*	: WORD := 8;	// State from Ethercat module
+	License_AdsAdrr	AT %I*	: AMSADDR;		// ADS address from EtherCAT module
+// Persistent data
+	fbPersistentData		: Tc2_SUPS.FB_S_UPS_CX51x0;
+	bUPS_PowerFailDetected	: BOOL;
+	eUPS_State				: Tc2_SUPS.E_S_UPS_State;
+// Misc
+	fbCPUTemp				: FB_GetCPUTemp;			// CPU temp
+	fbSafetyTemp			: FB_GetSafetyTemp;			// Safety CPU temp
+	fbIPCSerial				: FB_GetIPCSerial;			// IPC serial number
+	bGetIPCSerial			: BOOL := TRUE;				// 
+	fbCPULoadPLC			: FB_GetCPULoadPLC;			// Get actual CPU load (for the PLC runtime !)
+	fbCPULoad				: FB_GetCPULoad;			// Get actual CPU load (for system !)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Persistent data
+fbPersistentData(	sNetID:= '', 			// Local PLC
+					iPLCPort:= 851, 		// PLC runtime #1
+					iUPSPort:= 16#588,
+					tTimeout:= T#5S, 
+					eUpsMode:= E_S_UPS_Mode.eSUPS_WrPersistData_Shutdown, 
+					ePersistentMode:= E_PersistentMode.SPDM_2PASS, 
+					tRecoverTime:= T#10S, 
+					bPowerFailDetect=> bUPS_PowerFailDetected, 
+					eState=> eUPS_State);
+
+// Get CPU temp
+fbCPUTemp(	rInterval := 10,	// [s]
+			rCPUTemp => rCPUTemp,
+			bError => ,
+			nErrID => );
+
+// Get Safety Temp
+fbSafetyTemp(	rInterval := 10,	// [s]
+				rSafetyTemp => rSafetyTemp,
+				bError => ,
+				nErrID =>	);
+
+// Get serials
+fbIPCSerial(bExecute := bGetIPCSerial,
+			sSerialIPC => sSerialIPC,
+			sSerialMainBoard => sSerialMB,
+			bError => ,
+			nErrID => 	);
+bGetIPCSerial := FALSE;
+
+// Get CPU load for PLC runtime
+fbCPULoadPLC(	rInterval := 2,
+				rCPULoad => rCPULoadPLC,
+				bError => ,
+				nErrID => 	);
+
+// Get CPU load for System
+fbCPULoad(	rInterval := 2,
+			rCPULoad => rCPULoad,
+			rCPUFrequency => rCPUFrequency,
+			bError => ,
+			nErrID => 	);
+
+// PLC scan time
+IF (g_rPLCScan_S <= 0.0) THEN
+	g_rPLCScan_S := UDINT_TO_LREAL(_TaskInfo[GETCURTASKINDEXEX()].CycleTime) / 10000000.0;
+	g_iPLCScan_MS := UDINT_TO_UINT(_TaskInfo[GETCURTASKINDEXEX()].CycleTime / 10000);
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_PLC_Basic">
+      <LineId Id="372" Count="0" />
+      <LineId Id="370" Count="0" />
+      <LineId Id="374" Count="0" />
+      <LineId Id="376" Count="6" />
+      <LineId Id="373" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="217" Count="3" />
+      <LineId Id="246" Count="0" />
+      <LineId Id="223" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="250" Count="2" />
+      <LineId Id="305" Count="0" />
+      <LineId Id="253" Count="0" />
+      <LineId Id="306" Count="0" />
+      <LineId Id="308" Count="2" />
+      <LineId Id="312" Count="1" />
+      <LineId Id="409" Count="0" />
+      <LineId Id="311" Count="0" />
+      <LineId Id="410" Count="2" />
+      <LineId Id="414" Count="0" />
+      <LineId Id="418" Count="3" />
+      <LineId Id="427" Count="0" />
+      <LineId Id="422" Count="1" />
+      <LineId Id="457" Count="1" />
+      <LineId Id="461" Count="0" />
+      <LineId Id="459" Count="1" />
+      <LineId Id="415" Count="0" />
+      <LineId Id="462" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

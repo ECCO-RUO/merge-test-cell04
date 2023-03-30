@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputTransportAdditionalData" Id="{ae8c6b98-150b-4b2b-8f8c-ac806291098a}">
+    <Declaration><![CDATA[TYPE ST_InputTransportAdditionalData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Transport MES handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	MESHandShakes				: ST_InputTransportAdditionalDataMESHandShake;
+
+	{attribute 'OPC.UA.DA.Description' := 'Transport MES Handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Settings					: ST_InputTransportAdditionalDataSettings;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Exit point ticket release delay (s)'}
+	ExitPointReleaseDelay		: REAL := 0.0;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Allow initilization on Track Server (Create Stations etc.)'}
+	bAllowInit					: BOOL;		// TRUE to allow initilization to track server (create Stations, DecisionPoint, TrafficLight etc. to Track Server)
+
+	{attribute 'OPC.UA.DA.Description' := 'Set to TRUE to shut down the track on this cell'}
+	bShutDown					: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleOwnerData" Id="{9e1dec06-1563-4f56-8f55-afcd979bfb06}">
+    <Declaration><![CDATA[TYPE ST_UpdateVehicleOwnerData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_UpdateVehicleOwner';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 3;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_UpdateVehicleOwnerDataIn;
+	stOutput					: ST_UpdateVehicleOwnerDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

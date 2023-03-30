@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_CarrierX" Id="{088c875c-5094-4363-9f7e-9d0fc564c1b3}">
+    <Declaration><![CDATA[TYPE ST_CarrierX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Carrier ID'}
+	CarrierID					: STRING(30);
+	
+	{attribute 'OPC.UA.DA.Description' := 'Carrier status (0: Undefined, 1: Initiating, 2: Not busy, 3: Busy)'}
+	CarrierStatus				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status data are valid'}
+	ValidData					: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Date and time of the last scan of this carrier'}
+	LastScan					: DT;
+
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if a tool is mounted on the carrier'}
+	Tool						: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Tool ID'}
+	ToolID						: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if material is mounted on the carrier'}
+	Material					: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Material ID'}
+	MaterialID					: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'SKU ID'}
+	JobID						: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Packet (Ticket) (0-65536)'}
+	Ticket						: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Carriers in packet (Ticket) (0-100)'}
+	CarriersInPackage			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Priority within the packet (ticket)'}
+	Priority					: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Current location, Path ID'}
+	CurrentPath					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current location, Position on path (mm)'}
+	CurrentPosition				: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current station for this carrier'}
+	CurrentStation				: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Target station for this carrier'}
+	TargetStation				: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Target reached for this carrier'}
+	TargetReached				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Target reached counter for this carrier'}
+	TargetReachedCounter		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Indicator for Not OK'}
+	NOK							: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

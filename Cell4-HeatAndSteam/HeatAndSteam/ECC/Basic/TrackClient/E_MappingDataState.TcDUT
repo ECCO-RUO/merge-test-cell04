@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_MappingDataState" Id="{5566fe08-d369-4a9e-855b-cf711915a7be}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_MappingDataState :
+(
+	Undefined := 0,
+	CheckRequest,
+	UpdateMappingData,
+	UpdateReworkData,
+	Done,
+	Error
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_SetTrafficLightColorDataIn" Id="{580bc83a-bf28-4a95-b1ca-5f117d8dbecb}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_SetTrafficLightColorDataIn :
+STRUCT
+	sCellID						: STRING(30);
+	sID							: STRING(30);
+	nColor						: INT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

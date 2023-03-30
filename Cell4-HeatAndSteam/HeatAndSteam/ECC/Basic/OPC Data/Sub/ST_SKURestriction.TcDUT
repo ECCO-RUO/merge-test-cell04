@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_SKURestriction" Id="{6fea7755-e389-4b9e-b8eb-352fcb5257bf}">
+    <Declaration><![CDATA[TYPE ST_SKURestriction :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'TRUE of restrictions are active'}
+	Restricted				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Number of defined SKU restrictions (0-200)'}
+	NumberOfRestrictions	: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'ID of SKUs that the operation is restricted to handle'}
+	SKUID					: ARRAY [1..200] OF STRING(30);
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

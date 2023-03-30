@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputCellConfiguration" Id="{2f536d62-2484-43e0-9ce9-5a4b153dffa0}">
+    <Declaration><![CDATA[TYPE ST_OutputCellConfiguration :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledge (0-255)'}
+	ChangeAcknowledge				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus					: UINT;
+
+// Data part
+	{attribute 'OPC.UA.DA.Description' := 'Data Changed (0-65536)'}
+	DataChange						: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Data Changed (0-65536)'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General							: ST_OutputCellConfigurationGeneral;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

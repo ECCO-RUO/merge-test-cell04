@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddStationDataOut" Id="{97d199da-1000-480e-a52e-9a1b848e065e}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_AddStationDataOut :
+STRUCT
+	// Fixed data for all methods
+	nNumberOfOutputArguments	: UDINT;								// determined amount of output parameters
+	nReserved					: ARRAY[1..4] OF BYTE;					// Reserved padding
+	
+	// Method specific data
+	stOutputArgInfo				: ARRAY[1..2] OF ST_UAMethodArgInfo; 	// 
+	eStatus						: E_MMServerStatus;						// Status from remote method (succes/fail)
+	sMessage					: STRING;								// Debugging message
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

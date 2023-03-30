@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSAdditionalDataMESHandShake" Id="{31c1dd17-67ff-4b4a-88f5-08be60602389}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSAdditionalDataMESHandShake :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station ModeState update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusModeState				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Job Data update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusJobData					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station OEE update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusOEE						: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station ErrorWarning update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusErrorWarning			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Current Configuration update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusCurrentConfiguration	: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Upcoming Configuration update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusUpcomingConfiguration	: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Operationaldata update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusOperationalData			: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

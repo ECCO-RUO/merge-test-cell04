@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_VehicleInHS" Id="{766e90f3-6a10-427a-a634-843006055c00}">
+    <Declaration><![CDATA[TYPE ST_VehicleInHS :
+STRUCT
+	sCarrierID		: STRING;	//ID of the carrier
+	nVehicleNo		: UINT;		//Vehicle number
+	fVelocity		: REAL; 	//Velocity setpoint station entered
+	fCalculatedTIA	: REAL;		//Calculated time to arrival at staion 2 with current speed
+	JobData			: ST_InputStationHSJobDataOP11600; //Job data for vehicle
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

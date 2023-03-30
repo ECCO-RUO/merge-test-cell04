@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_TwinSAFE_Logic_State" Id="{bcc23543-2fb9-48b3-a4e0-7a1ad363c364}">
+    <Declaration><![CDATA[/// TwinCAT Group Diag definitions
+{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TwinSAFE_Logic_State :
+(
+	OFFLINE			:= 0,	// gray
+	RUN				:= 1,	// green
+	STOP			:= 2,	// dark red
+	SAFE			:= 3,	// red
+	ERROR			:= 4,	// purple
+	START			:= 6,	// blue
+	PREPARE			:= 8,	// blue
+	RESTORE			:= 10,	// blue
+	PROJECT_CRC_OK	:= 11	// blue
+
+) USINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

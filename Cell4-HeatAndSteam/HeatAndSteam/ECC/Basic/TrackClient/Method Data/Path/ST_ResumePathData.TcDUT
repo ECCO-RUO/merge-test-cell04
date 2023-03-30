@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ResumePathData" Id="{38fec6db-1bea-4fdf-84bf-236c2b70c0cf}">
+    <Declaration><![CDATA[TYPE ST_ResumePathData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_ResumePath';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 1;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_ResumePathDataIn;
+	stOutput					: ST_ResumePathDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

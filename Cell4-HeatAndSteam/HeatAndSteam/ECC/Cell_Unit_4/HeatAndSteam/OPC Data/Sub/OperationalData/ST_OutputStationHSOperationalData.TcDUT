@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputStationHSOperationalData" Id="{634edd4e-625e-4ab7-89d8-4e70dd66e02f}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSOperationalData :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge	: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus		: UINT;
+
+// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Data has changed (0-65536)'}
+	DataChange			: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'General'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General					: ST_OutputStationHSOperationalDataGeneral;
+	
+	{attribute 'OPC.UA.DA.Description' := 'OP11600'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600					: ST_OperationalDataOPxxxxx;
+	
+//	{attribute 'OPC.UA.DA.Description' := 'OP16101'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601					: ST_OperationalDataOPxxxxx;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

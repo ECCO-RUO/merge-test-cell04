@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_PostBufferInState" Id="{00ca8e78-9f1e-4e3e-9baa-5cb74a862f4b}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_PostBufferInState :
+(
+	Waiting := 0,
+	FindPosition,
+	Infeed,
+	ExtraVehicleRemove
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

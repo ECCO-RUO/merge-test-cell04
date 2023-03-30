@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_EMS_HS_Status" Id="{e8db300a-a0d8-4756-aefb-805fe7018007}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_EMS_HS_Status :
+(
+	STANDBY := 0,	// Stand-by - Not ready to work
+	PREPARING,		// Preparing - Not ready to work
+	READY,			// Ready to work
+	ALARM			// Alarm!
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

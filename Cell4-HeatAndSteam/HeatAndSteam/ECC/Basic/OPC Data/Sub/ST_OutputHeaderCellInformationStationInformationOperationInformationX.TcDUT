@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputHeaderCellInformationStationInformationOperationInformationX" Id="{4cfac317-7ecb-4d00-b1bf-e4f3a67eec38}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderCellInformationStationInformationOperationInformationX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Operation name'}
+	OperationName			: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Operation ID'}
+	OperationID				: STRING;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

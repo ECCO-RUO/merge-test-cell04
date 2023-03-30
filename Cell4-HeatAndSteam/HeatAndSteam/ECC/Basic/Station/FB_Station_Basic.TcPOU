@@ -1,0 +1,987 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_Station_Basic" Id="{a3063734-b673-481e-b463-540f775fa75f}" SpecialFunc="None">
+    <Declaration><![CDATA[/// Generic FB for cells/stations
+/// Contains the PackML state machine and PackTags data
+FUNCTION_BLOCK FB_Station_Basic IMPLEMENTS ITF_UnitState 
+VAR_INPUT
+	nCellStateCmd			: E_PML_Command;			// Cell PML state command
+	bVehicleReadyAtInput	: BOOL;						// Set to TRUE when a vehicle is ready at the station input location
+	bVehicleReadyAtOutput	: BOOL;						// Set to TRUE when a vehicle is ready at the station output location
+END_VAR
+VAR_OUTPUT
+	bUndefinedDone			: BOOL;						// When the SPS is started, the first state is Undefiend. bUndefinedDone is TRUE, when the method Undefined has succesful finished
+	bInvalidModeCommandOut	: BOOL;
+	bChangeIntoProduction	: BOOL;
+	bStationCommError		: BOOL := FALSE;			// Error communication with station PLC/HW
+	UnitModeChangeInProcess	: BOOL;
+	bReadyForVehicleInput	: BOOL;						// TRUE when station is ready for a vehicle/last at input location
+	bCompletedInput			: BOOL;						// TRUE when part operation has finished (ready to deliver to vehicle on input)
+	bReadyForVehicleOutput	: BOOL;						// TRUE when station is ready for a vehicle/last at output location
+	bCompletedOutput		: BOOL;						// TRUE when part operation has finished (ready to deliver to vehicle on input)
+END_VAR
+VAR_IN_OUT
+	stModeStateIn			: ST_InputModeState;
+	stModeStateOut			: ST_OutputModeState;	
+	stOEE					: ST_OutputOEE;
+	stErrorWarning			: ST_OutputErrorWarning;
+END_VAR
+VAR
+// Mode and State requests
+	// Input:
+	eMode					: E_PMLProtectedUnitMode := E_PMLProtectedUnitMode.ePMLProtUnitMode_Production;
+	eCommand				: E_PMLCommand := E_PMLCommand.ePMLCommand_Undefined;
+	bModeChangeRequest		: BOOL;
+	// Output:
+	eRequestedMode			: E_PMLProtectedUnitMode;
+	eCurrentMode			: E_PMLProtectedUnitMode;
+	eRequestedState			: E_PMLState;
+	eCurrentState			: E_PMLState;	
+
+// PackML
+	fbUnitModeManager		: PML_UnitModeManager;		// The PML_UnitModeManager manage the Modechanges
+	UnitModeChangeRequest	: BOOL;						// Set to TRUE to perform a mode change
+	fbStateMachine 			: PML_StateMachine;			// The PML_StateMachine mangae the Statechanges
+	nStateModeChange		: INT	:= 0;				// Variable to handle the modechange
+	nLastState				: E_PMLState;				// Variable to store last state
+	bProductionLocal		: BOOL := FALSE;			// Local Production mode button/command. Must be updated in inherited FB's
+	bManualLocal			: BOOL := FALSE;			// Local Manual mode button/command. Must be updated in inherited FB's
+	bMaintenanceLocal		: BOOL := FALSE;			// Local Maintenance mode button/command. Must be updated in inherited FB's
+	bEStopOK				: BOOL := TRUE;				// TRUE when emergency stop is OK. Must be updated in inherited FB's
+														// Will result in Abort state in PackML!
+	bAbortLocal				: BOOL := FALSE;			// Local abort button/command. Must be updated in inherited FB's
+	bStartLocal				: BOOL := FALSE;			// Local start button/command. Must be updated in inherited FB's
+	bStopLocal				: BOOL := FALSE;			// Local stop button/command. Must be updated in inherited FB's
+	bResetLocal				: BOOL := FALSE;			// Local reset button/command. Must be updated in inherited FB's
+	bClearLocal				: BOOL := FALSE;			// Local clear button/command. Must be updated in inherited FB's
+	bHoldLocal				: BOOL := FALSE;			// Local hold button/command. Must be updated in inherited FB's
+	bUnholdLocal			: BOOL := FALSE;			// Local unhold button/command. Must be updated in inherited FB's
+	bSuspendLocal			: BOOL := FALSE;			// Local suspend button/command. Must be updated in inherited FB's
+	bUnsuspendLocal			: BOOL := FALSE;			// Local unsuspend button/command. Must be updated in inherited FB's
+
+// Misc
+	fbGetTime				: NT_GetTime;
+	bInitDone				: BOOL;
+
+END_VAR
+VAR PERSISTENT
+	iGoodProduct			: UDINT;					// For keeping values during power-off
+	iProcessedProduct		: UDINT;					// Values are copied to stOEE in M_Init
+	iRejectedProduct		: UDINT;					// 
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Init
+M_Init();
+
+// Get system time
+fbGetTime(	NETID:= '',	// Local PLC 
+			START:= NOT fbGetTime.START AND NOT fbGetTime.BUSY, 
+			TMOUT:= T#5S	);
+
+// Follow cellbridge states
+CASE nCellStateCmd OF
+	E_PML_Command.Reset,
+	E_PML_Command.Hold,
+	E_PML_Command.Unhold,
+	E_PML_Command.Suspend,
+	E_PML_Command.Unsuspend,
+	E_PML_Command.Abort,
+	E_PML_Command.Clear:
+		// Station must follow cellbridge commands
+		eCommand := nCellStateCmd;
+
+	E_PML_Command.Start,
+	E_PML_Command.Stop,
+	E_PML_Command.Complete:
+		;
+END_CASE
+
+// Mode state handshake handling
+IF ((stModeStateIn.ChangeRequest <> stModeStateOut.ChangeStatus) AND (stModeStateIn.ChangeRequest > 0)) THEN
+	// Mode change
+	IF ( (stModeStateIn.Mode > 0) AND (stModeStateIn.Mode <= 6) ) THEN
+		// Set acknowledge
+		IF (stModeStateOut.ChangeAcknowledge <> stModeStateIn.ChangeRequest) THEN
+			stModeStateOut.ChangeAcknowledge := stModeStateIn.ChangeRequest;
+			stModeStateOut.ModeStateResponse := 0;
+			stModeStateOut.DataChange := stModeStateOut.DataChange + 1;
+		END_IF
+		// Set new mode
+		eMode := stModeStateIn.Mode;
+		stModeStateOut.RequestedMode := DINT_TO_UINT(eMode);
+		// Wait done
+		IF (stModeStateIn.Mode = eCurrentMode) THEN
+			// Set change status
+			stModeStateOut.ChangeStatus := stModeStateIn.ChangeRequest;
+			stModeStateOut.ModeStateResponse := 3;
+			stModeStateOut.DataChange := stModeStateOut.DataChange + 1;
+			stModeStateIn.Mode := E_PML_Mode.Undefined;
+		END_IF
+	END_IF
+
+	// State change
+	IF ( (stModeStateIn.State > 0) AND (stModeStateIn.State <= 10) ) THEN
+		// Set acknowledge
+		IF (stModeStateOut.ChangeAcknowledge <> stModeStateIn.ChangeRequest) THEN
+			stModeStateOut.ChangeAcknowledge := stModeStateIn.ChangeRequest;
+			stModeStateOut.ModeStateResponse := 0;
+			stModeStateOut.DataChange := stModeStateOut.DataChange + 1;
+		END_IF
+
+		// Check job data when START command
+		IF ( (stModeStateIn.State = E_PML_Command.Start) AND (stModeStateIn.State <> eCommand)) THEN
+			IF (M_CheckJobData()) THEN
+				// Job data OK! Set new state command
+				F_LogLine('STAT: Check Jobdata OK', stModeStateIn.State);
+				eCommand := stModeStateIn.State;
+			ELSE
+				// Job data NOT OK! Set change status to not possible to handle!
+				F_LogLine('STAT: Check Jobdata failed', stModeStateIn.State);
+				stModeStateOut.ChangeStatus := stModeStateIn.ChangeRequest;
+				stModeStateOut.ModeStateResponse := 1;	// Could not handle START request!
+				stModeStateOut.DataChange := stModeStateOut.DataChange + 1;
+				stModeStateIn.State := E_PML_Command.Undefined;
+				eCommand := E_PML_Command.Undefined;
+			END_IF
+		ELSE
+			// Set new state command
+			eCommand := stModeStateIn.State;
+		END_IF
+
+		// Find requested state
+		CASE eCommand OF
+			E_PML_Command.Reset:
+				stModeStateOut.RequestedState := E_PML_State.Idle;
+
+			E_PML_Command.Start:
+				stModeStateOut.RequestedState := E_PML_State.Execute;
+			
+			E_PML_Command.Stop:
+				stModeStateOut.RequestedState := E_PML_State.Stopped;
+			
+			E_PML_Command.Hold:
+				stModeStateOut.RequestedState := E_PML_State.Held;
+			
+			E_PML_Command.Unhold:
+				stModeStateOut.RequestedState := E_PML_State.Execute;
+			
+			E_PML_Command.Suspend:
+				stModeStateOut.RequestedState := E_PML_State.Suspended;
+			
+			E_PML_Command.Unsuspend:
+				stModeStateOut.RequestedState := E_PML_State.Execute;
+			
+			E_PML_Command.Abort:
+				stModeStateOut.RequestedState := E_PML_State.Aborted;
+			
+			E_PML_Command.Clear:
+				stModeStateOut.RequestedState := E_PML_State.Stopped;
+			
+			E_PML_Command.Complete:
+				stModeStateOut.RequestedState := E_PML_State.Complete;
+			
+		END_CASE
+
+		// Wait done
+		IF ((stModeStateOut.RequestedState = eCurrentState) AND (stModeStateOut.ModeStateResponse <= 0)) THEN
+			// Set change status
+			stModeStateOut.ChangeStatus := stModeStateIn.ChangeRequest;
+			stModeStateOut.ModeStateResponse := 3;
+			stModeStateOut.DataChange := stModeStateOut.DataChange + 1;
+			stModeStateIn.State := E_PML_Command.Undefined;
+			eCommand := E_PML_Command.Undefined;
+		END_IF
+	END_IF
+END_IF
+
+
+// Run State Machine
+M_PackML_StateMachine();
+
+
+// Update current mode/state
+IF (DINT_TO_UINT(eCurrentMode) <> stModeStateOut.CurrentMode) THEN
+	stModeStateOut.CurrentMode := DINT_TO_UINT(eCurrentMode);
+	stModeStateOut.DataChange := stModeStateOut.DataChange + 1;	
+END_IF
+IF (DINT_TO_UINT(eCurrentState) <> stModeStateOut.CurrentState) THEN
+	stModeStateOut.CurrentState := DINT_TO_UINT(eCurrentState);
+	stModeStateOut.DataChange := stModeStateOut.DataChange + 1;	
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="M_Aborted" Id="{2529e932-799b-4ed5-b499-018b98919edc}">
+      <Declaration><![CDATA[/// Static state "Aborted"
+/// Trigged by "StateCompleted" when in "Aborting" state
+/// Requires "Clear" to go to "Clearing" state 
+{attribute 'object_name' := 'M_Aborted'}
+METHOD M_Aborted
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Aborting" Id="{8ad80fc4-fbd0-41a2-875c-a058da8dad53}">
+      <Declaration><![CDATA[/// Dynamic state "Aborting"
+/// Trigged by "Abort" command
+/// Requires "StateCompleted" to go to "Aborted" state 
+{attribute 'object_name' := 'M_Aborting'}
+METHOD M_Aborting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CheckJobData" Id="{32073c80-b662-4f2d-bd23-320e5f9566f8}">
+      <Declaration><![CDATA[/// Set job data for mechanical roughing
+METHOD PROTECTED M_CheckJobData : BOOL
+VAR
+	i						: UINT;
+	bDynamicToolFound		: ARRAY [1..3] OF BOOL;		// Required Dynamic Tool(s) found
+	bStationaryToolFound	: ARRAY [1..3] OF BOOL;		// Required Stationary Tool(s) found
+	bDynamicMaterialFound	: ARRAY [1..3] OF BOOL;		// Required Dynamic Material(s) found
+	bStationaryMaterialFound: ARRAY [1..3] OF BOOL;		// Required Stationary Material(s) found
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Check Job Type
+// Should be overwritten in inherited FB's if JobData need to be checked!
+M_CheckJobData := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Clearing" Id="{3587aac9-32e3-45b0-b355-95be89e40c2d}">
+      <Declaration><![CDATA[/// Dynamic state "Clearing"
+/// Trigged by "Clear" command "Aborted" state
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Clearing'}
+METHOD M_Clearing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Complete" Id="{de47a751-2db4-4bc6-93fe-90fee5cf51a3}">
+      <Declaration><![CDATA[/// Static state "Complete"
+/// Trigged by "StateCompleted" when in "Completing" state
+/// Requires "Reset" to go to "Resetting" state 
+{attribute 'object_name' := 'M_Complete'}
+METHOD M_Complete
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Completing" Id="{626fe15d-525c-4f2f-98f9-753945a2605d}">
+      <Declaration><![CDATA[/// Dynamic state "Completing"
+/// Trigged by "StageCompleted" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Complete" state 
+{attribute 'object_name' := 'M_Completing'}
+METHOD M_Completing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorWarningObj" Id="{a8e935a1-6eb2-42d1-b770-dfa9e9a582b7}">
+      <Declaration><![CDATA[METHOD M_ErrorWarningObj : BOOL
+VAR_INPUT
+	bActive				: BOOL;
+	iErrorWarningType	: UINT;
+	diErrorWarningID 	: UDINT;
+	sDeviceID			: STRING(30);
+	iSeverity			: UINT;
+	iNativeID			: UDINT;
+	sNativeMessage		: STRING(80);
+END_VAR
+VAR_IN_OUT
+	arErrorWaringData	: ARRAY [1..255] OF ST_ErrorWarningDataX;
+END_VAR
+VAR
+	iFoundPos			: UINT;
+	i					: UINT;
+	j					: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Look through array to find existing record(s)
+FOR i := 1 TO 255 DO
+	IF arErrorWaringData[i].ErrorWarningID = 0 THEN
+		EXIT;
+	END_IF
+	//Existing alarm - first
+	IF arErrorWaringData[i].ErrorWarningID = diErrorWarningID AND iFoundPos = 0 THEN
+		iFoundPos := i;
+	//Multiple records - delete
+	ELSIF arErrorWaringData[i].ErrorWarningID = diErrorWarningID AND iFoundPos <> 0 THEN
+		MEMSET(ADR(arErrorWaringData[i]), 0, SIZEOF(arErrorWaringData[i]));
+		M_ErrorWarningObj := TRUE;
+	END_IF
+END_FOR
+
+//Alarm high
+IF bActive THEN
+	//New alarm
+	IF iFoundPos = 0 THEN
+		arErrorWaringData[i].ErrorWarningType := iErrorWarningType;
+		arErrorWaringData[i].DeviceID := sDeviceID;
+		arErrorWaringData[i].Severity := iSeverity;
+		arErrorWaringData[i].NativeID := iNativeID;
+		arErrorWaringData[i].NativeMessage := sNativeMessage;
+		arErrorWaringData[i].ErrorWarningID := diErrorWarningID;
+		arErrorWaringData[i].DateTime := SYSTEMTIME_TO_STRING(fbGetTime.TIMESTR);
+		M_ErrorWarningObj := TRUE;
+	END_IF
+	
+//Alarm low
+ELSIF NOT bActive AND iFoundPos <> 0 THEN
+	MEMSET(ADR(arErrorWaringData[iFoundPos]), 0, SIZEOF(arErrorWaringData[iFoundPos]));
+	M_ErrorWarningObj := TRUE;
+END_IF
+
+//Defrag
+IF M_ErrorWarningObj THEN
+	FOR i:= 1 TO 254 DO
+		//Find first empty spot
+		IF arErrorWaringData[i].ErrorWarningID = 0 THEN
+			//Find first record
+			FOR j:= i TO 255 DO
+				IF arErrorWaringData[j].ErrorWarningID <> 0 THEN
+					//Move to empty spot
+					arErrorWaringData[i] := arErrorWaringData[j];
+					MEMSET(ADR(arErrorWaringData[j]), 0, SIZEOF(arErrorWaringData[j]));
+					EXIT;
+				END_IF
+			END_FOR
+		END_IF
+		//No more records
+		IF j >= 255 THEN
+			RETURN;
+		END_IF
+	END_FOR
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Execute" Id="{3cf7de4a-fc93-44da-a18c-3a88ee6b8b3c}">
+      <Declaration><![CDATA[/// Static state "Execute"
+/// Trigged by "StageCompleted" when in "Starting" state
+/// Trigged by "StageCompleted" when in "Unholding" state
+/// Trigged by "StageCompleted" when in "Unsuspending" state
+/// Requires "Hold" command to go to "Holding" state 
+/// Requires "Suspend" command to go to "Suspending" state 
+/// Requires "StageCompleted" to go to "Completing" state 
+{attribute 'object_name' := 'M_Execute'}
+METHOD M_Execute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Held" Id="{3bc64d69-7330-437b-8bcc-8ca101df9115}">
+      <Declaration><![CDATA[/// Static state "Held"
+/// Trigged by "StateCompleted" when in "Holding" state
+/// Requires "Unhold" command to go to "Unholding" state 
+{attribute 'object_name' := 'M_Held'}
+METHOD M_Held
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Holding" Id="{e0264d7f-4b6e-4720-9c26-b26f354f059c}">
+      <Declaration><![CDATA[/// Dynamic state "Holding"
+/// Trigged by "Hold" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Held" state 
+{attribute 'object_name' := 'M_Holding'}
+METHOD M_Holding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Idle" Id="{1dac39eb-56fd-4771-896e-49990a30423e}">
+      <Declaration><![CDATA[/// Static state "Idle"
+/// Trigged by "StateCompleted" when in "Resetting" state
+/// Requires "Start" command to go to "Starting" state 
+{attribute 'object_name' := 'M_Idle'}
+METHOD M_Idle
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{931f0138-1890-46bc-9cd0-59d59dc092ad}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (NOT bInitDone) THEN
+	
+	// OEE initial values
+	stOEE.GoodProduct := iGoodProduct;	
+	stOEE.RejectedProduct := iRejectedProduct;	
+	stOEE.ProcessedProduct := iProcessedProduct;	
+
+	bInitDone := TRUE;
+
+END_IF
+M_Init := bInitDone;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_OEEProductProcessed" Id="{6ed02fc5-8775-4fa2-9117-a3a5692383bb}">
+      <Declaration><![CDATA[METHOD PROTECTED M_OEEProductProcessed
+VAR_INPUT
+	bGood		: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Increment OEE values
+iProcessedProduct := iProcessedProduct + 1;
+stOEE.ProcessedProduct := iProcessedProduct;
+IF (bGood) THEN
+	iGoodProduct := iGoodProduct + 1;
+	stOEE.GoodProduct := iGoodProduct;
+ELSE
+	iRejectedProduct := iRejectedProduct + 1;
+	stOEE.RejectedProduct := iRejectedProduct;
+END_IF
+
+// TODO!!!
+// Update Event ID!
+stOEE.EventID;
+
+// Update time for changes
+stOEE.DateTime := SYSTEMTIME_TO_DT(TIMESTR := fbGetTime.TIMESTR);
+
+// Increment DataChange to signal to LC that sometihng has changed
+stOEE.DataChange := stOEE.DataChange + 1;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_PackML_StateMachine" Id="{4515a354-6e18-4c70-9435-0403f8c820a5}">
+      <Declaration><![CDATA[METHOD PROTECTED M_PackML_StateMachine : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE nStateModeChange OF
+
+	0:	// Waiting for user request
+		IF (NOT UnitModeChangeInProcess) THEN
+			// Local unit mode change request
+			IF (bProductionLocal AND (eCurrentMode <> Tc3_PackML_V2.ePMLProtUnitMode_Production)) THEN
+				eMode := E_PML_Mode.Production;
+				UnitModeChangeRequest := TRUE;
+			ELSIF (bManualLocal AND (eCurrentMode <> Tc3_PackML_V2.ePMLProtUnitMode_Manual)) THEN
+				eMode := E_PML_Mode.Manual;
+				UnitModeChangeRequest := TRUE;
+			ELSIF (bMaintenanceLocal AND (eCurrentMode <> Tc3_PackML_V2.ePMLProtUnitMode_Maintenance)) THEN
+				eMode := E_PML_Mode.Maintenance;
+				UnitModeChangeRequest := TRUE;
+			END_IF
+		END_IF
+		bChangeIntoProduction := FALSE;
+		IF ((eMode = ePMLProtUnitMode_Production) AND (eCurrentMode = ePMLProtUnitMode_Invalid)) THEN
+			nStateModeChange := 1;
+		ELSIF (UnitModeChangeRequest AND (eMode <> ePMLProtUnitMode_Production)) THEN
+			nStateModeChange := 1;
+		ELSIF ((eMode = ePMLProtUnitMode_Production) AND (eCurrentMode <> ePMLProtUnitMode_Production)) THEN
+			nStateModeChange := 3;
+		END_IF
+		
+	1:	// Starting UnitModeManager 
+		fbUnitModeManager.bExecute := TRUE;
+		fbUnitModeManager.eModeCommand := eMode;
+		UnitModeChangeInProcess := TRUE;
+	
+		IF (fbUnitModeManager.bDone) THEN
+			fbUnitModeManager.bExecute := FALSE;
+			bInvalidModeCommandOut := FALSE;
+			nStateModeChange := 0;
+			bChangeIntoProduction := FALSE;
+			UnitModeChangeInProcess := FALSE;
+		ELSIF (fbUnitModeManager.bError) THEN
+			bInvalidModeCommandOut := TRUE;
+			fbUnitModeManager.bExecute := FALSE;
+			nLastState := eCurrentState;
+			nStateModeChange := 2;
+			bChangeIntoProduction := FALSE;
+			UnitModeChangeInProcess := FALSE;
+		END_IF
+	
+	2:	// ErrorHanddling
+		IF (bModeChangeRequest) THEN
+			nStateModeChange := 0;
+			bInvalidModeCommandOut := FALSE;
+		ELSIF (nLastState <> eCurrentState) THEN
+			bInvalidModeCommandOut := FALSE;
+		END_IF
+		
+	3:	// state to check, if command 'Production' is valid
+		IF ((eCurrentState = ePMLState_Aborted) OR (eCurrentState = ePMLState_Stopped) OR (eCurrentState = ePMLState_Idle)) THEN
+			bChangeIntoProduction := TRUE;
+			nStateModeChange := 1;
+		ELSE
+			nStateModeChange := 2;
+			bInvalidModeCommandOut := TRUE;
+			nLastState := eCurrentState;
+		END_IF
+END_CASE
+
+
+// Run Unit Mode Manager
+fbUnitModeManager(	eState := eCurrentState,
+					eModeStatus => eCurrentMode,
+					bDone => ,
+					bError => ,
+					nErrorId => 	);
+
+IF (fbUnitModeManager.eModeStatus <> 0) THEN
+	// Local E-stop/abort handling	
+	IF (NOT bEStopOK OR bAbortLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Abort);
+	END_IF
+	// Local Start handling
+	IF (bStartLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Start);
+	END_IF
+	// Local Stop handling
+	IF (bStopLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Stop);
+	END_IF
+	// Local Reset handling
+	IF (bResetLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Reset);
+	END_IF
+	// Local Clear handling
+	IF (bClearLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Clear);
+	END_IF
+	// Local Hold handling
+	IF (bHoldLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Hold);
+	END_IF
+	// Local Unhold handling
+	IF (bUnholdLocal) THEN
+		eCommand := DINT_TO_UINT(E_PMLCommand.ePMLCommand_Unhold);
+	END_IF
+	// Local Suspend handling
+	IF (bSuspendLocal) THEN
+		eCommand := E_PMLCommand.ePMLCommand_Suspend;
+	END_IF
+	// Local Unsuspend handling
+	IF (bSuspendLocal) THEN
+		eCommand := E_PMLCommand.ePMLCommand_Unsuspend;
+	END_IF
+	
+	// Calling the StateMachine, when there is a valid Mode
+	fbStateMachine(	eMode := eCurrentMode,
+					eCommand := eCommand,
+					stSubUnitInfoRef := ,
+					stOptions := ,
+					eState => eCurrentState,
+					bError => ,
+					nErrorID => 	);
+
+END_IF
+
+// Requested state:
+CASE eCommand OF			
+	E_PMLCommand.ePMLCommand_Abort:
+		eRequestedState := E_PMLState.ePMLState_Aborted;
+		
+	E_PMLCommand.ePMLCommand_Clear:
+		eRequestedState := E_PMLState.ePMLState_Stopped;
+
+	E_PMLCommand.ePMLCommand_Complete:
+		eRequestedState := E_PMLState.ePMLState_Complete;
+		
+	E_PMLCommand.ePMLCommand_Hold:
+		eRequestedState := E_PMLState.ePMLState_Held;
+		
+	E_PMLCommand.ePMLCommand_Reset:
+		eRequestedState := E_PMLState.ePMLState_Idle;
+		
+	E_PMLCommand.ePMLCommand_Start:
+		eRequestedState := E_PMLState.ePMLState_Execute;
+		
+	E_PMLCommand.ePMLCommand_Stop:
+		eRequestedState := E_PMLState.ePMLState_Stopped;
+		
+	E_PMLCommand.ePMLCommand_Suspend:
+		eRequestedState := E_PMLState.ePMLState_Suspended;
+		
+	E_PMLCommand.ePMLCommand_Unhold:
+		eRequestedState := E_PMLState.ePMLState_Execute;
+		
+	E_PMLCommand.ePMLCommand_Unsuspend:
+		eRequestedState := E_PMLState.ePMLState_Execute;
+		
+END_CASE
+
+
+//One of the methods is executing by the actual state
+CASE eCurrentState OF
+	E_PML_State.Undefined:
+		M_Undefined();
+	E_PML_State.Clearing:
+		M_Clearing();
+	E_PML_State.Stopped:
+		M_Stopped();
+	E_PML_State.Starting:
+		M_Starting();
+	E_PML_State.Idle:
+		M_Idle();
+	E_PML_State.Suspended:
+		M_Suspended();
+	E_PML_State.Execute:
+		M_Execute();
+	E_PML_State.Stopping:
+		M_Stopping();
+	E_PML_State.Aborting:
+		M_Aborting();
+	E_PML_State.Aborted:
+		M_Aborted();
+	E_PML_State.Holding:
+		M_Holding();
+	E_PML_State.Held:
+		M_Held();
+	E_PML_State.Unholding:
+		M_Unholding();
+	E_PML_State.Suspending:
+		M_Suspending();
+	E_PML_State.Unsuspending:
+		M_Unsuspending();
+	E_PML_State.Resetting:
+		M_Resetting();
+	E_PML_State.Completing:
+		M_Completing();
+	E_PML_State.Complete:
+		M_Complete();
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Resetting" Id="{179509e6-4301-471e-893b-a414522f5c92}">
+      <Declaration><![CDATA[/// Dynamic state "Resetting"
+/// Trigged by "Reset" command when in "Stopped" state
+/// Requires "StateCompleted" to go to "Idle" state 
+{attribute 'object_name' := 'M_Resetting'}
+METHOD M_Resetting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Starting" Id="{a1c1a662-7fc2-45f7-a337-717ad3c7f244}">
+      <Declaration><![CDATA[/// Dynamic state "Starting"
+/// Trigged by "Start" command when in "Idle" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Starting'}
+METHOD M_Starting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_StateComplete" Id="{6520b4c2-25bc-4f56-86e6-33ed15bca611}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_StateComplete'}
+METHOD M_StateComplete
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//the actual state is completed
+fbStateMachine.M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopped" Id="{e6133777-6f41-445d-9c2f-68741d83345a}">
+      <Declaration><![CDATA[/// Static state "Stopped"
+/// Trigged by "StateCompleted" when in "Stopping" state
+/// Requires "Reset" command to go to "Resetting" state 
+{attribute 'object_name' := 'M_Stopped'}
+METHOD M_Stopped
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopping" Id="{bc1215a0-6410-44c2-875c-fa97d3e8c5c0}">
+      <Declaration><![CDATA[/// Dynamic state "Stopping"
+/// Trigged by "Stop" command
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Stopping'}
+METHOD M_Stopping
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspended" Id="{7b9082ff-ce3f-4e60-bc1e-b44aba58f40b}">
+      <Declaration><![CDATA[/// Static state "Suspended"
+/// Trigged by "StateCompleted" when in "Suspending" state
+/// Requires "Unsuspend" command to go to "Unsuspending" state 
+{attribute 'object_name' := 'M_Suspended'}
+METHOD M_Suspended
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspending" Id="{74d2eb90-4a30-4e9d-8c90-58d906d61413}">
+      <Declaration><![CDATA[/// Dynamic state "Suspending"
+/// Trigged by "Suspend" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Suspended" state 
+{attribute 'object_name' := 'M_Suspending'}
+METHOD M_Suspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Undefined" Id="{86ac09a0-51ce-4e30-84f1-45c74805c934}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Undefined'}
+METHOD M_Undefined
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unholding" Id="{28f9334c-5066-4ca7-a48f-06200c02cf16}">
+      <Declaration><![CDATA[/// Dynamic state "Unholding"
+/// Trigged by "Unhold" command when in "Held" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unholding'}
+METHOD M_Unholding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unsuspending" Id="{ee410e46-5422-4205-be0f-c44f3711f80d}">
+      <Declaration><![CDATA[/// Dynamic state "Unsuspending"
+/// Trigged by "Unsuspend" command when in "Suspended" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unsuspending'}
+METHOD M_Unsuspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Station_Basic">
+      <LineId Id="1469" Count="2" />
+      <LineId Id="1393" Count="5" />
+      <LineId Id="1024" Count="48" />
+      <LineId Id="1197" Count="0" />
+      <LineId Id="1190" Count="0" />
+      <LineId Id="1199" Count="0" />
+      <LineId Id="1191" Count="0" />
+      <LineId Id="1209" Count="0" />
+      <LineId Id="1330" Count="0" />
+      <LineId Id="1195" Count="0" />
+      <LineId Id="1201" Count="0" />
+      <LineId Id="1210" Count="0" />
+      <LineId Id="1329" Count="0" />
+      <LineId Id="1204" Count="4" />
+      <LineId Id="1193" Count="0" />
+      <LineId Id="1268" Count="0" />
+      <LineId Id="1271" Count="1" />
+      <LineId Id="1200" Count="0" />
+      <LineId Id="1198" Count="0" />
+      <LineId Id="1196" Count="0" />
+      <LineId Id="1075" Count="31" />
+      <LineId Id="1211" Count="0" />
+      <LineId Id="1107" Count="25" />
+      <LineId Id="1467" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Aborted">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Aborting">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_CheckJobData">
+      <LineId Id="102" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="505" Count="0" />
+      <LineId Id="492" Count="0" />
+      <LineId Id="506" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Clearing">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Complete">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Completing">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_ErrorWarningObj">
+      <LineId Id="111" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="195" Count="2" />
+      <LineId Id="112" Count="1" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="116" Count="1" />
+      <LineId Id="142" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="194" Count="0" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="125" Count="2" />
+      <LineId Id="134" Count="2" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="141" Count="0" />
+      <LineId Id="139" Count="1" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="164" Count="0" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="166" Count="1" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="171" Count="2" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="213" Count="2" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="165" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Execute">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Held">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Holding">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Idle">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Init">
+      <LineId Id="5" Count="1" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="14" Count="2" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="10" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_OEEProductProcessed">
+      <LineId Id="18" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="20" Count="3" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="14" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_PackML_StateMachine">
+      <LineId Id="221" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="174" Count="0" />
+      <LineId Id="158" Count="1" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="164" Count="1" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="9" Count="7" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="18" Count="14" />
+      <LineId Id="34" Count="15" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="50" Count="15" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="128" Count="1" />
+      <LineId Id="131" Count="0" />
+      <LineId Id="133" Count="2" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="139" Count="18" />
+      <LineId Id="313" Count="7" />
+      <LineId Id="130" Count="0" />
+      <LineId Id="66" Count="1" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="220" Count="0" />
+      <LineId Id="71" Count="3" />
+      <LineId Id="309" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="182" Count="0" />
+      <LineId Id="321" Count="31" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="77" Count="38" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Resetting">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Starting">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_StateComplete">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Stopped">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Stopping">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Suspended">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Suspending">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Undefined">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Unholding">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station_Basic.M_Unsuspending">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

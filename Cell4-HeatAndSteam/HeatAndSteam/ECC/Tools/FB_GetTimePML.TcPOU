@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_GetTimePML" Id="{022b1905-7544-44a7-8454-cc0c49374b80}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetTimePML
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	PML_Time		: ARRAY [0..6] OF DINT;
+END_VAR
+VAR
+	fbGetTime		: NT_GetTime;
+	tonInterval		: TON;
+	tInterval		: TIME := T#100ms;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+tonInterval(	IN := NOT tonInterval.Q,
+				PT := tInterval,
+				Q =>,
+				ET =>	);
+
+fbGetTime(	NETID:= '', 
+			START:= tonInterval.Q, 
+			TMOUT:= T#5S, 
+			BUSY=> , 
+			ERR=> , 
+			ERRID=> , 
+			TIMESTR=> 	);
+
+
+PML_Time := TIMESTRUCT_TO_PackMLTime(fbGetTime.TIMESTR);
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetTimePML">
+      <LineId Id="22" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="23" Count="1" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="16" Count="4" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="39" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ReservationData" Id="{68129e3e-6819-4800-8cbb-9be649749b0b}">
+    <Declaration><![CDATA[TYPE ST_ReservationData :
+STRUCT
+	bUsed					: BOOL;
+	nTicket					: UINT;														(*  *)
+	nTicketSize				: UINT;														(*  *)
+	sStationID				: STRING(30);												(*  *)
+	sAddedTime				: STRING(30);												(* Date and time for when entry was added *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

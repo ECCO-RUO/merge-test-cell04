@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MMBuffer" Id="{46709478-3c0f-4e5a-a62e-0d88904d1274}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA.StructuredType':='1'}
+TYPE ST_MMBuffer :
+STRUCT
+	bPresent					: BOOL	:= FALSE;																	(* Flag for indicating if the buffer position is present/used*)
+	stLocation					: ST_MMLocation;																	(* Location of the buffer on the track. *)
+	nTicket						: UINT;
+	nTicketSize					: UINT;
+	nReservedVehicleID			: UINT;
+	nCurrentVehicleID			: UINT;
+	CurrentPriority				: UINT;
+//	sReservedCarrierID			: STRING(30);
+//	sCurrentCarrierID			: STRING(30);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

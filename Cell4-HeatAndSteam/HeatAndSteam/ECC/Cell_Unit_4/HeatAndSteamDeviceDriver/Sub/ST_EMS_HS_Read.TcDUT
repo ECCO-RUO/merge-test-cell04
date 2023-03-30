@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_EMS_HS_Read" Id="{96f08fa7-3cf6-4eeb-ac7a-b64b36cc37f3}">
+    <Declaration><![CDATA[ {attribute 'pack_mode' := '1'}
+TYPE ST_EMS_HS_Read :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Actual temperature value'}
+	rActTempVal			: REAL;								// [°C] - 32bit float - addr:2501
+	{attribute 'OPC.UA.DA.Description' := 'Actual desired temperature'}
+	rActTempSetpoint	: REAL;								// [°C] - 32bit float - addr:2503
+	{attribute 'OPC.UA.DA.Description' := 'Actual steam request'}
+	rActSteamReq		: DINT;								// [] - 32bit float - addr:2505
+	{attribute 'OPC.UA.DA.Description' := 'Actual fan speed request'}
+	rActFanReq			: REAL;								// [RPM] - 32bit float - addr:2507
+	{attribute 'OPC.UA.DA.Description' := 'Instant power'}
+	rInstPower			: REAL;								// [kW] - 32bit float - addr:2509
+	{attribute 'OPC.UA.DA.Description' := 'Energy consumption'}
+	rEnergyCons			: REAL;								// [kWh] - 32bit float - addr:2511
+	{attribute 'OPC.UA.DA.Description' := 'Running hours'}
+	iRunningHrs			: UDINT;							// [hours] - 32bit udint - addr:2513
+	{attribute 'OPC.UA.DA.Description' := 'Running minutes'}
+	iRunningMins		: UDINT;							// [minutes] - 32bit udint - addr:2515
+	{attribute 'OPC.UA.DA':='0'}
+	{attribute 'hide'}
+	wDisp2017			: WORD;
+	{attribute 'OPC.UA.DA':='0'}
+	{attribute 'hide'}
+	wDisp2018			: WORD;
+	{attribute 'OPC.UA.DA':='0'}
+	{attribute 'hide'}
+	wDisp2019			: WORD;
+	{attribute 'OPC.UA.DA':='0'}
+	{attribute 'hide'}
+	wDisp2020			: WORD;
+	{attribute 'OPC.UA.DA.Description' := 'Station status'}
+	eMachStatus			: E_EMS_HS_Status;	// - 16bit uint - addr:2521
+	{attribute 'OPC.UA.DA.Description' := 'Station status bits'}
+	stStates			: ST_EMS_HS_States;	// - 16bit word - addr:2522
+	{attribute 'OPC.UA.DA.Description' := 'Station alarms bits'}
+	stAlarms			: ST_EMS_HS_Alarms;	// - 16bit word	 - addr:2523
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

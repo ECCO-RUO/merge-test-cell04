@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputTransportCommand" Id="{e3ef529f-2b91-4350-8497-8e751c2cbf46}">
+    <Declaration><![CDATA[TYPE ST_InputTransportCommand :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	ChangeRequest			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Carrier ID'}
+	CarrierID				: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Packet (Ticket) ID (1-65536)'}
+	Ticket					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Number of carriers in Packet (Ticket) (1-100)'}
+	CarriersInPackage		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Priority within Packet (Ticket) (1-100)'}
+	Priority				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Assigned Job ID'}
+	JobID					: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Target station ID'}
+	TargetStation			: STRING(30);
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

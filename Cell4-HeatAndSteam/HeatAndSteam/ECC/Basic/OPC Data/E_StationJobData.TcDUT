@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_StationJobData" Id="{74dc16fd-a01d-4472-9e7c-73461f0d6b91}">
+    <Declaration><![CDATA[{attribute 'strict'}
+//
+//	MAX number is 9!!
+//
+TYPE E_StationJobData :
+(
+	// Back Moulding
+//	OP00100_			:= 0,
+
+	// Brazilian Blocking
+//	OP00200_			:= 0,
+
+	// Strobeling
+//	OP00300_			:= 0,
+
+	// Manual Lasting
+//	OP11400_			:= 0,
+
+	// Automatic Lasting
+//	OP11500_			:= 0,
+
+	// Upper heat setting
+//	OP11600_			:= 0,
+
+	// Shank Placement
+//	OP11700_			:= 0,
+
+	// Ironing
+//	OP11800_			:= 0,
+
+	// Strobel Pressing
+//	OP11900_			:= 0,
+
+	// Blow Drying
+//	OP12000_			:= 0,
+
+	// Hammering
+//	OP12100_			:= 0,
+
+	// Filler Foam Placement
+//	OP12200_			:= 0,
+
+	// Manual Roughing
+//	OP12300_			:= 0,
+
+	// Robot Laser Roughing
+//	OP12400_			:= 0,
+
+	// Robot Mechanical Roughing
+	OP12500_Motor 		:= 0,
+	OP12500_Speed 		:= 1,
+	OP12500_Pressure	:= 2,
+	
+	// Thread Burning
+	OP12600_Heat		:= 0,
+	OP12600_Air			:= 1,
+	
+	// Last Sorting
+//	OP12700_			:= 0,
+
+	// Last Handling
+//	OP12800_			:= 0,
+
+	// Sole Cooling
+//	OP12900_			:= 0,
+
+	// Sole Heating
+//	OP13000_			:= 0,
+
+	// Continouos Spraying
+	OP13100_Color		:= 0,
+	OP13100_SprayWidth	:= 1,
+	OP13100_SprayPress	:= 2,
+	OP13100_Tank1Press	:= 3,
+	OP13100_Tank2Press	:= 4,
+	
+	// Burst Spraying
+	OP13200_Color		:= 0,
+	OP13200_SprayWidth	:= 1,
+	OP13200_SprayPress	:= 2,
+	OP13200_Tank1Press	:= 3,
+	OP13200_Tank2Press	:= 4,
+	OP13200_SprayTime	:= 5,
+	OP13200_PauseTime	:= 6,
+
+	// Sole Trimming
+	OP13300_Speed		:= 0,
+	OP13300_Amplitude	:= 1
+	
+	// Sole Buffing
+//	OP13400_			:= 0,
+
+	// Manual Delasting
+//	OP13500_			:= 0,
+
+	// Robot Delasting
+//	OP13600_			:= 0,
+
+	// Delacing
+//	OP21900_			:= 0,
+
+	// Injection
+//	OP32800_			:= 0,
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

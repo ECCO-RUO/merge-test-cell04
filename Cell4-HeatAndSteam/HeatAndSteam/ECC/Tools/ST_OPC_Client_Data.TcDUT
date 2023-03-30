@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OPC_Client_Data" Id="{2048ef97-13aa-4277-9113-4b834b463c62}">
+    <Declaration><![CDATA[TYPE ST_OPC_Client_Data :
+STRUCT
+	sRemoteVar		: STRING;
+	eIdentifierType	: Tc3_PLCopen_OpcUa.E_UAIdentifierType;
+	bWrite			: BOOL;	// TRUE to write
+	iTargetSize		: UDINT;
+	pTarget			: pVOID;
+	bCommOK			: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="F_LogFile" Id="{4e6c5abc-d7c5-429b-969f-74c308a68a26}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_LogFile : BOOL
+VAR_INPUT
+	msg		: STRING(200);
+
+END_VAR
+VAR
+	Temp:ULINT;
+	CurrentDate:STRING(10);
+	msgWithTime :STRING(200);
+	DateTimeNow :STRING;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* Get date and time *)
+
+DateTimeNow  := SYSTEMTIME_TO_STRING(fbLocalTime.systemTime);
+
+(* Set date to check for generation of new file *)
+CurrentDate := DateTimeNow;
+
+(* Add date and time to line of log *)
+msgWithTime := CONCAT(DateTimeNow, ' ');
+msgWithTime := CONCAT(msgWithTime, msg);
+msgWithTime := CONCAT(msgWithTime, '$N');
+
+
+(* Write to FIFO *)
+IF LogToTextBuffer.Count <= LogToTextBuffer.DataTop THEN
+
+	(* Calculate new insert pointer *)
+	LogToTextBuffer.Input_Pointer := LogToTextBuffer.Input_Pointer + 1;
+	IF LogToTextBuffer.Input_Pointer > LogToTextBuffer.DataTop THEN
+		LogToTextBuffer.Input_Pointer := 0;
+	END_IF
+
+	(* If data is empty, sync output pointer *)
+	IF LogToTextBuffer.Count = 0 THEN
+		LogToTextBuffer.Output_Pointer := LogToTextBuffer.Input_Pointer;
+	END_IF
+
+	(* Store data *)
+	LogToTextBuffer.DB[LogToTextBuffer.Input_Pointer] := msgWithTime;
+
+	LogToTextBuffer.Count := LogToTextBuffer.Count + 1;
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_LogFile">
+      <LineId Id="8" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="9" Count="7" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="36" Count="19" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="34" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

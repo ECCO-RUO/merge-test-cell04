@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationStationHS" Id="{75033588-bb2f-45a7-a5f2-91cc61286d04}">
+    <Declaration><![CDATA[TYPE ST_OutputStationStationHS :
+STRUCT
+		{attribute 'OPC.UA.DA.Description' := 'Station mode and state'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ModeState			: ST_OutputModeState;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Station job data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	JobData				: ST_OutputStationHSJobData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station OEE'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OEE					: ST_OutputOEE;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station error/warning'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ErrorWarning		: ST_OutputErrorWarning;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	CurrentConfiguration: ST_OutputStationHSCurrentConfiguration;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	UpcomingConfiguration: ST_OutputStationHSUpcomingConfiguration;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station operational data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OperationalData		: ST_OutputStationHSOperationalData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station sustainability data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	SustainabilityData	: ST_OutputStationHSSustainabilityData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station sustainability data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	AdditionalData		: ST_OutputStationHSAdditionalData;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

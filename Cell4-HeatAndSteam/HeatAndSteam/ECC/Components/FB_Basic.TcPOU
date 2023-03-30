@@ -1,0 +1,459 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_Basic" Id="{6377d550-2fbe-40f7-b8b9-37fe92088255}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+// Commands
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Enable component'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bCmdEnable		: BOOL;		// Write from e.g. HMI
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Enable manual mode'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bCmdManual		: BOOL;		// Write from e.g. HMI
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Enable automatic mode'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bCmdAuto		: BOOL;		// Write from e.g. HMI
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Reset component'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bCmdReset		: BOOL;		// Write from PLC or HMI to reset errors and warnings
+	
+// Status
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Running status'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bStaRunning		: BOOL;
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Error status'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bStaError		: BOOL;
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Error ID'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	eStaErrorID		: E_ComponentErrors;
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Warning status'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bStaWarning		: BOOL;
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Manual mode enabled'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	bStaManual		: BOOL;
+	bInitDone		: BOOL;
+
+// Values
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Manual value'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	rManualValue	: LREAL;	// Write from e.g. HMI
+	rAutoValue		: LREAL;	// Write from program
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Actual value'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	rActualValue	: LREAL;
+	
+	trigManOn		: R_TRIG;
+	trigAutoOn		: R_TRIG;
+
+END_VAR
+VAR PERSISTENT
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Component tag'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	sTag			: STRING;
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Component name'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	sName			: STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Run methods (overwrite in inherited FB's)
+IF (NOT bInitDone) THEN
+	M_Init();
+ELSE
+	M_Run();
+	M_ErrorHandling();
+END_IF
+
+
+// Manual/Automatic mode
+trigManOn(CLK := bCmdManual);
+trigAutoOn(CLK := bCmdAuto);
+
+IF (trigManOn.Q) THEN
+	rManualValue := rActualValue;
+	bStaManual := TRUE;
+	bCmdManual := FALSE;
+
+ELSIF (trigAutoOn.Q) THEN
+	rActualValue := rAutoValue;
+	bStaManual := FALSE;
+	bCmdAuto := FALSE;
+
+END_IF
+
+// Run Manual/Automatic methods (overwrite them in inherited FB's)
+IF (bStaManual) THEN
+	M_ManualMode();
+ELSE
+	M_AutoMode();
+END_IF
+
+// Error reset
+IF (bCmdReset) THEN
+	bStaError := FALSE;
+	bStaWarning := FALSE;
+	eStaErrorID := E_ComponentErrors.OK;
+	bCmdReset := FALSE;
+
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="M_AutoMode" Id="{da5476b2-ac5d-4a6b-b077-53ab26d4d848}">
+      <Declaration><![CDATA[METHOD PROTECTED M_AutoMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Overwrite in inherited FB's!
+;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorHandling" Id="{71a0971e-b379-4c76-bf58-fcee49c0c216}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorHandling : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Overwrite in inherited FB's!
+;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{5c03180a-d0a0-412f-84b1-1afd3e03d296}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Overwrite in inherited FB's!
+bInitDone := TRUE;
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ManualMode" Id="{dd65023b-0a97-4167-8cb2-dd6777849ed8}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ManualMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Overwrite in inherited FB's!
+;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{3056be49-e2ff-433c-9951-d0c3b3210368}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Overwrite in inherited FB's!
+;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bEnable" Id="{ca3fed8e-478b-4efa-a6c4-f57b4ca3bd07}">
+      <Declaration><![CDATA[PROPERTY P_bEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{14799a30-4c6e-4b9f-9bd9-ccf161ba8246}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bEnable := bCmdEnable;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{c54fa905-84b6-410b-a53a-86befe48bb98}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bCmdEnable := P_bEnable;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bError" Id="{484ad947-fa2d-4f29-b949-b2a66023b5bb}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{c9f57607-f47f-4443-9dfd-cc0c2a7d0260}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+P_bError := bStaError;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_bManualMode" Id="{74650e9f-1512-4bde-adb7-996fc7f750f9}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bManualMode : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4b92ff7a-d793-416c-a296-4466e28db595}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bManualMode := bStaManual;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{a26f9cc5-fb27-4a91-ba58-c5408f786915}">
+        <Declaration><![CDATA[PUBLIC 
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+IF (P_bManualMode AND NOT bStaManual) THEN
+	bCmdAuto := FALSE;
+	bCmdManual := TRUE;
+
+ELSIF (NOT P_bManualMode AND bStaManual) THEN
+	bCmdAuto := TRUE;
+	bCmdManual := FALSE;
+	
+END_IF
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bReset" Id="{66bbbf7a-0014-46a3-ba9d-ba31dfc8ad40}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bReset : BOOL]]></Declaration>
+      <Set Name="Set" Id="{e4e8c6ba-80d4-4032-bb73-c66c1e6ab791}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bCmdReset := P_bReset;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rManualValue" Id="{e10ca7d0-d47f-4e80-941d-6054518b25aa}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rManualValue : LREAL]]></Declaration>
+      <Get Name="Get" Id="{6ff2e81c-2aaa-4834-818b-6c4f8b38f642}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rManualValue := rManualValue;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{d38797b8-5d65-4328-91f1-9a72e111c3bb}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[IF (P_bManualMode) THEN
+	rManualValue := P_rManualValue;
+END_IF
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sName" Id="{6c493159-7296-4d50-915f-d8ac7c58f567}">
+      <Declaration><![CDATA[// Component name
+PROPERTY PUBLIC P_sName : STRING]]></Declaration>
+      <Get Name="Get" Id="{1d24bddc-08d3-4cee-8895-542a57c3a2d9}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sName := sName;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f2388e94-371e-4ef7-bbb2-34c055be59b4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sName := P_sName;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sTag" Id="{91a0e1aa-5587-485d-88aa-632d341c5987}">
+      <Declaration><![CDATA[// Tag name
+PROPERTY PUBLIC P_sTag : STRING]]></Declaration>
+      <Get Name="Get" Id="{f8bf6986-2649-4de0-a26b-7ab4223449c7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sTag := sTag;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{1c38277b-6925-456c-8687-e8db87904cd8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sTag := P_sTag;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_Basic">
+      <LineId Id="94" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="104" Count="1" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="34" Count="1" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="72" Count="1" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="92" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.M_AutoMode">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Basic.M_ErrorHandling">
+      <LineId Id="6" Count="2" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.M_Init">
+      <LineId Id="6" Count="3" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.M_ManualMode">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.M_Run">
+      <LineId Id="6" Count="2" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bEnable.Get">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bEnable.Set">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bError.Get">
+      <LineId Id="6" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bManualMode.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bManualMode.Set">
+      <LineId Id="9" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="13" Count="1" />
+      <LineId Id="11" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_bReset.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_rManualValue.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_rManualValue.Set">
+      <LineId Id="6" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_sName.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_sName.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_sTag.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Basic.P_sTag.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

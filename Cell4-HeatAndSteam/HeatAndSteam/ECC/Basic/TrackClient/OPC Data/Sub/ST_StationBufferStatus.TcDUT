@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StationBufferStatus" Id="{5959d5ee-1f3a-45c5-b045-e3f0e8447d51}">
+    <Declaration><![CDATA[TYPE ST_StationBufferStatus :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Capacity (0-100)'}
+	Capacity				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Capacity used (0-100)'}
+	CapacityUsed			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Buffer status data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	BufferIndex				: ARRAY [1..100] OF ST_BufferIndexX;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

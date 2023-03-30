@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputTransportAdditionalDataMESHandShake" Id="{9a7cc21f-a7b1-434e-b989-03dcd89a9715}">
+    <Declaration><![CDATA[TYPE ST_InputTransportAdditionalDataMESHandShake :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Data Change status for Status values (0-65536)'}
+	DataChangeStatusTransportStatus		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Data Change status for Mapping values (0-65536)'}
+	DataChangeStatusTransportMapping	: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

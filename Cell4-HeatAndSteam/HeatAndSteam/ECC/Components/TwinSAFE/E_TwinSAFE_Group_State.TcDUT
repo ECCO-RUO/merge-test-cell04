@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_TwinSAFE_Group_State" Id="{194ff4c2-a7f2-4248-bd3d-aa13038a5414}">
+    <Declaration><![CDATA[/// TwinCAT Group State definitions
+{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TwinSAFE_Group_State :
+(
+	RUN				:= 1,
+	STOP			:= 2,
+	ERROR			:= 4,
+	RESET			:= 5,
+	START			:= 6,
+	STOPERROR		:= 7,
+	DEACTIVE		:= 16,
+	WAITCOMERROR	:= 17
+
+) USINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

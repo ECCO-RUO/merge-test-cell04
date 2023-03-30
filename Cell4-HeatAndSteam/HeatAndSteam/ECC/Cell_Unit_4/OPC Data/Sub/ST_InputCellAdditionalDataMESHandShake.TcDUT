@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputCellAdditionalDataMESHandShake" Id="{c22dc814-72a8-4027-8f7b-acb2e24a2963}">
+    <Declaration><![CDATA[TYPE ST_InputCellAdditionalDataMESHandShake :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Cell ModeState update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusModeState		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell OEE update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusOEE				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell ErrorWarning update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusErrorWarning	: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell Operationaldata update status'}
+	{attribute 'TcIgnorePersistent'}
+	DataChangeStatusOperationalData	: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

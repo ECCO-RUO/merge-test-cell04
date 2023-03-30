@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="F_ECat_OK" Id="{3258f906-cbd3-45ce-9a4c-bc675666a334}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_ECat_OK : BOOL
+VAR_INPUT
+	State : WORD;	// State from Ethercat module/device
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Check etherCAT state OK
+F_ECat_OK := (State AND 16#0008) = 8;
+IF bTestMode THEN
+	F_ECat_OK := TRUE;
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_ECat_OK">
+      <LineId Id="9" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

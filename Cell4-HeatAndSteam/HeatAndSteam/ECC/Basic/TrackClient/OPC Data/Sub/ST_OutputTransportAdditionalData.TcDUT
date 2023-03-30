@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputTransportAdditionalData" Id="{588a4d2d-41e3-45c7-b3a9-f1116d603ea2}">
+    <Declaration><![CDATA[TYPE ST_OutputTransportAdditionalData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if Track Client is connected to Track Server for method calls'}
+	bConnectedMethod			: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if Track Client is connected to Track Server for data reading'}
+	bConnectedNode				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if Track Client is ready to work (DecisionPoint, ExitPoint, Buffers)'}
+	bTrackReady					: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

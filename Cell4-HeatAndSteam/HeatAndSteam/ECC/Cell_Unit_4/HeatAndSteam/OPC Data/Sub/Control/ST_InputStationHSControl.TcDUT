@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSControl" Id="{665f608b-c78d-4acb-bbb9-0b386f4a040a}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSControl :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station general configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General						: ST_InputStationHSControlGeneral;
+
+	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Control'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600						: ST_InputStationHSControlOP11600;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSCurrentConfigurationOP11600" Id="{1331d10a-2dfe-49b1-884f-e623a2a78dec}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSCurrentConfigurationOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for describing if the operation is restricted for specific SKUs'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	SKURestriction				: ST_SKURestriction;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Possible tool amount for the operation'}
+	ToolCapacity				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Number of tools configured for the operation (0-200)'}
+	ToolCapacityUsed			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'IDs of upcoming tools'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Tool 						: ARRAY [1..200] OF ToolX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current location and control mapping of tools'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ToolMapping					: ARRAY [1..200] OF ToolXMapping;
+
+	{attribute 'OPC.UA.DA.Description' := 'Possible material amount for the operation'}
+	MaterialCapacity			: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Upcoming number of material configured for the operation (0-200)'}
+	MaterialCapacityUsed		: UINT; 
+
+	{attribute 'OPC.UA.DA.Description' := 'IDs OF upcoming material'}
+	Material					: ARRAY [1..200] OF STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current location and control mapping of feeding material'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	MaterialMapping				: ARRAY [1..200] OF MaterialXMapping;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

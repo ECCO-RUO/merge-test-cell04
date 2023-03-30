@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_ToolType" Id="{c22aa7e2-c4cc-49dd-b24d-9a7b5388661b}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_ToolType :
+(
+	Undefined := 0,
+	None,
+	Last,
+	Tray
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

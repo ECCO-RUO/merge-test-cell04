@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleOwnerDataIn" Id="{0e81e4f4-3aed-4bb2-9ff4-7f55a487f8f7}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_UpdateVehicleOwnerDataIn :
+STRUCT
+	eInputType					: UINT;										(* The vehicle/vehicles that will be moved. *)
+	sInput						: STRING(30);								(* Depending on the input type, the input can be the ID of a vehicle, last, article, last type, cell or station. *)
+	sCellID						: STRING(30);								(* Tool ID *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

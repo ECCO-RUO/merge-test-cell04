@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputHeaderTransportInformationX" Id="{3d1d5bfd-b878-44b5-9b57-ab0a9d4574e2}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderTransportInformationX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Transport name'}
+	TransportName			: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Transport type'}
+	TransportType			: STRING;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

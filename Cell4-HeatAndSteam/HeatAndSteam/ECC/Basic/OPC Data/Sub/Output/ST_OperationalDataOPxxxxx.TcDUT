@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OperationalDataOPxxxxx" Id="{1c17f99b-61c5-450b-bcf7-08b5770ca950}">
+    <Declaration><![CDATA[TYPE ST_OperationalDataOPxxxxx :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Current number of tools where data is available'}
+	NumberOfToolData			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of tools'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ToolData					: ARRAY [1..200] OF ToolDataX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current number OF feeding material where data is available'}
+	NumberOfMaterialData		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of material'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	MaterialData				: ARRAY [1..200] OF MaterialDataX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of devices'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	DeviceData					: ARRAY [1..200] OF ST_DeviceDataX;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

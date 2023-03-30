@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <EnumerationTextList Name="E_MMTrafficLightColor" Id="{afb261f9-7f48-49cd-b5e1-e67dd0f380f5}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE E_MMTrafficLightColor :
+(
+	eMMTrafficLightColor_NA		:= -1,
+	eMMTrafficLightColor_Green	:= 0,
+	eMMTrafficLightColor_Red	:= 1
+);
+END_TYPE
+]]></Declaration>
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="TextListEnumerationTextListObject">
+          <l n="TextList" t="ArrayList" cet="TextListRow">
+            <o>
+              <v n="TextID">"eMMTrafficLightColor_NA"</v>
+              <v n="TextDefault">"-1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMTrafficLightColor_Green"</v>
+              <v n="TextDefault">"0"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMTrafficLightColor_Red"</v>
+              <v n="TextDefault">"1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">""</v>
+              <v n="TextDefault">""</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+          </l>
+          <l n="Languages" t="ArrayList" />
+          <v n="GuidInit">{aa4b854d-0e9b-42b2-aadf-9e29ee803c27}</v>
+          <v n="GuidReInit">{44c9b218-0d80-43d7-916b-449f0d7966e8}</v>
+          <v n="GuidExitX">{33617cfc-9933-4c48-9db5-a24ddca2c898}</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="String">System.String</Type>
+        <Type n="TextListEnumerationTextListObject">{4b60233c-f940-4beb-b331-82133b520151}</Type>
+        <Type n="TextListRow">{53da1be7-ad25-47c3-b0e8-e26286dad2e0}</Type>
+      </TypeList>
+    </XmlArchive>
+  </EnumerationTextList>
+</TcPlcObject>

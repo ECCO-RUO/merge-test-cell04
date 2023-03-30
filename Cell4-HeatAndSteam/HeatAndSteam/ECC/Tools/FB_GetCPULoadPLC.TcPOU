@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_GetCPULoadPLC" Id="{c3fd5c4f-fb3a-4210-bfd4-7cf02d7d0e7e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetCPULoadPLC
+VAR_INPUT
+	rInterval			: REAL := 10.0;		// [sec]
+END_VAR
+VAR_OUTPUT
+	rCPULoad			: REAL;				// [deg]
+	bError				: BOOL;				// error flag (indicator: error occured)
+	nErrID				: UDINT;			// last error ID 
+END_VAR
+VAR
+	// internal use
+	sAmsNetId			: T_AmsNetId;		// ADS Net ID (local = '')    
+	iState				: INT;
+	// FB instances
+	fbReadCPUUsage		: TC_CpuUsage;  
+	tonInterval			: Tc2_Standard.TON;
+	// Info
+	iErrorCnt			: UINT;
+	iGoodCnt			: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Interval timer
+tonInterval(IN := NOT tonInterval.Q, PT := REAL_TO_TIME(rInterval * 1000.0));
+
+CASE iState OF
+	0: // Initiate program parameters (if required)
+		fbReadCPUUsage(START := FALSE);
+		IF (tonInterval.Q) THEN
+			iState := 10;
+		END_IF
+
+	10:	// Trigger FB: request CPU data
+		fbReadCPUUsage(	NETID := sAmsNetId,
+						START := TRUE,
+						TMOUT := T#5S	);
+		IF (fbReadCPUUsage.BUSY) THEN
+			// Started
+			iState := 20;
+		ELSIF (fbReadCPUUsage.ERR) THEN
+			// Error
+			iErrorCnt := iErrorCnt + 1;
+			iState := 0;
+		END_IF
+
+	20:	// Process FB: Request CPU temp
+		fbReadCPUUsage(START := FALSE); 
+		IF (NOT fbReadCPUUsage.BUSY) THEN
+			IF (NOT fbReadCPUUsage.ERR) THEN
+				rCPULoad := fbReadCPUUsage.USAGE;
+				iGoodCnt := iGoodCnt + 1;
+				iState := 30;
+			ELSE
+				iErrorCnt := iErrorCnt + 1;
+				iState := 0;
+			END_IF                                               
+		END_IF
+    
+     30: // Done 
+		iState := 0;
+
+	ELSE
+		iState := 0; 
+
+END_CASE
+
+bError := fbReadCPUUsage.ERR;
+nErrID := fbReadCPUUsage.ERRID;
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetCPULoadPLC">
+      <LineId Id="94" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="18" Count="2" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="22" Count="2" />
+      <LineId Id="114" Count="2" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="30" Count="2" />
+      <LineId Id="34" Count="2" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="44" Count="3" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="125" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_VehicleOnStation" Id="{b0d28063-784a-4d66-a20d-d45cca889bda}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_VehicleOnStation :
+(
+	Idle := 0,
+	VehicleAtStation,
+	AddToFIFO,
+	WaitStationStart,
+	MoveVehicle,
+	VehicleLeftStation
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

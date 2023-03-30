@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddPathSegmentDataIn" Id="{2b5bde6d-eab0-4731-b924-2f4f9e8cead4}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_AddPathSegmentDataIn :
+STRUCT
+	sCellID						: STRING(30);	// 
+	sSegmentID					: STRING(30);	// 
+	iPath						: UINT;			// MM path ID (1-65536)
+	rBeginPosition				: REAL;			// The position of the start of the segment
+	rEndPosition				: REAL;			// The position of the end of the segment (If position is greater than physical end
+												// position, the segment will cover until the end of the path!)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

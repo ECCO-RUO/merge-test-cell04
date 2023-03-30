@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_Blink" Id="{696b8675-161f-45dd-b70a-e3680a6705af}" SpecialFunc="None">
+    <Declaration><![CDATA[/// Q0 produces a High-Signal with the length OF PT on every rising edge on IN.
+FUNCTION_BLOCK FB_Blink
+VAR_INPUT
+	IN			: BOOL;		// TRUE:run Blink, FALSE: Q = FALSE
+	PT_L		: TIME;		// Time for Q = FALSE
+	PT_H		: TIME;		// Time for Q = TRUE
+END_VAR
+VAR_OUTPUT
+	Q			:BOOL;		// output variable, starting with FALSE
+END_VAR
+VAR
+	CLOCK:TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+IF (IN) THEN
+	IF (Q) THEN (*high time*)
+		CLOCK( IN := TRUE, PT := PT_H, Q=>, ET=> );
+		IF (CLOCK.Q) THEN
+			CLOCK(IN := FALSE);
+			Q := FALSE;
+		END_IF
+	ELSE (*low time*)
+		CLOCK( IN := TRUE, PT := PT_L, Q=> Q, ET=> );
+		IF (CLOCK.Q) THEN
+			CLOCK(IN := FALSE);
+			Q := TRUE;
+		END_IF;
+	END_IF
+ELSE
+	CLOCK( IN := FALSE, PT:=, Q=>, ET=> );
+	Q := FALSE;
+END_IF;
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Blink">
+      <LineId Id="3" Count="17" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="39" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

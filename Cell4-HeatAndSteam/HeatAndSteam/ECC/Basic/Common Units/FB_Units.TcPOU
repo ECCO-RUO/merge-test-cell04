@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_Units" Id="{a7c170a6-c81c-4224-a288-2d36eb08bbe2}" SpecialFunc="None">
+    <Declaration><![CDATA[// Common unit codes and symbols are taken from document:
+// rec20_Rev13e_2017.xls 
+FUNCTION_BLOCK FB_Units
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR CONSTANT
+	MAXSIZE		: BYTE := 50;
+END_VAR
+VAR
+	// array of possible unitcodes/units
+	aUnits		: ARRAY [0..MAXSIZE, 0..1] OF STRING(10);
+	bInitDone	: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+M_Init();
+]]></ST>
+    </Implementation>
+    <Method Name="Code" Id="{146e967c-ad50-46be-a86e-3572e25c5b0e}">
+      <Declaration><![CDATA[METHOD PUBLIC Code : STRING
+VAR_INPUT
+	eUnit		: E_Units;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[/// Returns the common unit code for the definded unit type
+
+// Make sure valuesa are initialized
+M_Init();
+
+IF (eUnit <= MAXSIZE) THEN
+	Code := aUnits[eUnit, 0];	
+
+ELSE
+	Code := aUnits[0, 0];
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{dce676a2-f734-4d20-a4dc-58b2c2842151}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init
+VAR_INPUT
+END_VAR
+VAR
+	i		: BYTE;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Add the units needed
+// NOTE: Must match the enumeration E_CommonUnits!!
+IF (NOT bInitDone) THEN
+	i := 0;
+	// Init with selectable units
+	aUnits[i, 0] := '';		aUnits[i, 1] := '';			i := i+1;	// Empty / fallback
+
+	aUnits[i, 0] := 'MTR';	aUnits[i, 1] := 'm';		i := i+1;
+	aUnits[i, 0] := 'CMT';	aUnits[i, 1] := 'cm';		i := i+1;
+	aUnits[i, 0] := 'MMT';	aUnits[i, 1] := 'mm';		i := i+1;
+	aUnits[i, 0] := '4H';	aUnits[i, 1] := 'µm';		i := i+1;
+	aUnits[i, 0] := 'C45';	aUnits[i, 1] := 'nm';		i := i+1;
+
+	aUnits[i, 0] := 'KGM';	aUnits[i, 1] := 'kg';		i := i+1;
+	aUnits[i, 0] := 'GRM';	aUnits[i, 1] := 'g';		i := i+1;
+
+	aUnits[i, 0] := 'M46';	aUnits[i, 1] := 'r/min';	i := i+1;
+	aUnits[i, 0] := 'C16';	aUnits[i, 1] := 'mm/s';		i := i+1;
+	aUnits[i, 0] := 'H81';	aUnits[i, 1] := 'mm/min';	i := i+1;
+	aUnits[i, 0] := 'MTS';	aUnits[i, 1] := 'm/s';		i := i+1;
+	aUnits[i, 0] := '2X';	aUnits[i, 1] := 'm/min';	i := i+1;
+	
+	aUnits[i, 0] := 'M41';	aUnits[i, 1] := 'mm/s²';	i := i+1;
+
+	aUnits[i, 0] := 'P1';	aUnits[i, 1] := '%';		i := i+1;	
+	
+	aUnits[i, 0] := 'DD';	aUnits[i, 1] := '°';		i := i+1;	
+	aUnits[i, 0] := 'CEL';	aUnits[i, 1] := '°C';		i := i+1;	
+	aUnits[i, 0] := 'FAH';	aUnits[i, 1] := '°F';		i := i+1;	
+
+	aUnits[i, 0] := 'BAR';	aUnits[i, 1] := 'bar';		i := i+1;	
+
+	aUnits[i, 0] := 'DAY';	aUnits[i, 1] := 'day';		i := i+1;	
+	aUnits[i, 0] := 'HUR';	aUnits[i, 1] := 'h';		i := i+1;	
+	aUnits[i, 0] := 'MIN';	aUnits[i, 1] := 'min';		i := i+1;	
+	aUnits[i, 0] := 'SEC';	aUnits[i, 1] := 's';		i := i+1;	
+	aUnits[i, 0] := 'C26';	aUnits[i, 1] := 'ms';		i := i+1;	
+	aUnits[i, 0] := 'B98';	aUnits[i, 1] := 'µs';		i := i+1;	
+	aUnits[i, 0] := 'C47';	aUnits[i, 1] := 'ns';		i := i+1;	
+
+	aUnits[i, 0] := '2G';	aUnits[i, 1] := 'V';		i := i+1;	
+	aUnits[i, 0] := '2H';	aUnits[i, 1] := 'V';		i := i+1;	
+	aUnits[i, 0] := '2Z';	aUnits[i, 1] := 'mV';		i := i+1;	
+	aUnits[i, 0] := 'AMP';	aUnits[i, 1] := 'A';		i := i+1;	
+	aUnits[i, 0] := '4K';	aUnits[i, 1] := 'mA';		i := i+1;	
+	aUnits[i, 0] := 'B84';	aUnits[i, 1] := 'µA';		i := i+1;	
+	aUnits[i, 0] := 'KWH';	aUnits[i, 1] := 'KWh';		i := i+1;	
+	aUnits[i, 0] := 'KWT';	aUnits[i, 1] := 'KW';		i := i+1;	
+	aUnits[i, 0] := 'WTT';	aUnits[i, 1] := 'W';		i := i+1;	
+	aUnits[i, 0] := 'C31';	aUnits[i, 1] := 'mW';		i := i+1;	
+	aUnits[i, 0] := 'D80';	aUnits[i, 1] := 'µW';		i := i+1;	
+
+	aUnits[i, 0] := 'MHZ';	aUnits[i, 1] := 'MHz';		i := i+1;	
+	aUnits[i, 0] := 'KHZ';	aUnits[i, 1] := 'kHz';		i := i+1;	
+	aUnits[i, 0] := 'HTZ';	aUnits[i, 1] := 'Hz';		i := i+1;	
+
+	bInitDone := TRUE;
+	
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Text" Id="{65c51a0b-f1e2-4854-9fe4-3d05f49748e2}">
+      <Declaration><![CDATA[METHOD PUBLIC Text : STRING
+VAR_INPUT
+	eUnit		: E_Units;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[/// Returns the common unit code for the definded unit type
+
+// Make sure valuesa are initialized
+M_Init();
+
+IF (eUnit <= MAXSIZE) THEN
+	Text := aUnits[eUnit, 1];	
+
+ELSE
+	Text := aUnits[0, 1];
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Units">
+      <LineId Id="13" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Units.Code">
+      <LineId Id="25" Count="11" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Units.M_Init">
+      <LineId Id="31" Count="1" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="13" Count="1" />
+      <LineId Id="16" Count="7" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="25" Count="2" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="45" Count="1" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="68" Count="2" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="47" Count="1" />
+      <LineId Id="50" Count="3" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="55" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="75" Count="1" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Units.Text">
+      <LineId Id="24" Count="11" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

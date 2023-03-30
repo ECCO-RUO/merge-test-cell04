@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputCell" Id="{fbd75237-a26b-4892-905e-4d93827c5012}">
+    <Declaration><![CDATA[TYPE ST_OutputCell :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Cell Mode State'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ModeState			: ST_OutputModeState;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell OEE'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OEE					: ST_OutputOEE;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell error warning'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ErrorWarning		: ST_OutputErrorWarning;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Configuration		: ST_OutputCellConfiguration;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell operational data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OperationalData		: ST_OutputCellOperationalData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell operational data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	SustainabilityData	: ST_OutputCellSustainabilityData;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	AdditionalData		: ST_OutputCellAdditionalData;
+
+END_STRUCT
+END_TYPE
+ ]]></Declaration>
+  </DUT>
+</TcPlcObject>

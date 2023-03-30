@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_String_FIFO" Id="{41b476cd-c484-414f-b777-841ce51108ae}">
+    <Declaration><![CDATA[TYPE ST_String_FIFO :
+STRUCT
+	Input_Pointer:INT;
+	Output_Pointer:INT;
+	Count:INT;
+	Full:BOOL;
+	DataTop:INT:=199; (*Change this to max array len *)
+	DB: ARRAY[0..199] OF STRING(255);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

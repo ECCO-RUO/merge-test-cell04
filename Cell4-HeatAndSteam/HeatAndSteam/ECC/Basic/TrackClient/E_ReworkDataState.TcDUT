@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_ReworkDataState" Id="{ce1c2c31-fa59-4f18-8e5e-f5a7b98b2864}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_ReworkDataState :
+(
+	Undefined := 0,
+	CheckRequest,
+	UpdateReworkData,
+	Done,
+	Error
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

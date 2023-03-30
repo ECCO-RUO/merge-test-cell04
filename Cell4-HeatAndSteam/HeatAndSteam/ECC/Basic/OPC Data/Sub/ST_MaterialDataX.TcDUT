@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MaterialDataX" Id="{477320ea-9047-4d38-8c8a-15348eee0cf3}">
+    <Declaration><![CDATA[TYPE ST_MaterialDataX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Job data type'}
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

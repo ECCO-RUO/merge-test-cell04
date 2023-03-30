@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_PML_Mode" Id="{782b59c1-cc38-41fc-aaf0-156fe810f4f7}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE E_PML_Mode :
+(
+	Undefined := 0,		// Same as in E_PMLProtectedUnitMode in TC3_PackML_V2 library
+	Production,			// Same as in E_PMLProtectedUnitMode in TC3_PackML_V2 library
+	Maintenance,		// Same as in E_PMLProtectedUnitMode in TC3_PackML_V2 library
+	Manual,				// Same as in E_PMLProtectedUnitMode in TC3_PackML_V2 library
+	Calibration,		// ??
+	Cleaning,			// ??
+	Simulation			// Same as E_PMLProtectedUnitMode.Production, but with GVL_Components.bSIMUMode = TRUE
+) UINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

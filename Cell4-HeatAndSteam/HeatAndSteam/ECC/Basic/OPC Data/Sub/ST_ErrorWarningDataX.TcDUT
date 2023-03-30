@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ErrorWarningDataX" Id="{d482969c-7f37-4901-9c8c-439094efde15}">
+    <Declaration><![CDATA[TYPE ST_ErrorWarningDataX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Error/Warning type. 0: Undefined, 1: Warning, 2: Error'}
+	ErrorWarningType	: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell ID or Station ID'}
+	LocationID			: STRING(30);
+	
+	{attribute 'OPC.UA.DA.Description' := 'Trigger data and time'}
+	DateTime			: STRING;	
+
+	{attribute 'OPC.UA.DA.Description' := 'ID of the error/warning'}
+	ErrorWarningID		: UDINT;	
+
+	{attribute 'OPC.UA.DA.Description' := 'ID of the specific device/tool (optional)'}
+	DeviceID			: STRING(30);	
+
+	{attribute 'OPC.UA.DA.Description' := 'Severity of the event. 0: Undefined, 1: Low, 2: High'}
+	Severity			: UINT;	
+
+	{attribute 'OPC.UA.DA.Description' := 'ID from the native device'}
+	NativeID			: UDINT;	
+
+	{attribute 'OPC.UA.DA.Description' := 'Message from the native device'}
+	NativeMessage		: STRING(80);	
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

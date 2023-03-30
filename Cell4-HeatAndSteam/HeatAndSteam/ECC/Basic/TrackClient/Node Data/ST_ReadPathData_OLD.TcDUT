@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ReadPathData_OLD" Id="{39052aa4-64b1-4676-bf36-d7c03d9baf25}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_ReadPathData_OLD :
+STRUCT
+//	stReadListReturnInfo		: ARRAY [1..1] OF ST_UAReadListReturnInfo;
+//	stPathData					: ST_StatusPath;
+
+	// Array must have the same number as the amount of elements in the status strucuture! 
+	stReadListReturnInfo		: ARRAY [1..4] OF ST_UAReadListReturnInfo;
+	nPathID						: UINT;
+	sCellID						: STRING(30);
+	bPathPresent				: BOOL;
+	nState						: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

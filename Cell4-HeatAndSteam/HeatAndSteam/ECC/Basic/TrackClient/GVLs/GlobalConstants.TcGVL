@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <GVL Name="GlobalConstants" Id="{ab28b2a6-df9e-493d-af41-de4236ee2d51}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	(* Bridge related *)
+	MM_MAX_NUMBER_OF_PATH_ELEMENTS			: UINT		:= 30;			(* The maximum number of paths that the server should handle. OBS!: If mulitible cells owns a path, they will each be defined as a path element. *)						
+	MM_MAX_NUMBER_OF_STATION_ELEMENTS		: UINT		:= 20;			(* The maximum number of stations that the server should handle. OBS!: If mulitible stations are linked to a MM Station, they will each be defined as a station element. *)		
+	MM_MAX_NUMBER_OF_TRAFFICLIGHT_ELEMENTS	: UINT		:= 20;			(* The maximum number of trafficlights that the server should handle. OBS!: If mulitible traffic lights are linked to a MM traffic light, they will each be defined as a traffic light element. *)
+																		(* Maximum in the MagneMotion system is 32 Traffic Lights! *)		
+	MM_MAX_BUFFER_INDEX						: USINT		:= 20;			(* The maximum number of pre-buffer or post-buffer indexes each station is allowed to have. *)		
+	MM_MAX_NUMBER_OF_VEHICLE_ELEMENTS		: UINT		:= 50;			(* The maximum number of vehicles that the track server should handle. *)
+	MM_MAX_NUMBER_OF_VEHICLE_CONFIGURATIONS	: UINT		:= 50;			(* The maximum number of vehicles configurations that the track server should handle. *)
+	MM_MAX_NUMBER_OF_CELL_ELEMENTS			: UINT		:= 20;			(* The maxmimum nubmer of cells in the system *)			
+	MM_MAX_RESERVATIONLIST_ELEMENTS			: UINT		:= 20;			(* The maximum number of reservations in the cell reservation list *)			
+	MM_BUFFER_DISTANCE						: REAL		:= 50.0;		(* Distance between buffer points in pre/post buffers *)
+
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

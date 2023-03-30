@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSConfigurationOP11600" Id="{7d175a4b-2246-4647-863d-3551a8faecf4}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSConfigurationOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for describing if the operation is restricted for specific SKUs'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	SKURestriction				: ST_SKURestriction;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Possible tool amount for the operation'}
+	ToolCapacity				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Possible material amount for the operation'}
+	MaterialCapacity			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current config for the operation'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	CurrentConfiguration		: ST_OutputStationHSCurrentConfigurationOP11600;
+
+	{attribute 'OPC.UA.DA.Description' := 'Next config for the operation'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	UpcomingConfiguration		: ST_OutputStationHSUpcomingConfigurationOP11600;
+
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

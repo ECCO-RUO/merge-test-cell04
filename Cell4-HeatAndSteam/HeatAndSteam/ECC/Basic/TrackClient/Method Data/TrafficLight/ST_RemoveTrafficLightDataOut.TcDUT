@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_RemoveTrafficLightDataOut" Id="{101a8409-6ce6-4b49-a137-0b78a038ddab}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_RemoveTrafficLightDataOut :
+STRUCT
+	// Fixed data for all methods
+	nNumberOfOutputArguments	: UDINT; // determined amount of output parameters
+	nReserved					: ARRAY[1..4] OF BYTE; // Reserved padding
+	
+	// Method specific data
+	stOutputArgInfo				: ARRAY[1..2] OF ST_UAMethodArgInfo; // number of output parameters - M_Mul has 1 output parameter 
+	eStatus						: E_MMServerStatus;
+	sMessage					: STRING;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

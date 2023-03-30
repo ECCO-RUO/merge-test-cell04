@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleDataData" Id="{ec68444d-d5cc-46e4-a2b2-0d3a2df07939}">
+    <Declaration><![CDATA[TYPE ST_UpdateVehicleDataData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_UpdateVehicleData';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 10;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_UpdateVehicleDataDataIn;
+	stOutput					: ST_UpdateVehicleDataDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

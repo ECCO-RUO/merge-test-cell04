@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleMontageDataIn" Id="{3ffaabb2-d1c1-4daa-bb40-b3e913378cab}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_UpdateVehicleMontageDataIn :
+STRUCT
+	eInputType					: E_MMVehicleInputType;
+	sInput						: STRING(30);										(* Identifier for the vehicle to update data for *)
+	bTool						: BOOL;												(* TRUE if a tool is mounted *)
+	sToolID						: STRING(30);										(* Tool ID for the mounted tool *)
+	bMaterial					: BOOL;												(* TRUE if a material is mounted *)
+	sMaterialID					: STRING(30);										(* Material ID for the mounted material *)
+	bReserved					: BOOL;												(* TRUE if the vehicle should be reserved for montage loop *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

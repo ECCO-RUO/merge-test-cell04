@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputTransport" Id="{50cd2a31-a4c4-4cc0-a9c0-2aba8cc30102}">
+    <Declaration><![CDATA[TYPE ST_OutputTransport :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Track status data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Status				: ST_OutputTransportStatus;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track mapping data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Mapping				: ST_OutputTransportMapping;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track configuration data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Configuration		: ST_OutputTransportConfiguration;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	AdditionalData		: ST_OutputTransportAdditionalData;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

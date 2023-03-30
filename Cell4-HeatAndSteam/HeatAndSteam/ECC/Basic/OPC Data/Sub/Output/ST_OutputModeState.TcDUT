@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputModeState" Id="{9b1ba845-1ba7-4315-aad5-7928a7169488}">
+    <Declaration><![CDATA[TYPE ST_OutputModeState :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus			: UINT;
+
+// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Mode State data changed'}
+	DataChange				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Mode State response (0-3)'}
+	ModeStateResponse		: UINT;		// 0: Undefined, 1: Could not handle, 2: Request declined, 3: OK
+
+	{attribute 'OPC.UA.DA.Description' := 'Current mode (0-6)'}
+	CurrentMode				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Requested mode (0-6)'}
+	RequestedMode			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current state (0-17)'}
+	CurrentState			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Requested state (0-17)'}
+	RequestedState			: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

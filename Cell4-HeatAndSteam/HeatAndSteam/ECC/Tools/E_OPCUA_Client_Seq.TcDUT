@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_OPCUA_Client_Seq" Id="{0e0b0c49-40c5-4d14-86be-56f0c79a5532}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_OPCUA_Client_Seq :
+(
+	Idle := 0,
+	CheckData,
+	OpenSession,
+	GetNameSpace,
+	GetNode,
+	Read,
+	GetMethod,
+	CallMethod,
+	ReleaseNode,
+	ReleaseMethod,
+	CloseSession,
+	Disconnect,
+	Done
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

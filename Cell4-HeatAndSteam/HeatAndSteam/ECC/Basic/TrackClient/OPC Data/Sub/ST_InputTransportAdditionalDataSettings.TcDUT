@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputTransportAdditionalDataSettings" Id="{4be2f9f2-ef00-4943-b1bf-dfdf7b705e41}">
+    <Declaration><![CDATA[TYPE ST_InputTransportAdditionalDataSettings :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Transport Status update Enable'}
+	DataChangeStatusTransportStatusEnable	: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Transport Mapping update Enable'}
+	DataChangeStatusTransportMappingEnable	: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

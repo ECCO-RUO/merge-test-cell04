@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <EnumerationTextList Name="E_MMVehicleInputType" Id="{ca9eeba8-1c9b-4181-ad08-f02832e25ced}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_MMVehicleInputType :
+(
+	eMMVehicleInputType_VehicleID			:= 0,	// MagneMotion ID
+	eMMVehicleInputType_CarrierID			:= 1,	// RFID scanned ID from Carrier
+	eMMVehicleInputType_LastID 				:= 2,	// RFID scanned Id from Last
+	eMMVehicleInputType_ArticleID 			:= 3,
+	eMMVehicleInputType_LastTypeID			:= 4,
+	eMMVehicleInputType_StationID			:= 5,
+	eMMVehicleInputType_CellID				:= 6,
+	eMMVehicleInputType_EmptyVehicles		:= 7,
+	eMMVehicleInputType_ReleasedVehicles	:= 8,
+	eMMVehicleInputType_AllVehicles			:= 9
+);
+END_TYPE
+]]></Declaration>
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="TextListEnumerationTextListObject">
+          <l n="TextList" t="ArrayList" cet="TextListRow">
+            <o>
+              <v n="TextID">"eMMVehicleInputType_VehicleID"</v>
+              <v n="TextDefault">"0"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_CarrierID"</v>
+              <v n="TextDefault">"1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_LastID"</v>
+              <v n="TextDefault">"2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_ArticleID"</v>
+              <v n="TextDefault">"3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_LastTypeID"</v>
+              <v n="TextDefault">"4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_StationID"</v>
+              <v n="TextDefault">"5"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_CellID"</v>
+              <v n="TextDefault">"6"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_EmptyVehicles"</v>
+              <v n="TextDefault">"7"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_ReleasedVehicles"</v>
+              <v n="TextDefault">"8"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMVehicleInputType_AllVehicles"</v>
+              <v n="TextDefault">"9"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">""</v>
+              <v n="TextDefault">""</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+          </l>
+          <l n="Languages" t="ArrayList" />
+          <v n="GuidInit">{e00ee5be-5360-42ab-8f8b-c44064a016b0}</v>
+          <v n="GuidReInit">{a7694609-2060-442e-be12-71ab4c24657d}</v>
+          <v n="GuidExitX">{6a96e907-a800-4f95-be13-5a0a3989109f}</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="String">System.String</Type>
+        <Type n="TextListEnumerationTextListObject">{4b60233c-f940-4beb-b331-82133b520151}</Type>
+        <Type n="TextListRow">{53da1be7-ad25-47c3-b0e8-e26286dad2e0}</Type>
+      </TypeList>
+    </XmlArchive>
+  </EnumerationTextList>
+</TcPlcObject>

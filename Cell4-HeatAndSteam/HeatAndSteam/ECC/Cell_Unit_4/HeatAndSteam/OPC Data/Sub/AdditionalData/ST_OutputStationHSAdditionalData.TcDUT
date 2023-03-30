@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSAdditionalData" Id="{70e61e1e-381b-487a-ac9f-9bc64ccfc65b}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSAdditionalData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'General'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General					: ST_OutputStationHSAdditionalDataGeneral;
+
+	(* Might not be the same struct *)
+	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 1 additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600					: ST_OuputStationHSAdditionalDataOP11600;
+
+//	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 2 additional data'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601					: ST_OuputStationHSAdditionalDataOP11601;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

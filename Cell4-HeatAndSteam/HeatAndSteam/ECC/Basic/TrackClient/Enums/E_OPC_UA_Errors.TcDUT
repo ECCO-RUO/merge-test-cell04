@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_OPC_UA_Errors" Id="{cf8f8703-a28c-4582-ab65-515b58914c32}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE E_OPC_UA_Errors :
+(
+	NO_ERROR						:= 16#00000000, // No error
+	DEVICE_INVALIDSIZE				:= 16#00000705, // Parameter size not correct
+	DEVICE_INVALIDDATA				:= 16#00000706, // Invalid parameter values
+	DEVICE_NOMEMORY					:= 16#0000070A, // Not enough memory
+
+	UAC_E_FAIL						:= 16#E4DD0001, // UA service call failed
+	UAC_E_CONNECTED					:= 16#E4DD0100, // Server already connected
+	UAC_E_CONNECT					:= 16#E4DD0101, // General error when establishing a connection
+	UAC_E_UASECURITY				:= 16#E4DD0102, // UA security could not be set up
+	UAC_E_ITEMEXISTS				:= 16#E4DD0103, // Element ID already exists
+	UAC_E_ITEMNOTFOUND				:= 16#E4DD0104, // Element does not exist
+	UAC_E_ITEMTYPE					:= 16#E4DD0105, // Invalid or unsupported item type
+	UAC_E_CONVERSION				:= 16#E4DD0106, // Variable types cannot be converted
+	UAC_E_SUSPENDED					:= 16#E4DD0107, // Device hangs. Please try again later...
+	UAC_E_TYPE_NOT_SUPPORTED		:= 16#E4DD0108, // Conversion variable type is not supported.
+	UAC_E_NSNAME_NOTFOUND			:= 16#E4DD0109, // No namespace with the specified name found.
+	UAC_E_CONNECT_NOTFOUND			:= 16#E4DD0110, // Connection failed: Target host could not be found.
+	UAC_E_TIMEOUT					:= 16#E4DD0111, // Timeout: i.e. target host does not respond
+	UAC_E_INVALIDHDL				:= 16#E4DD0112, // Session handle invalid
+	UAC_E_INVALIDNODEID				:= 16#E4DD0113, // UA node ID unknown
+	UAC_E_INVAL_IDENTIFIER_TYPE		:= 16#E4DD0114, // Identifier type of UaNodeId invalid
+	UAC_E_IDENTIFIER_NOTSUPP		:= 16#E4DD0115, // Identifier type UaNodeId is not supported
+	UAC_E_INVAL_NODE_HDL			:= 16#E4DD0116, // Invalid node handle
+	UAC_E_UAREADFAILED				:= 16#E4DD0117, // UA read failed for unknown reasons
+	UAC_E_UAWRITEFAILED				:= 16#E4DD0118, // UA write failed for unknown reasons
+	UAC_E_INVAL_NODEMETHOD_HDL		:= 16#E4DD0119, // Invalid method handle
+	UAC_E_CALL_FAILED				:= 16#E4DD011A, // Call failed, cause unknown
+	UAC_E_CALLDECODE_FAILED			:= 16#E4DD011B, // Successful call, decoding return value failed
+	UAC_E_NOTMAPPEDTYPE				:= 16#E4DD011C, // Unassigned data type in return value
+	UAC_E_CALL_FAILED_BADINTERNAL	:= 16#E4DD011D, // Call failed with UA_BadInternal
+	UAC_E_METHODIDINVALID			:= 16#E4DD011E, // Unknown MethodID (returned on call, even if provided by GetMethodHdl)
+	UAC_E_TOOMUCHDIM				:= 16#E4DD011F, // Method call has returned parameters with more than 3 dimensions; not supported.
+	UAC_E_CALL_FAILED_INVALIDARG	:= 16#E4DD0120, // Call failed with OpcUa_BadInvalidArgument
+	UAC_E_CALL_FAILED_TYPEMISMATCH	:= 16#E4DD0121, // Call failed with UAC_E_CALL_FAILED_TYPEMISMATCH
+	UAC_E_CALL_FAILED_OUTOFRANGE	:= 16#E4DD0122, // Call failed with UAC_E_CALL_FAILED_OUTOFRANGE
+	UAC_E_CALL_FAILED_BADSTRUCTURE	:= 16#E4DD0123, // Call failed with OpcUa_BadStructureMissing
+	UAC_E_CALL_TYPEMISMATCH_OUTPARAM:= 16#E4DD0124, // Call successful, but type of output information provided does not match
+	UAC_E_NONVALIDTYPEINFO			:= 16#E4DD0125, // Node has insufficient type information
+	UAC_E_INVALIDATTRIBID			:= 16#E4DD0126, // Access to invalid node attribute
+	UAC_E_NOTSUPPORTED				:= 16#E4DD0128, // The command is not supported by the connected UaServer, e.g. when calling UA_HistoryUpdate.
+	UAC_E_INVALID_ARRAY_LENGTH		:= 16#E4DE0100, // An invalid array length not matching DataValueCount was assigned to UA_HistoryUpdate.
+	UAC_E_INVALID_DATASIZE			:= 16#E4DE0101, // A data value with an invalid data type size was assigned to UA_HistoryUpdate. All assigned DataValues must be of the same data type.
+	UAC_E_SUBERROR					:= 16#E4DE0102 // A lower-level error was output for at least one of the transferred data values. See ValueErrorIDs at UA_HistoryUpdate.
+		
+) UDINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_AI" Id="{efa953f3-1753-412a-a0fe-7e7e6438cf7f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_AI EXTENDS FB_Basic
+VAR_OUTPUT
+	rValue		: LREAL;
+END_VAR
+VAR
+	fbLinTrafo	: FB_LIN_TRAFO;
+
+// HW
+	Status AT %I* : WORD;		// Status word from IO module
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Input I/O signal (RAW)'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	Value AT %I* : INT;			// Value from IO module
+	State AT %I* : WORD := 8;	// State from Ethercat module
+	AdsAdrr AT %I* : AMSADDR;	// ADS address from EtherCAT module
+
+END_VAR
+VAR PERSISTENT
+	rScaleMax	: LREAL := 100;
+	rScaleMin	: LREAL := -100;
+	bUseLoLo	: BOOL;
+	rLoLo		: LREAL := -100;
+	bUseLo		: BOOL;
+	rLo			: LREAL := -100;
+	bUseHi		: BOOL;
+	rHi			: LREAL := 100;
+	bUseHiHi	: BOOL;
+	rHiHi		: LREAL := 100;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Run parent FB
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="M_AutoMode" Id="{b2b1c127-2f55-4488-b638-03b66eed37fa}">
+      <Declaration><![CDATA[METHOD PROTECTED M_AutoMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog inputs automatic mode
+// Executed from parent FB_Basic
+
+IF (P_bEnable) THEN
+	rActualValue := rAutoValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+
+rValue := rActualValue;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorHandling" Id="{12beca82-f5ff-4d06-a59e-cdd55defb28a}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorHandling : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Error handling
+IF (bCmdEnable) THEN
+	IF (NOT P_bManualMode) THEN
+		// Hardware errors
+		IF (NOT F_ECat_OK(State)) THEN
+			// EtherCAT state
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_ECat_Not_OP;
+		ELSIF (Status.14) THEN
+			// Module internal error
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_Internal_Error;
+		ELSIF (Status.0) THEN
+			// Underrange
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_UnderRange;
+		ELSIF (Status.1) THEN
+			// Overrange
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_OverRange;
+		ELSIF (Status.2) THEN
+			// Limit1
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_Limit1;
+		ELSIF (Status.2) THEN
+			// Limit2
+			bStaError := TRUE;
+			eStaErrorID := E_ComponentErrors.HW_Limit2;
+		END_IF
+	END_IF
+	
+	// Software errors
+	IF (bUseHiHi AND (rActualValue > rHiHi)) THEN
+		bStaError := TRUE;
+		eStaErrorID := E_ComponentErrors.SW_HiHi;
+	END_IF
+	IF (bUseHi AND (rActualValue > rHi)) THEN
+		bStaWarning := TRUE;
+		eStaErrorID := E_ComponentErrors.SW_Hi;
+	END_IF
+	IF (bUseLoLo AND (rActualValue < rLolo)) THEN
+		bStaError := TRUE;
+		eStaErrorID := E_ComponentErrors.SW_LoLo;
+	END_IF
+	IF (bUseLo AND (rActualValue < rLo)) THEN
+		bStaWarning := TRUE;
+		eStaErrorID := E_ComponentErrors.SW_Lo;
+	END_IF
+	
+ELSE
+	bStaError := FALSE;
+	bStaWarning := FALSE;
+	eStaErrorID := E_ComponentErrors.OK;
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{9a5570cc-4db4-4843-b32f-e30cfb218b0f}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Init
+
+bCmdEnable := TRUE;
+bInitDone := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ManualMode" Id="{41690e2a-c37a-49f3-a759-2a58c9bcc661}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ManualMode : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog inputs manual mode
+// Executed from parent FB_Basic
+
+rManualValue := LIMIT(rScaleMin, rManualValue, rScaleMax);
+
+IF (P_bEnable) THEN
+	rActualValue := rManualValue;
+ELSE
+	rActualValue := 0.0;
+END_IF
+
+rValue := rActualValue;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{126cb09e-1ac5-4fb3-a78b-f2e155c315b1}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog inputs run
+// Executed from parent FB_Basic
+
+// Update IO 
+
+fbLinTrafo(	rIN := Value,
+			rIN_MIN := -32767,
+			rIN_MAX := 32767,
+			rOUT_MIN := rScaleMin,
+			rOUT_MAX := rScaleMax,
+			rOUT => rAutoValue,
+			bERROR =>	);
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_AI">
+      <LineId Id="15" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="151" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AI.M_AutoMode">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="18" Count="2" />
+      <LineId Id="22" Count="1" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AI.M_ErrorHandling">
+      <LineId Id="6" Count="1" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="8" Count="26" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="35" Count="23" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AI.M_Init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_AI.M_ManualMode">
+      <LineId Id="8" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="28" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_AI.M_Run">
+      <LineId Id="6" Count="1" />
+      <LineId Id="19" Count="1" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="6" />
+      <LineId Id="22" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

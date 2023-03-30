@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="F_NewDeviceDataX" Id="{2886e9bf-693c-4722-a0c5-f28c8d4d573a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_NewDeviceDataX : ST_DeviceDataX
+VAR_INPUT
+	sDeviceID			: STRING;			// The ID of the specific device
+	sDeviceName			: STRING;			// The descriptive name of the device
+	iDataID				: UDINT;			// The ID of the operational data
+	sDataName			: STRING;			// The descriptive name of the operational data
+	eUnit				: E_Units;	// The symbolic description of the measuring unit
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Create structure
+
+F_NewDeviceDataX.DeviceID := sDeviceID;
+F_NewDeviceDataX.DeviceName :=sDeviceName;
+F_NewDeviceDataX.DataID := iDataID;
+F_NewDeviceDataX.DataName := sDataName;
+F_NewDeviceDataX.UnitID := Units.Code(eUnit);	// Extracts common unit code from pre-defined unit types
+F_NewDeviceDataX.Unit := Units.Text(eUnit);		// Extracts common unit symbol from pre-definded unit types
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_NewDeviceDataX">
+      <LineId Id="28" Count="1" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="30" Count="5" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

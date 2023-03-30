@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_VehicleMoveState" Id="{d1dfae83-9e69-45ca-a76b-5fd2e4a9db3a}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_VehicleMoveState :
+(
+	Unknown := 0,
+	Idle,
+	Pending,
+	Accepted,
+	Moving,
+	Complete,
+	ErrorLocation
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

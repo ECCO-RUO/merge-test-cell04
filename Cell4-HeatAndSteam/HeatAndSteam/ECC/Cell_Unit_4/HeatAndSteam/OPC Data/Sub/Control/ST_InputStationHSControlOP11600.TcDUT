@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSControlOP11600" Id="{d1e0e0d3-7193-4754-8e8d-adf8e9ac1034}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSControlOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'OP11600 - Idle temperature C°'}
+	IdleTemperature				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'OP11600 - Idle Fan speed'}
+	IdleFanSpeed				: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

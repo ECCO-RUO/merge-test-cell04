@@ -1,0 +1,488 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_OPC_Cell_Unit_4" Id="{4d74fb34-c831-4b88-ab1b-d763a7c598f7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_OPC_Cell_Unit_4 //EXTENDS FB_OPC_Basic IMPLEMENTS ITF_OPC_Basic
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'Cell 4 bridge output data'}
+	{attribute 'OPC.UA.DA.DisplayName' := 'Cell 4 bridge output data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Output			: ST_Output;
+
+END_VAR
+VAR_OUTPUT PERSISTENT
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Cell 4 bridge input data'}
+	{attribute 'OPC.UA.DA.DisplayName' := 'Cell 4 bridge input data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Input			: ST_Input;
+
+END_VAR
+VAR
+	bInitDone					: BOOL;
+	bInhibitOPCUpdate			: BOOL;		// Set to TRUE to stop updating values from OPC structures
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Init values
+M_Init();
+
+// Data change status handling for cell
+IF (NOT Input.Cell.AdditionalData.Settings.DataChangeStatusModeStateEnable) THEN
+	Input.Cell.AdditionalData.MESHandShakes.DataChangeStatusModeState := Output.Cell.ModeState.DataChange;
+END_IF
+IF (NOT Input.Cell.AdditionalData.Settings.DataChangeStatusOEEEnable) THEN
+	Input.Cell.AdditionalData.MESHandShakes.DataChangeStatusOEE := Output.Cell.OEE.DataChange;
+END_IF
+IF (NOT Input.Cell.AdditionalData.Settings.DataChangeStatusErrorWarningEnable) THEN
+	Input.Cell.AdditionalData.MESHandShakes.DataChangeStatusErrorWarning := Output.Cell.ErrorWarning.DataChange;
+END_IF
+IF (NOT Input.Cell.AdditionalData.Settings.DataChangeStatusOperationalDataEnable) THEN
+	Input.Cell.AdditionalData.MESHandShakes.DataChangeStatusOperationalData := Output.Cell.OperationalData.DataChange;
+END_IF
+	
+// Data change status handling for Station 1
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusModeStateEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusModeState := Output.Station.Station1.ModeState.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusJobDataEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusJobData := Output.Station.Station1.JobData.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusOEEEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusOEE := Output.Station.Station1.OEE.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusErrorWarningEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusErrorWarning := Output.Station.Station1.ErrorWarning.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusCurrentConfigurationEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusCurrentConfiguration := Output.Station.Station1.CurrentConfiguration.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusUpcomingConfigurationEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusUpcomingConfiguration := Output.Station.Station1.UpcomingConfiguration.DataChange;
+END_IF
+IF (NOT Input.Station.Station1.AdditionalData.Settings.DataChangeStatusOperationalDataEnable) THEN
+	Input.Station.Station1.AdditionalData.MESHandShakes.DataChangeStatusOperationalData := Output.Station.Station1.OperationalData.DataChange;
+END_IF
+
+// Data change status handling for Station 1
+IF (NOT Input.Transport.AdditionalData.Settings.DataChangeStatusTransportStatusEnable) THEN
+	Input.Transport.AdditionalData.MESHandShakes.DataChangeStatusTransportStatus := Output.Transport.Status.DataChange;
+END_IF
+IF (NOT Input.Transport.AdditionalData.Settings.DataChangeStatusTransportMappingEnable) THEN
+	Input.Transport.AdditionalData.MESHandShakes.DataChangeStatusTransportMapping := Output.Transport.Mapping.DataChange;
+END_IF
+
+
+]]></ST>
+    </Implementation>
+    <Method Name="M_init" Id="{6f313a76-2463-4f2b-b7eb-952d3dfcb38d}">
+      <Declaration><![CDATA[METHOD M_init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (NOT bInitDone) THEN
+	bInitDone := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bCellLight" Id="{4fa91b4a-4b9a-45ab-9a63-8fd3dfcd301a}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bCellLight : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6584cd07-c318-41f1-9995-465495b08f18}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bCellLight := Input.Cell.Control.EnableCellLight;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{9434322f-77b6-452e-a831-8b49fad97eb3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.bCellLight := P_bCellLight;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bDoors" Id="{cb9dafbb-9216-4814-9a28-da9942595914}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bDoors : BOOL]]></Declaration>
+      <Set Name="Set" Id="{5fdea3c3-4d33-48c0-af7d-78f7143898a4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.bDoors := P_bDoors;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bEStop" Id="{350b058e-4e13-4a29-b9e6-0ad151f03770}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bEStop : BOOL]]></Declaration>
+      <Get Name="Get" Id="{7bdbbbdf-be97-4e78-8d7a-1a7bb9a2a39b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bEStop := Output.Cell.OperationalData.General.bEStop;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{ce21554d-f274-44c7-900e-dfccfd707f12}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.bEStop := P_bEStop;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bLockDoors" Id="{3bb44a5e-7ebd-418b-8ab2-3e2d578ec3a7}">
+      <Declaration><![CDATA[PROPERTY P_bLockDoors : BOOL]]></Declaration>
+      <Get Name="Get" Id="{ad8c671c-8ab7-4170-b94c-c542a5f785c1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bLockDoors := Input.Cell.Control.LockDoors;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_bResetEStop" Id="{91068d9d-4e8c-4c67-86d0-39982401fc21}">
+      <Declaration><![CDATA[PROPERTY P_bResetEStop : BOOL]]></Declaration>
+      <Get Name="Get" Id="{63e7abcd-3843-4346-a77d-dd78066c01d5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bResetEStop := Input.Cell.Control.ResetEStop;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_bStationCommOK" Id="{091fc529-1f8a-4fa2-bd09-76bad4223958}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bStationCommOK : BOOL]]></Declaration>
+      <Get Name="Get" Id="{40db9b0d-e0d5-4593-9962-fd17bb6960b0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bStationCommOK := Output.Cell.OperationalData.General.bStationCommOK;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{c3e54d85-b146-499c-aa16-569f2b9f3e8f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.bStationCommOK := P_bStationCommOK;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bUnlockDoors" Id="{b0ecb8c8-8a65-4e16-b19e-047191b041ea}">
+      <Declaration><![CDATA[PROPERTY P_bUnlockDoors : BOOL]]></Declaration>
+      <Get Name="Get" Id="{bcbce038-3d41-4b7a-b572-2289af306807}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bUnlockDoors := Input.Cell.Control.UnlockDoors;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_iHeartBeat" Id="{10f72142-3ba4-4e96-a702-aac9a1d28238}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_iHeartBeat : UINT]]></Declaration>
+      <Get Name="Get" Id="{761ad27f-8d40-48c2-9bb0-d5af87022bd8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_iHeartBeat := Input.Header.HeartBeat;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e75fdd67-66d5-4b08-b0d9-4744dfc9d9df}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Header.HeartBeat := P_iHeartBeat;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rCPUFrequency" Id="{17e740b9-626f-477d-890e-56660cb23ba7}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rCPUFrequency : REAL]]></Declaration>
+      <Get Name="Get" Id="{3cf56568-335a-4882-a976-0ea4abf78015}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rCPUFrequency := Output.Cell.OperationalData.General.rCPUFrequency;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{99ec6272-9aec-4f2b-83db-80aef5848077}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.rCPUFrequency := P_rCPUFrequency;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rOSCPULoad" Id="{f14f4591-08d8-4c73-bb92-dfad259bbece}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rOSCPULoad : REAL]]></Declaration>
+      <Get Name="Get" Id="{81ade830-5f46-47d2-a3a2-98ddb303c4a8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rOSCPULoad := Output.Cell.OperationalData.General.rOSCPULoad;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{b764e910-b8ea-4a48-ac7f-81a31250ed1c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.rOSCPULoad := P_rOSCPULoad;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rPLCCPULoad" Id="{ba56f122-56a6-4d26-8dd7-f97cfccab867}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rPLCCPULoad : REAL]]></Declaration>
+      <Get Name="Get" Id="{a41f06db-47c3-46ad-93a0-a42e6725adeb}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rPLCCPULoad := Output.Cell.OperationalData.General.rPLCCPULoad;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{6ddedb1e-2df8-4f25-bb28-899f6be911d7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.rPLCCPULoad := P_rPLCCPULoad;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rPLCCPUTemp" Id="{c0e114c6-a8cd-481f-9592-c60b837c1671}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rPLCCPUTemp : REAL]]></Declaration>
+      <Get Name="Get" Id="{423410fb-316c-4d3c-b9c9-b9e0ba8969f2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rPLCCPUTemp := Output.Cell.OperationalData.General.rPLCCPUTemp;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{8b625dce-8509-476a-a1c8-22b1cba500e9}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.rPLCCPUTemp := P_rPLCCPUTemp;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rSafetyCPUTemp" Id="{78cd3f2e-eb07-4798-a54b-a21babfcc389}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rSafetyCPUTemp : REAL]]></Declaration>
+      <Get Name="Get" Id="{6a171e82-4db3-48e9-a2ca-5ac44be5d338}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_rSafetyCPUTemp := Output.Cell.OperationalData.General.rSafetyCPUTemp;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{67f26075-5874-42bc-a5c7-7c3132553685}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.rSafetyCPUTemp := P_rSafetyCPUTemp;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sPLCMBSerial" Id="{03a400ab-616a-44eb-8e3a-d18f1f32db8a}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sPLCMBSerial : STRING]]></Declaration>
+      <Get Name="Get" Id="{ea685a61-5322-4e26-b6dd-1c9e18451859}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[
+P_sPLCMBSerial := Output.Cell.OperationalData.General.sPLCMBSerial;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{087dd1c5-e8fb-49e5-aba8-a23b3d08c3b0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.sPLCMBSerial := P_sPLCMBSerial;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sPLCSerial" Id="{040ab2e5-db73-4255-8a83-6b4052337d62}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sPLCSerial : STRING]]></Declaration>
+      <Get Name="Get" Id="{9aa67b5c-4ffb-4504-baf8-ad8b7c009692}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sPLCSerial := Output.Cell.OperationalData.General.sPLCSerial;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{2183e5e5-e35e-432a-b5e9-7e3002b5cf47}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Output.Cell.OperationalData.General.sPLCSerial := P_sPLCSerial;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_OPC_Cell_Unit_4">
+      <LineId Id="46" Count="2" />
+      <LineId Id="113" Count="43" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="89" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.M_init">
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bCellLight.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bCellLight.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bDoors.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bEStop.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bEStop.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bLockDoors.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bResetEStop.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bStationCommOK.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bStationCommOK.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_bUnlockDoors.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_iHeartBeat.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_iHeartBeat.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rCPUFrequency.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rCPUFrequency.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rOSCPULoad.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rOSCPULoad.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rPLCCPULoad.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rPLCCPULoad.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rPLCCPUTemp.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rPLCCPUTemp.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rSafetyCPUTemp.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_rSafetyCPUTemp.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_sPLCMBSerial.Get">
+      <LineId Id="6" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_sPLCMBSerial.Set">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_sPLCSerial.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPC_Cell_Unit_4.P_sPLCSerial.Set">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

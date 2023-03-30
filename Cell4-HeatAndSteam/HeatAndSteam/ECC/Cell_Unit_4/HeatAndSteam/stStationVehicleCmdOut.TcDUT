@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="stStationVehicleCmdOut" Id="{49f31981-811d-4bfe-8fd9-60b4caba4ef5}">
+    <Declaration><![CDATA[TYPE stStationVehicleCmdOut :
+STRUCT
+	bCmdStart			: BOOL;
+	iVehicleID			: UINT;
+	iBufferDestination 	: UINT;
+	iVehilceVelocity	: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

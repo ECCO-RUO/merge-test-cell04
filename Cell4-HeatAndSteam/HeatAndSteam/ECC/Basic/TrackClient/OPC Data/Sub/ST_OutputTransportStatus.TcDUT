@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputTransportStatus" Id="{0fa9ea82-db09-4f9a-8c62-42a27969faba}">
+    <Declaration><![CDATA[TYPE ST_OutputTransportStatus :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change Acknowledge (0-255)'}
+	ChangeAcknowledge			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change Status (0-255)'}
+	ChangeStatus				: UINT;
+
+// Data part
+	{attribute 'OPC.UA.DA.Description' := 'Data Changed (0-65536)'}
+	DataChange					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'The request is valid'}
+	ValidRequest				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Last handled ticket (0-65536)'}
+	LatestTicket				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Number of carriers under this bridge responsibility (0-1000)'}
+	NumberOfCarriers			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Carrier Status'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Carrier						: ARRAY [1..1000] OF ST_CarrierX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station buffer Status'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationBuffer				: ARRAY [1..5] OF ST_StationBufferX;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

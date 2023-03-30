@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputCellSustainabilityData" Id="{22fab066-b962-47e1-9c2a-c104e7d5b90f}">
+    <Declaration><![CDATA[TYPE ST_OutputCellSustainabilityData :
+STRUCT
+	// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus				: UINT;
+
+	// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Data has changed (0-65536)'}
+	DataChange					: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current sustainability data of devices'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Energy						: ARRAY [1..200] OF ST_DeviceDataX;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current sustainability data of devices'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Fluid						: ARRAY [1..200] OF ST_DeviceDataX;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current sustainability data of devices'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Exhaust						: ARRAY [1..200] OF ST_DeviceDataX;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

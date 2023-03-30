@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSAdditionalDataSettings" Id="{8f9e361b-e159-4164-93a8-5d41b580eaad}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSAdditionalDataSettings :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station ModeState update Enable'}
+	DataChangeStatusModeStateEnable				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station JobData update Enable'}
+	DataChangeStatusJobDataEnable				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station OEE update Enable'}
+	DataChangeStatusOEEEnable					: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station ErrorWarning update Enable'}
+	DataChangeStatusErrorWarningEnable			: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Current Configuration update Enable'}
+	DataChangeStatusCurrentConfigurationEnable	: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Upcoming Configuration update Enable'}
+	DataChangeStatusUpcomingConfigurationEnable	: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station Operationaldata update Enable'}
+	DataChangeStatusOperationalDataEnable		: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

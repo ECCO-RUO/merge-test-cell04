@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputStationHSConfiguration" Id="{2c73fea9-036a-45fd-90f8-80a9b6c94fb6}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSConfiguration :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	{attribute 'TcIgnorePersistent'}
+	ChangeRequest				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Configuration type (OPxxxxx or General)'}
+	{attribute 'TcIgnorePersistent'}
+	ConfigurationType			: STRING(7);
+	
+	{attribute 'OPC.UA.DA.Description' := 'Station general configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General						: ST_InputStationHSConfigurationGeneral;
+	
+		(* Might not be the same struct *)
+	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 1 Configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600						: ST_InputStationHSConfigurationOP11600;
+
+//	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 2 Configuration'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601						: ST_InputStationHSConfigurationOP11601;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

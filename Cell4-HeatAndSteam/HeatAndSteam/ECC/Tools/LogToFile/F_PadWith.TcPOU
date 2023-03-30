@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="F_PadWith" Id="{48352928-08b4-43fd-85f0-1f7fbe59f1ba}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_PadWith : STRING
+VAR_INPUT
+	in_Int:INT;
+	in_NumOfBytes:INT;
+	in_PadWith:STRING;
+END_VAR
+VAR
+	i:INT;
+	TempString:STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[TempString := '';
+
+FOR i := 1 TO in_NumOfBytes - LEN(INT_TO_STRING(in_INT)) DO
+	TempString := CONCAT(TempString, in_PadWith);
+END_FOR
+
+F_PadWith := CONCAT(TempString, INT_TO_STRING(in_INT));]]></ST>
+    </Implementation>
+    <LineIds Name="F_PadWith">
+      <LineId Id="21" Count="5" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

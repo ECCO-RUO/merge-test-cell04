@@ -1,0 +1,582 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_EMS_HS" Id="{1e7d32d3-1fc5-459f-b7ae-c1510d53e863}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_EMS_HS
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+// ModBus data structures
+	uRead			: U_EMS_HS_Read;
+	uWrite			: U_EMS_HS_Write;
+	
+	// Modbus reading
+	tonMBRead		: TON;		// Timer to handle reading requests from device
+	fbMBRead		: Tc2_ModbusSrv.FB_MBReadRegs;	// FB for reading modbus register(s)
+	bMBRead_Busy	: BOOL;
+	bMBRead_Error	: BOOL;
+	nMBRead_ErrorID	: UDINT;
+	cbMBRead_Read	: UDINT;
+	trigMBReadError	: R_TRIG;
+	fbGetReadTime	: NT_GetTime;
+	trigReadDone	: F_TRIG;
+	tsLastRead		: TIMESTRUCT;
+	iReads			: UINT;
+	iErrorReads		: UINT;
+
+// Modbus writing
+	tonMBWrite		: TON;		// Timer to handle writing requests to device
+	fbMBWrite		: Tc2_ModbusSrv.FB_MBWriteRegs;	// FB for writing modbus register(s)
+	bMBWrite_Busy	: BOOL;
+	bMBWrite_Error	: BOOL;
+	nMBWrite_ErrorID: UDINT;
+	trigWriteDone	: F_TRIG;
+	trigMBWriteError: R_TRIG;
+	fbGetWriteTime	: NT_GetTime;
+	tsLastWrite		: TIMESTRUCT;
+	iWrites			: UINT;
+	iErrorWrites	: UINT;
+	
+//Local vars
+	bAbortLocal 	: BOOL;
+	bManualLocal	: BOOL;
+	bProductionLocal: BOOL;
+// Simulation
+	bSimMode		: BOOL;	// TRUE if simulation should be used (no start device, no setpoints to device)
+END_VAR
+VAR PERSISTENT
+	sIPAddr			: STRING(15);	// Station IP address
+	tTimeout		: TIME := T#5S;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Simulation mode ?
+// Only perform communication if NOT in simulation mode
+IF (NOT M_Simulation()) THEN
+
+	// Device controller
+	M_ModBusRead(	rInterval := 1,
+					wAddress := 2501,
+					wNoOfRegisters := 23,
+					pbDestAddress := ADR(uRead.aWords),
+					dwDestSize := SIZEOF(uRead.aWords)	);
+	
+	M_ModBusWrite(	rInterval := 1, 
+					wAddress := 2601,
+					wNoOfRegisters := 8,	
+					pbSrcAddress := ADR(uWrite.aWords),
+					dwSrcSize := SIZEOF(uWrite.aWords)	);
+END_IF
+
+// Local state changes
+IF (uRead.stVars.eMachStatus = E_EMS_HS_Status.ALARM) THEN
+	bAbortLocal := TRUE;
+ELSIF (uRead.stVars.stStates.ALARM_IN_PROGRESS) THEN
+	bAbortLocal := TRUE;
+ELSIF (NOT uRead.stVars.stStates.REMOTE_MODE) THEN
+	bAbortLocal := TRUE;
+ELSE
+	bAbortLocal := FALSE;
+END_IF
+IF (NOT uRead.stVars.stStates.REMOTE_MODE) THEN
+	bManualLocal := TRUE;
+	bProductionLocal := FALSE;
+ELSE
+	bProductionLocal := TRUE;
+	bManualLocal := FALSE;
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="M_CmdNeutral" Id="{df67d31e-796c-48bf-9279-1a2c3e34719f}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CmdNeutral : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[uWrite.stVars.stCommands.REMOTE_START := FALSE;
+uWrite.stVars.stCommands.REMOTE_STOP := FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Cmdreset" Id="{a7d6c347-a00b-4483-9ff7-2f8ac31f3725}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Cmdreset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CmdStart" Id="{f88e3817-dcb4-4b7e-b186-fd80a0644fe2}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CmdStart : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[uWrite.stVars.stCommands.REMOTE_START := TRUE;
+uWrite.stVars.stCommands.REMOTE_STOP := FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CmdStop" Id="{499747e8-b3b8-4d1d-bd40-dd2916fabc16}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CmdStop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[uWrite.stVars.stCommands.REMOTE_START := FALSE;
+uWrite.stVars.stCommands.REMOTE_STOP := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ModBusRead" Id="{1d805d5b-72cb-4562-b8f3-7b5f95a6d3c6}">
+      <Declaration><![CDATA[/// Read modbus TCP register(s)
+METHOD PROTECTED M_ModBusRead : BOOL
+VAR_INPUT
+	rInterval		: REAL;
+	wAddress		: WORD;				// Register address to read
+	wNoOfRegisters	: WORD;				// Register to read from station
+	pbDestAddress	: POINTER TO BYTE;	// Address of mem to place read data
+	dwDestSize		: DWORD;			// Size of mem to place read data
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Timer
+tonMBRead(	IN := NOT tonMBRead.Q,
+			PT := REAL_TO_TIME(rInterval * 1000.0),
+			Q => 	);
+
+// Read data from device via. modbus TCP
+fbMBRead(	sIPAddr:= sIPAddr, 				// Station IP address
+			nTCPPort:= MODBUS_TCP_PORT, 	// Modbus TCP port (normally 502)
+			nUnitID:= 1,//16#FF, 			// If a device is addressed directly via TCP/IP, this value must be 16#FF.
+			nQuantity:= wNoOfRegisters,		// Number of words (registers) to read 
+			nMBAddr:= wAddress - 1,			// Addres of registers to read ( -1 needed ) 
+			cbLength:= dwDestSize,			// Contains the max. byte size of the destination buffer. The minimum buffer byte size must be: nQuantity * 2.
+			pDestAddr:= pbDestAddress, 		// Address of the destination buffer into which the data are to be read.
+			bExecute:= tonMBRead.Q,			// Trig reading
+			tTimeout:= tTimeout, 			// States the length of the timeout that may not be exceeded by execution of the ADS command
+			bBusy=> bMBRead_Busy, 
+			bError=> bMBRead_Error, 
+			nErrId=> , 
+			cbRead=> cbMBRead_Read);
+
+// Last read time
+trigReadDone(CLK := (fbMBRead.bBusy AND NOT fbMBRead.bError));
+trigMBReadError(CLK := bMBRead_Error);
+IF (trigReadDone.Q) THEN
+	iReads := iReads + 1;
+END_IF
+IF (trigMBReadError.Q) THEN
+	iErrorReads := iErrorReads + 1;
+	nMBRead_ErrorID := fbMBRead.nErrId;
+END_IF
+fbGetReadTime(	NETID:= '', 
+				START:= trigReadDone.Q,
+				TMOUT:= T#5S, 
+				BUSY=> , 
+				ERR=> , 
+				ERRID=> , 
+				TIMESTR=> tsLastRead);
+
+// Station communication status
+M_ModBusRead := (cbMBRead_Read = wNoOfRegisters * 2);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ModBusWrite" Id="{ad7e0026-c981-45e4-82b3-0ad200bde4c2}">
+      <Declaration><![CDATA[/// Writes ModBus TCP registers
+METHOD PROTECTED M_ModBusWrite : BOOL
+VAR_INPUT
+	rInterval		: REAL;
+	wAddress		: WORD;				// Register address to write to
+	wNoOfRegisters	: WORD;				// Register(s) to write to station
+	pbSrcAddress	: POINTER TO BYTE;	// Address of mem to read source data from
+	dwSrcSize		: DWORD;			// Size of mem to read source data from
+END_VAR
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Timer
+tonMBWrite(	IN := NOT tonMBWrite.Q,
+			PT := REAL_TO_TIME(rInterval * 1000.0),
+			Q => 	);
+
+// Write data to device via. modbus TCP
+fbMBWrite(	sIPAddr:= sIPAddr, 				// Station IP address
+			nTCPPort:= MODBUS_TCP_PORT, 	// Modbus TCP port (normally 502)
+			nUnitID:= 1,//16#FF, 			// If a device is addressed directly via TCP/IP, this value must be 16#FF.
+			nQuantity:= wNoOfRegisters,		// Number of words (registers) to write 
+			nMBAddr:= wAddress - 1,			// Addres of registers to write 
+			cbLength:= dwSrcSize,			// Contains the max. byte size of the source buffer. The minimum buffer byte size must be: nQuantity * 2.
+			pSrcAddr:= pbSrcAddress,	 	// Address of the source buffer from which, the data are read
+			bExecute:= tonMBWrite.Q,		// Trig writing 
+			tTimeout:= tTimeout, 			// States the length of the timeout that may not be exceeded by execution of the ADS command
+			bBusy=> bMBWrite_Busy, 
+			bError=> bMBWrite_Error, 
+			nErrId=> );
+
+// Last write time
+trigWriteDone(CLK := (fbMBWrite.bBusy AND NOT fbMBWrite.bError));
+trigMBWriteError(CLK := bMBWrite_Error);
+IF (trigWriteDone.Q) THEN
+	iWrites := iWrites + 1;
+END_IF
+IF (trigMBWriteError.Q) THEN
+	iErrorWrites := iErrorWrites + 1;
+	nMBWrite_ErrorID := fbMBWrite.nErrId;
+END_IF
+fbGetWriteTime(	NETID:= '', 
+				START:= trigWriteDone.Q,
+				TMOUT:= T#5S, 
+				BUSY=> , 
+				ERR=> , 
+				ERRID=> , 
+				TIMESTR=> tsLastWrite);
+
+// Station communication status
+M_ModBusWrite := trigWriteDone.Q;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Simulation" Id="{d1d60dd9-27e1-43df-9925-59e6970c9666}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Simulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (bSimMode) THEN
+	// Simulation mode ENABLED
+
+	// Device start command
+	IF (uWrite.stVars.stCommands.REMOTE_START) THEN
+		// Device states
+		uRead.stVars.eMachStatus := E_EMS_HS_Status.READY;
+		uRead.stVars.stStates.MACHINE_READY_TO_WORK := TRUE;
+		uRead.stVars.stStates.TEMP_START_BELT_REACHED := TRUE;
+		uRead.stVars.stStates.TEMP_START_STEAM_REACHED := TRUE;
+		uRead.stVars.stStates.MACHINE_IN_STANDBY := FALSE;
+		// Device temperature
+		uRead.stVars.rActTempVal := uWrite.stVars.rSetTemp;
+	ELSE
+		// Device states
+		uRead.stVars.eMachStatus := E_EMS_HS_Status.STANDBY;
+		uRead.stVars.stStates.MACHINE_READY_TO_WORK := FALSE;
+		uRead.stVars.stStates.TEMP_START_BELT_REACHED := FALSE;
+		uRead.stVars.stStates.TEMP_START_STEAM_REACHED := FALSE;
+		uRead.stVars.stStates.MACHINE_IN_STANDBY := TRUE;
+	END_IF
+	// Temperature setpoint value
+	uRead.stVars.rActTempSetpoint := uWrite.stVars.rSetTemp;
+	// Steam setpoint value
+	uRead.stVars.rActSteamReq := uWrite.stVars.rSetSteamReq;
+	// Fan setpoint value
+	uRead.stVars.rActFanReq := uWrite.stVars.rSetFanSpeed;
+	// Alarms
+	uRead.stVars.stAlarms.TEMP_PROBE_FAULT := FALSE;
+	uRead.stVars.stAlarms.FAULT_INVERTER := FALSE;
+	uRead.stVars.stAlarms.ENERGY_METER_COM_ERROR := FALSE;
+	// Device states
+	uRead.stVars.stStates.REMOTE_MODE := TRUE;
+	uRead.stVars.stStates.ALARM_IN_PROGRESS := FALSE;
+	uRead.stVars.stStates.MACHINE_IN_HEATING := FALSE;
+	
+	M_Simulation := TRUE;
+
+ELSE
+	// Simulation mode DISABLED
+
+	M_Simulation := FALSE;
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_StaAlarm" Id="{dea6e8a1-5a0d-4fbc-a58a-c08fe03b92da}">
+      <Declaration><![CDATA[METHOD PROTECTED M_StaAlarm : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StaAlarm := (uRead.stVars.eMachStatus = E_EMS_HS_Status.ALARM);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_StaReady" Id="{771b0fd9-5c4d-427d-90ca-aa71d928646a}">
+      <Declaration><![CDATA[METHOD PROTECTED M_StaReady : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StaReady := (uRead.stVars.eMachStatus = E_EMS_HS_Status.READY);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_StaStandby" Id="{ca89f6b8-7639-45bd-8a53-e6e632c1abd0}">
+      <Declaration><![CDATA[METHOD PROTECTED M_StaStandby : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_StaStandby := (uRead.stVars.eMachStatus = E_EMS_HS_Status.STANDBY);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bSimulationMode" Id="{4e2d2f17-1689-4614-8d3f-7a9b2b482f3e}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bSimulationMode : BOOL]]></Declaration>
+      <Get Name="Get" Id="{746a8707-d105-4e70-875e-58b7822a198d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bSimulationMode := bSimMode;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{c4f43457-4532-4734-a2f4-21feb602d173}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSimMode := P_bSimulationMode;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_ModbusIPBarrera" Id="{32e6a03d-bfcb-4215-82a9-1b3613b8830d}">
+      <Declaration><![CDATA[PROPERTY P_ModbusIPBarrera : STRING]]></Declaration>
+      <Get Name="Get" Id="{89502621-3507-4af2-87bd-1904daa8e14e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_ModbusIPBarrera := sIPAddr;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{4cec20f3-52c9-49ff-bae4-4ecbef7b7857}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sIPAddr := P_ModbusIPBarrera;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rSetFanSpeed" Id="{0f0f0c95-f786-4d61-a94a-c3d5057da639}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rSetFanSpeed : REAL]]></Declaration>
+      <Set Name="Set" Id="{87576d72-ef69-45f3-8182-519a042b52f2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[uWrite.stVars.rSetFanSpeed := P_rSetFanSpeed;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rSetSteamReq" Id="{5e767a20-e0c3-4191-b6ad-37c4649aa6a5}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rSetSteamReq : REAL]]></Declaration>
+      <Set Name="Set" Id="{b27ff9f6-0783-4737-8f27-f0c33a7008ed}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[uWrite.stVars.rSetSteamReq := REAL_TO_DINT(P_rSetSteamReq);
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_rSetTemp" Id="{d7170c0b-2e33-4cea-a6d4-bd60bbf61bce}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_rSetTemp : REAL]]></Declaration>
+      <Set Name="Set" Id="{0a709314-5109-47c2-9d95-e4df4df9ca64}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[uWrite.stVars.rSetTemp := P_rSetTemp;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_stCellCommandData" Id="{7f055175-13e6-4580-9ad2-b3d43fae28bd}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_stCellCommandData : ST_EMS_HS_Write]]></Declaration>
+      <Get Name="Get" Id="{59dcfd2a-aa1c-4095-8660-27c25adf3c82}">
+        <Declaration><![CDATA[PUBLIC 
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_stCellCommandData := uWrite.stVars;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f679871d-679f-4f0a-a06a-c918464db843}">
+        <Declaration><![CDATA[PUBLIC 
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[uWrite.stVars := P_stCellCommandData;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_stCellStatusData" Id="{7a826849-9064-407e-b166-1851ac98572c}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_stCellStatusData : ST_EMS_HS_Read]]></Declaration>
+      <Get Name="Get" Id="{c50d1c87-523f-4925-b7f9-a59866f475e8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_stCellStatusData := uRead.stVars;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <LineIds Name="FB_EMS_HS">
+      <LineId Id="261" Count="1" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="263" Count="0" />
+      <LineId Id="66" Count="1" />
+      <LineId Id="102" Count="4" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="107" Count="4" />
+      <LineId Id="264" Count="0" />
+      <LineId Id="192" Count="17" />
+      <LineId Id="177" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_CmdNeutral">
+      <LineId Id="5" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_Cmdreset">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_CmdStart">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_CmdStop">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_ModBusRead">
+      <LineId Id="115" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="57" Count="1" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="10" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="126" Count="7" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="87" Count="4" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="100" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_ModBusWrite">
+      <LineId Id="163" Count="4" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="27" Count="9" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="114" Count="1" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="142" Count="2" />
+      <LineId Id="146" Count="1" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="92" Count="7" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="100" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_Simulation">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="62" Count="3" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="66" Count="3" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="45" Count="3" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="29" Count="2" />
+      <LineId Id="54" Count="2" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="71" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_StaAlarm">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_StaReady">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.M_StaStandby">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_bSimulationMode.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_bSimulationMode.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_ModbusIPBarrera.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_ModbusIPBarrera.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_rSetFanSpeed.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_rSetSteamReq.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_rSetTemp.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_stCellCommandData.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_stCellCommandData.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_EMS_HS.P_stCellStatusData.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

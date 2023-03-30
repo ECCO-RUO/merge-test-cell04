@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_Cylinder_Cmd" Id="{83025624-040a-4d12-b711-119a01787d91}">
+    <Declaration><![CDATA[{attribute 'strict'}
+TYPE E_Cylinder_Cmd :
+(
+	Cyl_Cmd_None	:= 0,
+	Cyl_Cmd_Fwd 	:= 1,
+	Cyl_Cmd_Rev		:= 2
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

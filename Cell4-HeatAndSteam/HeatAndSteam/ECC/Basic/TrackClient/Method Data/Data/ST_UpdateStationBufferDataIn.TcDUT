@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateStationBufferDataIn" Id="{143e22bf-014a-4c4d-bd23-474cc7874487}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_UpdateStationBufferDataIn :
+STRUCT
+	sStationID					: STRING(30);								(* The ID of the station that will be moved to. *)
+	eStationBufferType			: UINT; // E_MMStationBuffer;				(* Select pre or post buffer *)
+	nIndex						: USINT;									(* Buffer index *)
+	nVehicleID					: UINT;										(* Vehicle ID of vehicle at buffer position *)
+	sCarrierID					: STRING(30);								(* Carrierr ID at buffer position *)
+	nTicket						: UINT;										(* Ticket number *)
+	nPriority					: UINT;										(* Ticket priority *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

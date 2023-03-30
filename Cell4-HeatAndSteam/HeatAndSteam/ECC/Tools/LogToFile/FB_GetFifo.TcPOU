@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_GetFifo" Id="{856a7513-08fe-438f-b923-79134b901d3a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetFifo
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	bFIFO_Empty:BOOL;
+	out_STRING:STRING(255);
+END_VAR
+VAR_IN_OUT
+	DB:ST_String_FIFO;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bFIFO_Empty := FALSE;
+IF DB.Count > 0 THEN
+	out_STRING := DB.DB[DB.Output_Pointer];
+	DB.DB[DB.Output_Pointer] := '';
+	DB.Count := DB.Count - 1;
+
+	DB.Output_Pointer := DB.Output_Pointer + 1;
+	IF DB.Output_Pointer > DB.DataTop THEN
+		DB.Output_Pointer := 0;
+	END_IF
+
+ELSE
+	bFIFO_Empty := TRUE;
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetFifo">
+      <LineId Id="45" Count="0" />
+      <LineId Id="14" Count="8" />
+      <LineId Id="35" Count="2" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

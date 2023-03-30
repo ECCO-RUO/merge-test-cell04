@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputCell" Id="{df0dc89e-f104-476f-b5e7-96de87abe62c}">
+    <Declaration><![CDATA[TYPE ST_InputCell :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Cell Mode State'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	ModeState			: ST_InputModeState;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell Configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Configuration		: ST_InputCellConfiguration;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell Control'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	Control				: ST_InputCellControl;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell Additional Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	AdditionalData		: ST_InputCellAdditionalData;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

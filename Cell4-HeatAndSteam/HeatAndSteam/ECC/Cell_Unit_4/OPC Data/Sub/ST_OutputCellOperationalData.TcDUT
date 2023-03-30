@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputCellOperationalData" Id="{2fd1f30c-fedb-4f0e-972e-e9380d6a0b49}">
+    <Declaration><![CDATA[TYPE ST_OutputCellOperationalData :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus				: UINT;
+
+// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Data has changed (0-65536)'}
+	DataChange					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'General'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General						: ST_OutputCellOperationalDataGeneral;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of devices'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	DeviceData					: ARRAY [1..200] OF ST_DeviceDataX;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

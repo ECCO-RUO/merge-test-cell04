@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_OPC_NodeType" Id="{78673c66-f2f9-4be3-964f-24929a2006be}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_OPC_NodeType :
+(
+	Vehicles := 0,
+	Paths,
+	Stations,
+	Cells
+ 
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <GVL Name="GVL_BASIC" Id="{c480a25e-292f-4080-b1a4-d908dfb8f150}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	Units		: FB_Units;
+	g_rPLCScan_S		: REAL;				// [s] PLC scantime
+	g_iPLCScan_MS		: UINT;				// [ms] PLC scantime
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OPCUA_MethodData" Id="{9a452fcb-f6e3-4dbd-a66b-55c8db344336}">
+    <Declaration><![CDATA[// Data needed for OPC UA method calling
+TYPE ST_OPCUA_MethodData :
+STRUCT
+	bActivate						: BOOL;		// TRUE to use this method call
+
+	// Method information:
+	sRemoteObjectName				: STRING;	// Remote object. e.g. 'MAIN.fbMMServer'
+	sRemoteMethodName				: STRING;	// Remote method. e.g. 'M_AddPath'
+
+	// Input data:
+	NoOfInputArgs					: BYTE;		// Number of input arguments for the remote method
+	
+	
+	// Output data:
+	NoOfOutputArgs					: BYTE;		// Number of output arguments for the remote method
+	
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

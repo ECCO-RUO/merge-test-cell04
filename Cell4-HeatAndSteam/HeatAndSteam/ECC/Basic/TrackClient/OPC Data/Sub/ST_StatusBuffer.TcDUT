@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StatusBuffer" Id="{29dffe30-c43e-4017-ae4d-4e33c6375c31}">
+    <Declaration><![CDATA[TYPE ST_StatusBuffer :
+STRUCT
+	bPresent		: BOOL;		// TRUE if buffer point is in use
+	nTicket			: UINT;		// Reseved Ticket ID 
+	nPriority		: UINT;		// Current Ticket priority
+	nVehicleID		: UINT;		// Current vehicle ID (0 if no vehicle)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

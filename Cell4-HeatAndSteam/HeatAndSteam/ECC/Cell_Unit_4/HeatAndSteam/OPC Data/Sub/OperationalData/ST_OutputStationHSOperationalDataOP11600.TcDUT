@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSOperationalDataOP11600" Id="{629e78d4-0c5f-4056-86b8-2225d5419563}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSOperationalDataOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Current number of tools where data is available'}
+	NumberOfToolData			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of tools'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ToolData					: ARRAY [1..200] OF ToolDataX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Current number OF feeding material where data is available'}
+	NumberOfMaterialData		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Status variables for current operational data of material'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	MaterialData				: ARRAY [1..200] OF MaterialDataX;
+
+//	{attribute 'OPC.UA.DA.Description' := 'Status variables FOR current operational data of devices'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	DeviceData					: ST_Scanner_JobStatus;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

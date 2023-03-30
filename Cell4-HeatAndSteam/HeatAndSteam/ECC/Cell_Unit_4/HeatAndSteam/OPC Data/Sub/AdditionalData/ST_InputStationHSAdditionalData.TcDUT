@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSAdditionalData" Id="{5af3017f-828e-434a-9c33-2630a7872872}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSAdditionalData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station MES Handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	MESHandShakes				: ST_InputStationHSAdditionalDataMESHandShake;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell MES Handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Settings					: ST_InputStationHSAdditionalDataSettings;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Station general additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General						: ST_InputStationHSAdditionalDataGeneral;
+	
+	(* Might not be the same struct *)
+	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 1 additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600						: ST_InputStationHSAdditionalDataOP11600;
+
+//	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 2 additional data'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601						: ST_InputStationHSAdditionalDataOP11601;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

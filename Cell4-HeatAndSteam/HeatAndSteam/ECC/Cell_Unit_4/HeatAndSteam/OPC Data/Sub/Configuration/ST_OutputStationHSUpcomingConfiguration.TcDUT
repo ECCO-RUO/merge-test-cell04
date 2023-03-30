@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSUpcomingConfiguration" Id="{70b487af-851c-4548-b2be-38ae7c7678c6}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSUpcomingConfiguration :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledge (0-255)'}
+	ChangeAcknowledge		: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus			: UINT;
+
+// Data part
+	{attribute 'OPC.UA.DA.Description' := 'Data changed (0-65536)'}
+	DataChange				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Date and time'}
+	DateTime				: DT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Configuration type (OPxxxxx or General)'}
+	ConfigurationType		: STRING(7);
+	
+	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 1 Upcoming Configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600						: ST_InputStationHSUpcomingConfigurationOP11600;
+	
+//	{attribute 'OPC.UA.DA.Description' := 'HeatAndSteam Step 2 Upcoming Configuration'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601						: ST_InputStationHSUpcomingConfigurationOP11601;	
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

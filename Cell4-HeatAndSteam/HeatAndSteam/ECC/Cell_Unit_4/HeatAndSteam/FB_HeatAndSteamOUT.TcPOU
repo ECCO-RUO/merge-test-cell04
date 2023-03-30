@@ -1,0 +1,596 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_HeatAndSteamOUT" Id="{81e5ee96-dffb-460f-9007-be457e2ef5d0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HeatAndSteamOUT EXTENDS FB_Station_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+	// Inputs
+	stJobDataIn				: ST_InputStationHSJobData;
+	stConfigIn				: ST_InputStationHSConfiguration;
+	stUpcomingConfigIn		: ST_InputStationHSUpcomingConfiguration;
+	stControlIn				: ST_InputStationHSControl;
+	stAdditionalDataIn		: ST_InputStationHSAdditionalData;
+	// Outputs
+	stJobDataOut			: ST_OutputStationHSJobData;
+	stConfigOut				: ST_OutputStationHSCurrentConfiguration;
+	stUpcomingConfigOut		: ST_OutputStationHSUpcomingConfiguration;
+	stOperationalDataOut	: ST_OutputStationHSOperationalData;
+	stSustainabilityData	: ST_OutputStationHSSustainabilityData;
+	stAdditionalDataOut		: ST_OutputStationHSAdditionalData;	
+END_VAR 
+VAR
+	iOldChangeRequest		: UINT;
+
+// Start up
+	nCheckValid				: UINT;
+
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^( stModeStateIn := stModeStateIn,
+		stModeStateOut := stModeStateOut,
+		stOEE := stOEE,
+		stErrorWarning := stErrorWarning);
+
+M_Init();
+
+//Automatic reset when operation complete
+bResetLocal := (eCommand <> ePMLCommand_Start AND eCurrentState = E_PMLState.ePMLState_Complete);
+
+
+]]></ST>
+    </Implementation>
+    <Method Name="M_Aborted" Id="{a36e6168-bf32-4771-93d3-73cd3cc3a073}">
+      <Declaration><![CDATA[/// Static state "Aborted"
+/// Trigged by "StateCompleted" when in "Aborting" state
+/// Requires "Clear" to go to "Clearing" state 
+{attribute 'object_name' := 'M_Aborted'}
+METHOD M_Aborted
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Aborting" Id="{dc328328-7c60-461a-b0c2-c7e30e6c5b61}">
+      <Declaration><![CDATA[/// Dynamic state "Aborting"
+/// Trigged by "Abort" command
+/// Requires "StateCompleted" to go to "Aborted" state 
+{attribute 'object_name' := 'M_Aborting'}
+METHOD M_Aborting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Stop all moving parts
+(* STOP all OPSTIONS and Track - Clear alarms og gå til Complete*)
+
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ClearAll" Id="{a6890534-9fd0-4823-96aa-3c75aed1fa16}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF eCurrentState = E_PMLState.ePMLState_Aborted OR eCurrentState = E_PMLState.ePMLState_Aborting THEN
+	
+	F_Logfile('ST2 - All data cleared!');
+	
+	M_ClearAll := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Clearing" Id="{5f14d801-9d96-4751-a768-710a60dc87fe}">
+      <Declaration><![CDATA[/// Dynamic state "Clearing"
+/// Trigged by "Clear" command "Aborted" state
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Clearing'}
+METHOD M_Clearing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* Clear all OPSTIONS and Track - Clear alarms og gå til Complete*)
+
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Complete" Id="{bc4555df-b698-4f2a-b302-3398af224ea7}">
+      <Declaration><![CDATA[/// Static state "Complete"
+/// Trigged by "StateCompleted" when in "Completing" state
+/// Requires "Reset" to go to "Resetting" state 
+{attribute 'object_name' := 'M_Complete'}
+METHOD M_Complete
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Completing" Id="{cb979d6e-728f-4fca-b1ce-e084437009fb}">
+      <Declaration><![CDATA[/// Dynamic state "Completing"
+/// Trigged by "StageCompleted" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Complete" state 
+{attribute 'object_name' := 'M_Completing'}
+METHOD M_Completing
+
+VAR
+	
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Reset execute sequence
+// Job status data to OPC 
+
+//Store old data for comparison
+
+
+
+M_StateComplete(); 
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ConfigurationHandling" Id="{e2c28828-85dc-4de2-9b13-545912fcff71}">
+      <Declaration><![CDATA[METHOD M_ConfigurationHandling
+VAR_INPUT
+END_VAR
+VAR
+	sTempSTring		: STRING(200);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Is updated from operator/HMI
+IF (stConfigIn.ChangeRequest <> stConfigOut.ChangeStatus) AND (stConfigIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('Station 2 - ConfigChange request - Old request: ', TO_STRING(stConfigOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stConfigIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' ConfigType: ');
+	F_LogFile(CONCAT(sTempString, stConfigIn.ConfigurationType)); 
+	
+	// Change request from Line Controller
+	stConfigOut.ChangeAcknowledge := stConfigIn.ChangeRequest;
+	
+	// Check Configuration Type
+	IF (stConfigIn.ConfigurationType = 'OP11600') THEN	
+		// Update output job data
+		stConfigOut.ConfigurationType := stConfigIn.ConfigurationType;
+		stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+		stConfigOut.OP11600 := stConfigIn.OP11600;
+		
+		// Signal that job data has been written		
+		stConfigOut.ChangeStatus := stConfigIn.ChangeRequest;
+		
+		// Signal that output job data has been updated
+		stConfigOut.DataChange := stConfigOut.DataChange + 1;
+
+	ELSE
+		// Wrong configuration data type!
+		stConfigOut.ConfigurationType := '';
+		stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+
+		// Signal that configuration data has been written		
+		stConfigOut.ChangeStatus := stConfigIn.ChangeRequest;
+		
+		// Signal that output configuration data has been updated
+		stConfigOut.DataChange := stConfigOut.DataChange + 1;
+
+	END_IF
+END_IF
+
+
+// Upcoming Configuration
+IF (stUpcomingConfigIn.ChangeRequest <> stUpcomingConfigOut.ChangeStatus) AND (stUpcomingConfigIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('Station 2 Upcoming ConfigChange request - Old request: ', TO_STRING(stUpcomingConfigOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stUpcomingConfigIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' ConfigType: ');
+	F_LogFile(CONCAT(sTempString, stUpcomingConfigIn.ConfigurationType)); 	
+
+	// Change request from Line Controller
+	stUpcomingConfigOut.ChangeAcknowledge := stUpcomingConfigIn.ChangeRequest;
+	
+	// Check Configuration Type
+	IF (stUpcomingConfigIn.ConfigurationType = 'OP11600') THEN	
+		// Update configuration data
+		stUpcomingConfigOut.ConfigurationType := stUpcomingConfigIn.ConfigurationType;
+		stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+		stUpcomingConfigOut.OP11600 := stUpcomingConfigIn.OP11600;
+
+		// Signal that configuration data has been written		
+		stUpcomingConfigOut.ChangeStatus := stUpcomingConfigIn.ChangeRequest;
+		
+		// Signal that output configuration data has been updated
+		stUpcomingConfigOut.DataChange := stUpcomingConfigOut.DataChange + 1;
+		
+	ELSE
+		// Wrong configuration data type!
+		stUpcomingConfigOut.ConfigurationType := '';
+		stConfigOut.DateTime := SYSTEMTIME_TO_DT(timestr:=fbGetTime.TIMESTR);
+
+		// Signal that configuration data has been written		
+		stUpcomingConfigOut.ChangeStatus := stUpcomingConfigIn.ChangeRequest;
+		
+		// Signal that output configuration data has been updated
+		stUpcomingConfigOut.DataChange := stUpcomingConfigOut.DataChange + 1;
+
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorWarning" Id="{4eea7dc3-f697-474b-a054-fa8357350c9d}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorWarning
+VAR_INPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+
+// Alarms // TODO
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Execute" Id="{9a59abdb-1906-4bf1-9528-210f52d751b2}">
+      <Declaration><![CDATA[/// Static state "Execute"
+/// Trigged by "StageCompleted" when in "Starting" state
+/// Trigged by "StageCompleted" when in "Unholding" state
+/// Trigged by "StageCompleted" when in "Unsuspending" state
+/// Requires "Hold" command to go to "Holding" state 
+/// Requires "Suspend" command to go to "Suspending" state 
+/// Requires "StageCompleted" to go to "Completing" state 
+{attribute 'object_name' := 'M_Execute'}
+METHOD M_Execute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ExternalStart" Id="{5f99af1f-78bb-4b42-818e-07563343d9a3}">
+      <Declaration><![CDATA[METHOD M_ExternalStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bStartLocal := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Held" Id="{5cf29592-0f45-4ee4-a9d6-0676c4581e74}">
+      <Declaration><![CDATA[/// Static state "Held"
+/// Trigged by "StateCompleted" when in "Holding" state
+/// Requires "Unhold" command to go to "Unholding" state 
+{attribute 'object_name' := 'M_Held'}
+METHOD M_Held
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Holding" Id="{62be4449-ceb1-440f-8e9c-ba235ecc3ac2}">
+      <Declaration><![CDATA[/// Dynamic state "Holding"
+/// Trigged by "Hold" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Held" state 
+{attribute 'object_name' := 'M_Holding'}
+METHOD M_Holding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Idle" Id="{89c90341-e3c4-41ac-ac03-822485c59a18}">
+      <Declaration><![CDATA[/// Static state "Idle"
+/// Trigged by "StateCompleted" when in "Resetting" state
+/// Requires "Start" command to go to "Starting" state 
+{attribute 'object_name' := 'M_Idle'}
+METHOD M_Idle
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+
+
+	
+	
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{31c49fab-7475-40c6-a752-631acb49b04c}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL;
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT bInitDone THEN
+	// Call method in base FB
+	SUPER^.M_Init();
+
+	bInitDone := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_JobDataHandling" Id="{62467990-374e-412c-8a46-739bc6c7fc6b}">
+      <Declaration><![CDATA[METHOD M_JobDataHandling
+VAR_INPUT
+END_VAR
+VAR
+	sTempString : STRING(200);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Job Data to device
+IF (stJobDataIn.ChangeRequest <> stJobDataOut.ChangeStatus) AND (stJobDataIn.ChangeRequest > 0) THEN
+	sTempString := CONCAT('NewJobdata request - Old request: ', TO_STRING(stJobDataOut.ChangeStatus));
+	sTempString := CONCAT(sTempString, ', New request: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.ChangeRequest));
+	sTempString := CONCAT(sTempString, ' JobDataType: ');
+	sTempString := CONCAT(sTempString, stJobDataIn.JobDataType); 	
+
+	// Change request from Line Controller
+	stJobDataOut.ChangeAcknowledge := stJobDataIn.ChangeRequest;
+	
+	
+
+	// Check Job Type
+	IF (stJobDataIn.JobDataType = 'OP11600') THEN	
+
+		// Update output job data
+		stJobDataOut.OP11600 := stJobDataIn.OP11600;
+		stJobDataOut.JobDataType := stJobDataIn.JobDataType;
+
+		// Signal that job data has been written		
+		stJobDataOut.ChangeStatus := stJobDataIn.ChangeRequest;
+		
+		// Set job state to Idle
+		stJobDataOut.JobState := 1;
+		
+		// Signal that output job data has been updated
+		stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+
+	ELSE
+
+		// Update output job data
+		stJobDataOut.JobDataType := '';
+
+		// Signal that job data has been written		
+		stJobDataOut.ChangeStatus := stJobDataIn.ChangeRequest;
+		
+		// Signal that output job data has been updated
+		stJobDataOut.DataChange := stJobDataOut.DataChange + 1;
+
+	END_IF
+	
+	sTempString := CONCAT(sTempString, ', TTarget: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureTarget));
+	sTempString := CONCAT(sTempString, ', TMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureMin));
+	sTempString := CONCAT(sTempString, ', TMax: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.TemperatureMax));
+	sTempString := CONCAT(sTempString, ', SMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.SteamMin));
+	sTempString := CONCAT(sTempString, ', SMax: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.SteamMax));
+	sTempString := CONCAT(sTempString, ', AMin: ');
+	sTempString := CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.AirMin));
+	sTempString := CONCAT(sTempString, ', AMax: ');
+	F_LogFile(CONCAT(sTempString, TO_STRING(stJobDataIn.OP11600.AirMax)));
+END_IF
+
+
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Resetting" Id="{576e2788-4a41-4f56-8514-3c9abca5759f}">
+      <Declaration><![CDATA[/// Dynamic state "Resetting"
+/// Trigged by "Reset" command when in "Stopped" state
+/// Requires "StateCompleted" to go to "Idle" state 
+{attribute 'object_name' := 'M_Resetting'}
+METHOD M_Resetting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[iOldChangeRequest := stJobDataIn.ChangeRequest;
+
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Starting" Id="{ef97664c-72c2-490a-81b4-50632014f28f}">
+      <Declaration><![CDATA[/// Dynamic state "Starting"
+/// Trigged by "Start" command when in "Idle" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Starting'}
+METHOD M_Starting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Starting production mode
+
+
+// Start execute sequence
+
+bStartLocal := FALSE;
+eCommand := E_PML_Command.Undefined;
+
+
+M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopped" Id="{2f92a90f-97c5-4fbb-99d9-7856f430a2e6}">
+      <Declaration><![CDATA[/// Static state "Stopped"
+/// Trigged by "StateCompleted" when in "Stopping" state
+/// Requires "Reset" command to go to "Resetting" state 
+{attribute 'object_name' := 'M_Stopped'}
+METHOD M_Stopped
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopping" Id="{c6496b56-753d-4099-a7ea-b79e2b675f16}">
+      <Declaration><![CDATA[/// Dynamic state "Stopping"
+/// Trigged by "Stop" command
+/// Requires "StateCompleted" to go to "Stopped" state 
+{attribute 'object_name' := 'M_Stopping'}
+METHOD M_Stopping
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspended" Id="{b1a62736-85b8-4e8a-9979-a63efd61f72c}">
+      <Declaration><![CDATA[/// Static state "Suspended"
+/// Trigged by "StateCompleted" when in "Suspending" state
+/// Requires "Unsuspend" command to go to "Unsuspending" state 
+{attribute 'object_name' := 'M_Suspended'}
+METHOD M_Suspended
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspending" Id="{e66c94da-0303-486f-ba04-5b4fccf2b852}">
+      <Declaration><![CDATA[/// Dynamic state "Suspending"
+/// Trigged by "Suspend" command when in "Execute" state
+/// Requires "StateCompleted" to go to "Suspended" state 
+{attribute 'object_name' := 'M_Suspending'}
+METHOD M_Suspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unholding" Id="{773ce341-081d-4618-9b04-24961edec5a7}">
+      <Declaration><![CDATA[/// Dynamic state "Unholding"
+/// Trigged by "Unhold" command when in "Held" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unholding'}
+METHOD M_Unholding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unsuspending" Id="{fd150e3e-b30b-4e9a-b309-4c052eeb84f9}">
+      <Declaration><![CDATA[/// Dynamic state "Unsuspending"
+/// Trigged by "Unsuspend" command when in "Suspended" state
+/// Requires "StateCompleted" to go to "Execute" state 
+{attribute 'object_name' := 'M_Unsuspending'}
+METHOD M_Unsuspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+ M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_HeatAndSteamOUT">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Aborted">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Aborting">
+      <LineId Id="3" Count="3" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_ClearAll">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Clearing">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Complete">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Completing">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_ConfigurationHandling">
+      <LineId Id="3" Count="74" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_ErrorWarning">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Execute">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_ExternalStart">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Held">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Holding">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Idle">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Init">
+      <LineId Id="3" Count="4" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_JobDataHandling">
+      <LineId Id="3" Count="61" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Resetting">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Starting">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Stopped">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Stopping">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Suspended">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Suspending">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Unholding">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HeatAndSteamOUT.M_Unsuspending">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

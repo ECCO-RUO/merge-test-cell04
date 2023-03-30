@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StatusNode" Id="{81872ef2-3d85-4d0d-a81f-9aeb2fd4db0d}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_StatusNode :
+STRUCT
+	nState	: UINT;
+	rTemp	: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

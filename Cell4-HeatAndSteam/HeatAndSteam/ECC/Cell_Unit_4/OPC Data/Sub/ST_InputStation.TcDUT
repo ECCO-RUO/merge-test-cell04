@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputStation" Id="{19a2a7e4-7826-4f48-abed-402022c171a2}">
+    <Declaration><![CDATA[TYPE ST_InputStation :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Station 1 Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Station1			: ST_InputStationStationHS;
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Station 2 Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Station2			: ST_InputStationStationHS;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AdjustBufferPosData" Id="{afdcfc6f-5bd9-41ff-8fbb-cb79578dd529}">
+    <Declaration><![CDATA[TYPE ST_AdjustBufferPosData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_AdjustBufferPosition';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 3;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_AdjustBufferPosDataIn;
+	stOutput					: ST_AdjustBufferPosDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

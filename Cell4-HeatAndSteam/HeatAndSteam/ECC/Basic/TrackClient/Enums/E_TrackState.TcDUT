@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_TrackState" Id="{b27e7ec3-bf76-4ff0-ba07-128eff98c643}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TrackState :
+(
+	Undefined := 0,
+	CheckInitDone,
+//	InitDecisionPoint,
+	WaitAllowInit,
+	InitStations,
+	SetPreBufferAdjust,
+	SetPostBufferAdjust,
+	InitPaths,
+//	InitPathsStations,
+//	InitPathsDecisionPoint,
+//	InitPathsTrafficLight,
+	InitGetCellIndex,
+	Idle,
+	Resetting,
+	ResetWait,
+	ResetCheck,
+	Starting,
+	StartCheck,
+	InitTrafficLight,
+	InitTrafficLight2,
+	InitPathSegment,
+	InitPathSegment2,
+	InitVehicles,
+	Started,
+	Suspend,
+	Suspending,
+	Suspended,
+	Resume,
+	Resuming,
+	Error
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

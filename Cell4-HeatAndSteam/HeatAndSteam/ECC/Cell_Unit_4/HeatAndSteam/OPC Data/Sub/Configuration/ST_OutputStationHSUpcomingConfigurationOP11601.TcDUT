@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputStationHSUpcomingConfigurationOP11601" Id="{2c9cf7b2-74ef-4f48-8b80-54587258611c}">
+    <Declaration><![CDATA[TYPE ST_OutputStationHSUpcomingConfigurationOP11601 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Number of tools configured for the operation (0-200)'}
+	ToolCapacityUsed			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'IDs of upcoming tools'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Tool 						: ARRAY [1..200] OF ToolX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Upcoming number of material configured for the operation (0-200)'}
+	MaterialCapacityUsed		: UINT; 
+
+	{attribute 'OPC.UA.DA.Description' := 'IDs OF upcoming material'}
+	Material					: ARRAY [1..200] OF STRING(30);
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,499 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_LogToFile" Id="{8f134402-f412-47d7-8a21-91c86e67abd5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_LogToFile
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	Busy : BOOL;
+END_VAR
+VAR
+	State:INT;
+	StateDelFile:INT;
+	StateSetDate:INT;
+	msg_old : STRING(200);
+	msgWithTime : STRING(255);
+	msgToWrite : STRING(3000);
+	tmpMsgToWrite : STRING(3000);
+	StateOld:INT;
+	hFileOld:UINT;
+
+	OpenFile:FB_FileOpen;
+	WriteFile:FB_FileWrite;
+	CloseFile:FB_FileClose;
+	DeleteFile:FB_FileDelete;
+	CurrentDate:STRING(10);
+	PathAndFile:STRING(200);
+
+	PathAndFileDelete:STRING(200);
+
+	(*Control and status *)
+
+	bFileOpenError:BOOL;
+	nFileOpenErrorID:UDINT;
+	hFile:UINT;
+
+	bFileWriteError:BOOL;
+	nFileWriteErrorID:UDINT;
+
+	bFileCloseError:BOOL;
+	nFileCloseErrorID:UDINT;
+	nFileCloseError: BOOL;
+
+	nDeleteFileErrorID:UDINT;
+	bDeleteFileError:BOOL;
+
+	DateTimeNow		:STRING;
+	DateNow			:STRING(10);
+
+	CPUCOUNTER: GETCPUCOUNTER;
+	Scan_EndMeassurement:DWORD;
+	Scan_EndMeassurementHigh:DWORD;
+	Scan_Current_us:DWORD;
+	CPUScanLimitReach:BOOL;
+
+	CPUScanLimOld:BOOL;
+
+	MaxEntriesFifo:INT;
+	SetFifoLog:FB_SetFifo;
+	GetFifoLog:FB_GetFifo;
+
+	i:INT;
+	Sourcepointer: POINTER TO STRING(3000);//DWORD;
+	DestPointer:POINTER TO STRING(3000);//DWORD;
+	SourceLength:INT;
+	DestLength:DWORD;
+	TotalLength:INT;
+	MaxTotalLength:INT;
+
+	DateChanged:BOOL;
+	DelYear:INT;
+	DelMonth:INT;
+	DelDay:INT;
+	DelMonthString:STRING(2);
+	TempString:STRING;
+	OS_Error:BOOL;
+
+	(* Use as setting for example from XML settings *)
+	EnableHouseKeeping:BOOL:=TRUE;	(* Enable/disable housekeeping *)
+	LogStoreDays:INT:=7;			(* How many days to keep logs *)
+	NumberOfTries:INT:=7;			(* How many days before to try to delete. To double check cleaning *)
+	ErrorCount:INT;
+END_VAR
+VAR PERSISTENT 
+// Log to file
+	DaysOfLog 			: INT:=14;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* Monitor system resources and stop write to log if scantime exceeded *)
+//A_SystemMonitor();
+
+//File logging
+fbLocalTime(
+	sNetID:= '', 
+	bEnable:= TRUE, 
+	dwCycle:= 5, 
+	dwOpt:= 0, 
+	tTimeout:=DEFAULT_ADS_TIMEOUT );	
+
+(* Check buffer for text stream to write to file *)
+A_WriteToLog();
+
+(* Execute housekeeping if date changed *)
+A_Housekeeping();]]></ST>
+    </Implementation>
+    <Action Name="A_Housekeeping" Id="{1b00bbb8-c1cb-422e-a5c1-f2f55a602583}">
+      <Implementation>
+        <ST><![CDATA[(* Change number of days to log *)
+IF (DaysOfLog > 0) THEN
+	LogStoreDays := DaysOfLog;
+END_IF
+
+(* Housekeeping: Delete files from x numbers of days back *)
+IF DateChanged AND StateSetDate = 0 AND EnableHouseKeeping THEN
+	DelYear := STRING_TO_INT(MID(CurrentDate, 4, 1));
+	DelMonth := STRING_TO_INT(MID(CurrentDate, 2, 6));
+	DelDay := STRING_TO_INT(MID(CurrentDate, 2, 9));
+
+	(* Set start date and wrap around month + year if needed *)
+	IF DelDay <= LogStoreDays THEN
+		DelDay := 31 + DelDay - LogStoreDays;
+		DelMonth := DelMonth - 1;
+	ELSE
+		DelDay := DelDay - LogStoreDays;
+	END_IF
+
+	IF DelMonth < 1 THEN
+		DelMonth := DelMonth + 12;
+		DelYear := DelYear - 1;
+	END_IF
+
+	StateSetDate := 1;
+
+ELSIF DateChanged AND StateDelFile = 9999 THEN
+	F_LogFile('WARNING: Housekeep stopped');
+	DateChanged := FALSE;
+ELSIF NOT EnableHouseKeeping THEN
+	DateChanged := FALSE;
+END_IF
+
+CASE StateSetDate OF
+	0: (* Do nothing *)
+		;
+	1: (* Initialize *)
+		DateChanged := FALSE;
+		StateSetDate := StateSetDate + 1;
+		ErrorCount := 0;
+
+		F_LogFile('LogToFile - Housekeep - New day!!');
+		F_LogFile(Tempstring);
+
+	2: (* Set Date to delete *)
+
+		(* Combine to file and path *)
+		PathAndFileDelete := CONCAT('C:\Log\', INT_TO_STRING(DelYear));
+		PathAndFileDelete := CONCAT(PathAndFileDelete, '-');
+		PathAndFileDelete := CONCAT(PathAndFileDelete, F_PadWith(DelMonth, 2, '0'));
+		PathAndFileDelete := CONCAT(PathAndFileDelete, '-');
+		PathAndFileDelete := CONCAT(PathAndFileDelete, F_PadWith(DelDay, 2, '0'));
+		PathAndFileDelete := CONCAT(PathAndFileDelete, ' PLC Debug.txt');
+
+
+		OS_Error := FALSE;
+		StateDelFile := 1;
+		StateSetDate := StateSetDate + 1;
+
+		TempString := 'LogToFile - Housekeep: ';
+		TempString := CONCAT('Try to delete: ', PathAndFileDelete);
+		TempString := CONCAT(TempString, ' And ');
+		TempString := CONCAT(TempString, INT_TO_STRING(NumberOfTries - ErrorCount));
+		TempString := CONCAT(TempString, ' days before');
+		F_LogFile(Tempstring);
+
+
+	3: (* Wait for file deletion to complete *)
+		IF ErrorCount < NumberOfTries AND StateDelFile = 0 THEN
+
+			(* Set start date and wrap around month + year if needed *)
+			IF DelDay - 1 <= 0 THEN
+				DelDay := 31;
+				DelMonth := DelMonth - 1;
+			ELSE
+				DelDay := DelDay - 1;
+			END_IF
+
+			IF DelMonth < 1 THEN
+				DelMonth := DelMonth + 12;
+				DelYear := DelYear - 1;
+			END_IF
+
+			StateSetDate := 2;
+
+		ELSIF ErrorCount >= NumberOfTries AND StateDelFile = 0 THEN
+			StateSetDate := 0;
+
+			F_LogFile('LogToFile - Housekeep: Done deleting file(s)');
+		END_IF
+
+END_CASE
+
+CASE StateDelFile OF
+
+	0: (* Do nothing*)
+		;
+	1: (* Delete root file *)
+
+		DeleteFile( bExecute := FALSE );
+
+		DeleteFile(
+		sNetId:= '',
+		sPathName:= PathAndFileDelete,
+		ePath:= PATH_GENERIC,
+		bExecute:= TRUE,
+		tTimeout:= t#3s,
+		);
+
+		StateDelFile := StateDelFile + 1;
+
+
+	2: (* Wait for not busy and check for error *)
+		DeleteFile( bExecute := FALSE );
+
+		IF NOT DeleteFile.bBusy THEN
+			IF DeleteFile.bError THEN
+				nDeleteFileErrorID := DeleteFile.nErrId;
+				bDeleteFileError := TRUE;
+				StateDelFile := 9999;
+
+			ELSE
+				StateDelFile:= 0;
+				ErrorCount := 0;
+
+				TempString := ('LogToFile - Housekeep: Deleted file: ');
+				TempString := CONCAT(TempString, PathAndFileDelete);
+				F_LogFile(TempString);
+			END_IF
+		END_IF
+
+	9999: (* FileDelete error *)
+		IF nDeleteFileErrorID = 1804 THEN (* File not found *)
+			F_LogFile('LogToFile - Housekeep: File not found - ignore');
+			nDeleteFileErrorID := 0;
+			bDeleteFileError := FALSE;
+			StateDelFile:= 0;
+			ErrorCount := ErrorCount + 1;
+		ELSE (* Any other error *)
+
+			IF NOT OS_Error THEN
+				TempString := ('LogToFile - Housekeep: Failed with ADS errorID: ');
+				TempString := CONCAT(TempString, UDINT_TO_STRING(nDeleteFileErrorID));
+				F_LogFile(TempString);
+				OS_Error := TRUE;
+			END_IF
+		END_IF
+	END_CASE]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_SystemMonitor" Id="{14ef3d2e-d7e2-40e3-925b-9ae88958f420}">
+      <Implementation>
+        <ST><![CDATA[(* Check for new log stream and put into FIFO buffer with time stamp *)
+
+(* Calculate current time of scan *)
+	CPUCOUNTER(cpuCntLoDW=>Scan_EndMeassurement , cpuCntHiDW=>Scan_EndMeassurementHigh );
+	Scan_Current_us:=(Scan_EndMeassurement-MAIN.TimeStamps.StartMeassurement)/10000;
+
+	(* Did we have a warning ?*)
+	IF Scan_Current_us > Util.Scan_Warning_us THEN
+		CPUScanLimitReach := TRUE;
+
+		IF NOT CPUScanLimOld THEN
+			(* Get date and time *)
+			DateTimeNow  := TO_STRING(SYSTEMTIME_TO_DT(timestr:=MAIN.fbLocalTime.systemTime));
+
+			(* Set date to check for generation of new file *)
+			CurrentDate := DateTimeNow;
+
+			(* Add date and time to line of log *)
+			msgWithTime := CONCAT(DateTimeNow, ' ');
+			msgWithTime := CONCAT(msgWithTime, 'Maximum scan time exceeded - File logging to disk paused!!');
+			msgWithTime := CONCAT(msgWithTime, '$N');
+
+			SetFifoLog(
+				in_STRING:= msgWithTime,
+				in_Owner:= 'LogToFile',
+				in_LogLevel:= 0,
+				DB:= LogToTextBuffer);
+
+			CPUScanLimOld := TRUE;
+		END_IF
+	ELSE
+		IF CPUScanLimOld THEN
+			(* Get date and time *)
+			DateTimeNow  := Get_SystemTime();
+
+			CurrentDate := DateTimeNow;
+
+			(* Add date and time to line of log *)
+			msgWithTime := CONCAT(DateTimeNow, ' ');
+			msgWithTime := CONCAT(msgWithTime, 'File logging resumed');
+			msgWithTime := CONCAT(msgWithTime, '$N');
+
+			SetFifoLog(
+				in_STRING:= msgWithTime,
+				in_Owner:= 'LogToFile',
+				in_LogLevel:= 0,
+				DB:= LogToTextBuffer);
+		END_IF
+
+		CPUScanLimitReach := FALSE;
+		CPUScanLimOld := FALSE;
+	END_IF
+
+IF LogToTextBuffer.Count > MaxEntriesFifo THEN
+	MaxEntriesFifo := LogToTextBuffer.Count;
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_WriteToLog" Id="{51e802b3-10d0-439e-b919-e4d57ffc1c26}">
+      <Implementation>
+        <ST><![CDATA[(* Ready for new logline to be written *)
+IF State = 0 AND LogToTextBuffer.Count > 0 AND NOT CPUScanLimitReach THEN
+
+	(* Get date and time *)
+	DateTimeNow  := SYSTEMTIME_TO_STRING(fbLocalTime.systemTime);
+
+	(* New date - set flag for housekeeping *)
+	DateNow := DateTimeNow;
+	IF CurrentDate <> DateNow THEN
+		DateChanged := TRUE;
+	END_IF
+
+	(* Set date to check for generation of new file *)
+	CurrentDate := DateTimeNow;
+
+	(* Set Path and filename *)
+	PathAndFile := 'C:\Log\';
+	PathAndFile := CONCAT(PathAndFile, CurrentDate);
+	PathAndFile := CONCAT(PathAndFile, ' PLC Debug');
+	PathAndFile := CONCAT(PathAndFile, '.txt');
+
+	State := 1;
+	Busy := TRUE;
+END_IF
+
+CASE State OF
+
+0:	(* Do nothing *)
+	;
+
+1: (* Open File *)
+
+	OpenFile( bExecute := FALSE );
+
+	OpenFile(
+		sNetId:= '',
+		sPathName:= PathAndFile,
+		nMode:= FOPEN_MODEAPPEND,
+		ePath:= PATH_GENERIC,
+		bExecute:= TRUE,
+		tTimeout:= t#3s,
+		);
+
+	State := State +1;
+
+2: (* Wait for not busy - check for error *)
+
+	OpenFile( bExecute := FALSE );
+
+	IF NOT OpenFile.bBusy THEN
+
+		IF OpenFile.bError THEN
+			nFileOpenErrorID := OpenFile.nErrId;
+			bFileOpenError := TRUE;
+			State := 50;
+		ELSE
+			hFile := OpenFile.hFile;
+			State := State + 1;
+		END_IF
+	END_IF
+
+
+3: (* Put line into file *)
+
+	WriteFile ( bExecute := FALSE );
+
+	msgToWrite := '';
+	DestLength := 0;
+	TotalLength := 0;
+	SourcePointer := ADR(tmpMsgToWrite);
+	DestPointer := ADR(msgToWrite);
+
+	(* Bundle to maximum 2700 + logline amount of bytes *)
+	WHILE TotalLength < 2700 AND LogToTextBuffer.Count > 0 DO
+
+		GetFifoLog(
+			DB:= LogToTextBuffer,
+			out_STRING=> );
+
+		tmpMsgToWrite := GetFifoLog.out_STRING;
+		SourceLength := LEN(tmpMsgToWrite);
+		TotalLength := SourceLength + TotalLength;
+  		MEMCPY (DestPointer, SourcePointer, SourceLength);
+
+		Destpointer := DestPointer + SourceLength;
+
+	END_WHILE
+
+	(* Save maximum totallengt of string to write to file for debug use *)
+	IF TotalLength > MaxTotalLength THEN
+		MaxTotalLength := TotalLength;
+	END_IF
+
+	WriteFile(
+	sNetId:= '',
+	hFile:= hFile,
+	pWriteBuff:= ADR(msgToWrite),
+	cbWriteLen:= TotalLength,
+	bExecute:= TRUE,
+	tTimeout:= t#3s,
+	);
+
+	State := State + 1;
+
+4: (* Wait for not busy and check for error *)
+
+	WriteFile( bExecute := FALSE );
+
+	IF NOT WriteFile.bBusy THEN
+		IF WriteFile.bError THEN
+			nFileWriteErrorID := WriteFile.nErrId;
+			bFileWriteError := TRUE;
+			State := 50;
+		ELSE
+			State := State + 1;
+		END_IF
+	END_IF
+
+
+5: (* Close file *)
+
+	CloseFile( bExecute := FALSE );
+
+	CloseFile(
+		sNetId:= '',
+		hFile:= hFile,
+		bExecute:= TRUE,
+		tTimeout:= t#3s,
+		);
+
+	State := State + 1;
+
+6: (* Wait for not busy and check for error *)
+
+	CloseFile( bExecute := FALSE );
+
+	IF NOT CloseFile.bBusy THEN
+		IF CloseFile.bError THEN
+			nFileCloseErrorID := CloseFile.nErrId;
+			bFileCloseError := TRUE;
+		END_IF
+
+		State := 50;
+		hFile := 0;
+	END_IF
+
+50: (* Error or ready => Cleanup *)
+
+	IF hFile <> 0 THEN
+		State := 5; (* Close the file *)
+	ELSE
+		State := 0;
+		Busy := FALSE;
+	END_IF
+
+END_CASE]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_LogToFile">
+      <LineId Id="87" Count="1" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="175" Count="6" />
+      <LineId Id="89" Count="4" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_LogToFile.A_Housekeeping">
+      <LineId Id="169" Count="146" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_LogToFile.A_SystemMonitor">
+      <LineId Id="2" Count="54" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_LogToFile.A_WriteToLog">
+      <LineId Id="2" Count="23" />
+      <LineId Id="159" Count="130" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

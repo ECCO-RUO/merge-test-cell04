@@ -1,0 +1,684 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_StationControl" Id="{72388f1b-6405-451a-9d21-3afe194693e3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_StationControl
+VAR_IN_OUT
+	stStationData			: ST_MMStation;
+END_VAR
+VAR_INPUT
+// From station FB
+	bReadyForVehicleInput	: BOOL;		// TRUE when station is ready for a vehicle/last at input location
+	bCompletedInput			: BOOL;		// TRUE when part operation has finished (ready to deliver to vehicle on input)
+	bReadyForVehicleOutput	: BOOL;		// TRUE when station is ready for a vehicle/last at output location
+	bCompletedOutput		: BOOL;		// TRUE when part operation has finished (ready to deliver to vehicle on input)
+// From Track Client FB (Vehicle movement)
+	bVehiclePreMoved		: BOOL;
+	bVehiclePostMoved		: BOOL;
+	bVehiclePreToInMoved	: BOOL;
+	bVehiclePreToOutMoved	: BOOL;
+	bVehicleInToOutMoved	: BOOL;
+	bVehicleInToPostMoved	: BOOL;
+	bVehicleOutToPostMoved	: BOOL;
+END_VAR
+VAR_OUTPUT
+// To Station FB
+	bVehicleReadyAtInput	: BOOL;		// Set to TRUE when a vehicle is ready at the station input location
+	bVehicleReadyAtOutput	: BOOL;		// Set to TRUE when a vehicle is ready at the station input location
+// To Track Client (vehicle movement)
+	bMoveVehiclePreToIn		: BOOL;		// TRUE when a vehicle need to be moved from pre buffer to station input/1 location
+	bMoveVehiclePreToOut	: BOOL;		// TRUE when a vehicle need to be moved from pre buffer to station output/2 location
+	bMoveVehicleInToOut		: BOOL;		// TRUE when a vehicle need to be moved from station input/1 to station output/2
+	bMoveVehicleInToPost	: BOOL;		// TRUE when a vehicle need to be moved from station input/1 to post buffer
+	bMoveVehicleOutToPost	: BOOL;		// TRUE when a vehicle need to be moved from station output/2 to post buffer
+END_VAR
+VAR
+	bInitDone				: BOOL;	
+
+	// In to station
+	eStationInState			: E_StationInOutState;
+	
+	// Out from station
+	eStationOutState		: E_StationInOutState;
+	
+	// Misc
+	i						: UINT;
+	
+	// TEST
+	bTEST_ForceCompletedInput	: BOOL;
+	bTEST_ForceCompletedOutput	: BOOL;
+END_VAR
+VAR CONSTANT
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Init
+M_Init();
+
+// Buffer handling... Decide which vehicles to move in the buffers
+//M_Buffers();
+
+// Station handling
+M_Station();]]></ST>
+    </Implementation>
+    <Method Name="M_AddVehicle" Id="{5942a3ce-fc68-4d7c-ac65-ec9399ec7c40}">
+      <Declaration><![CDATA[METHOD PUBLIC M_AddVehicle : USINT
+VAR_INPUT
+	nTicket			: UINT;
+	nVehicleID		: UINT;
+	nPriority		: UINT;
+END_VAR
+VAR
+	i				: USINT;
+	iFoundIndex		: USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Return TRUE if station is ready to receive the specified task/ticket/priority
+
+iFoundIndex := 0;
+
+// Find the empty spot closest to station position (smallest index)
+FOR i := iPreBufferSize TO 1 BY -1 DO
+	IF (stStationData.astPreBuffer[i].nCurrentVehicleID = 0) THEN
+		// Buffer spot is empty
+		iFoundIndex := i;
+	ELSE
+		EXIT;
+	END_IF
+END_FOR
+
+IF (iFoundIndex > 0) THEN
+	stStationData.astPreBuffer[iFoundIndex].nReservedVehicleID := nVehicleID;
+	stStationData.astPreBuffer[iFoundIndex].nTicket := nTicket;
+	stStationData.astPreBuffer[iFoundIndex].CurrentPriority := nPriority;
+	stStationData.astPreBuffer[iFoundIndex].nCurrentVehicleID := nVehicleID;
+END_IF
+
+M_AddVehicle := iFoundIndex;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Buffers" Id="{f9ad3c59-f184-4f8a-ae92-ce2df129f7d2}">
+      <Declaration><![CDATA[/// Handling of the pre/post buffer on the station
+METHOD M_Buffers
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Pre buffer
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+CASE ePreBufferState OF
+	E_StationBufferState.Idle:
+		bMoveVehiclePre := FALSE;
+		iBufferSourcePre := 0;
+		iBufferTargetPre := 0;
+		iPreBufferIdx := 0;
+
+	E_StationBufferState.CheckBuffer:
+		iPreBufferIdx := iPreBufferIdx + 1;
+		IF (iPreBufferIdx < MM_MAX_BUFFER_INDEX) THEN
+			IF ( (stStationData.astPreBuffer[iPreBufferIdx].nCurrentVehicleID = 0) AND (stStationData.astPreBuffer[iPreBufferIdx].bPresent) ) THEN
+				// Buffer space empty... Check next index
+				IF ( (stStationData.astPreBuffer[iPreBufferIdx+1].nCurrentVehicleID > 0) AND (stStationData.astPreBuffer[iPreBufferIdx+1].bPresent) ) THEN
+					// Buffer occupied, move to previous buffer index (closer to station pickup position)
+					ePreBufferState := E_StationBufferState.StartMove;
+				END_IF
+			END_IF
+		ELSE
+			// All buffer indexes checked
+			ePreBufferState := E_BufferState.Idle;
+		END_IF
+		
+	E_StationBufferState.StartMove:
+		bMoveVehiclePre := TRUE;
+		iBufferSourcePre := iPreBufferIdx+1;
+		iBufferTargetPre := iPreBufferIdx;
+		ePreBufferState := E_StationBufferState.WaitMove;
+		
+	E_StationBufferState.WaitMove:
+		IF (bVehiclePreMoved) THEN
+			bMoveVehiclePre := FALSE;
+			ePreBufferState := E_BufferState.Idle;			
+		END_IF
+
+END_CASE
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Post buffer
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+CASE ePostBufferState OF
+	E_StationBufferState.Idle:
+		bMoveVehiclePost := FALSE;
+		iBufferSourcePost := 0;
+		iBufferTargetPost := 0;
+		iPostBufferIdx := MM_MAX_BUFFER_INDEX+1;
+
+	E_StationBufferState.CheckBuffer:
+		iPostBufferIdx := iPostBufferIdx - 1;
+		IF (iPostBufferIdx > 1) THEN
+			IF ( (stStationData.astPostBuffer[iPostBufferIdx].nCurrentVehicleID = 0) AND (stStationData.astPostBuffer[iPostBufferIdx].bPresent) ) THEN
+				// Buffer space empty... Check next index
+				IF ( (stStationData.astPostBuffer[iPostBufferIdx-1].nCurrentVehicleID > 0) AND (stStationData.astPostBuffer[iPostBufferIdx-1].bPresent) ) THEN
+					// Buffer occupied, move to next buffer index (closer to exit point)
+					ePostBufferState := E_StationBufferState.StartMove;
+				END_IF
+			END_IF
+		ELSE
+			// All buffer indexes checked
+			ePostBufferState := E_BufferState.Idle;
+		END_IF
+		
+	E_StationBufferState.StartMove:
+		bMoveVehiclePost := TRUE;
+		iBufferSourcePost := iPostBufferIdx-1;
+		iBufferTargetPost := iPostBufferIdx;
+		ePostBufferState := E_StationBufferState.WaitMove;
+		
+	E_StationBufferState.WaitMove:
+		IF (bVehiclePostMoved) THEN
+			bMoveVehiclePost := FALSE;
+			ePostBufferState := E_BufferState.Idle;			
+		END_IF
+
+END_CASE
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ClearAll" Id="{ca133e95-101e-40cf-8cf7-e341aec66934}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bVehicleReadyAtInput := FALSE;
+bVehicleReadyAtOutput := FALSE;
+bMoveVehiclePreToIn := FALSE;
+bMoveVehiclePreToOut := FALSE;
+bMoveVehicleInToOut	 := FALSE;
+bMoveVehicleInToPost := FALSE;
+bMoveVehicleOutToPost := FALSE;
+
+eStationInState	:= E_StationInOutState.Idle;
+eStationOutState := E_StationInOutState.Idle;
+
+
+F_Logfile('StationControl - All data cleared!');
+
+M_ClearAll:= TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{baa29f88-aa8c-49a7-bf27-3e17a9350dfa}">
+      <Declaration><![CDATA[METHOD PUBLIC M_Init
+VAR_INPUT
+END_VAR
+VAR
+	i		: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Init all variables (deletes values!)
+IF (NOT bInitDone) THEN
+	bInitDone := TRUE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_PostBufferEmpty" Id="{1c7605c9-ef55-4151-a597-0f07532cee11}">
+      <Declaration><![CDATA[METHOD PUBLIC M_PostBufferEmpty : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Returns TRUE if post-buffer is empty
+M_PostBufferEmpty := iPostBufferFree >= iPostBufferSize;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_PreBufferEmpty" Id="{3f87054c-708b-4945-90af-87a4ddb74be4}">
+      <Declaration><![CDATA[METHOD PUBLIC M_PreBufferEmpty : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Returns TRUE if pre-buffer is empty
+M_PreBufferEmpty := iPreBufferFree >= iPreBufferSize;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_RemoveVehicle" Id="{43c9323a-abb2-420b-b221-46ba33fbd38a}">
+      <Declaration><![CDATA[METHOD PUBLIC M_RemoveVehicle : UINT
+VAR_INPUT
+	nCarrierID		: UINT;
+END_VAR
+VAR
+	i				: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Find the empty spot closes to station position (smallest index)
+FOR i := iPostBufferSize TO 1 BY -1 DO
+	IF (stStationData.astPostBuffer[i].nCurrentVehicleID = nCarrierID) THEN
+		MEMSET(ADR(stStationData.astPostBuffer[i]), 0, SIZEOF(stStationData.astPostBuffer[i]));
+		M_RemoveVehicle := i;
+		RETURN;
+	END_IF
+END_FOR
+
+M_RemoveVehicle := 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ShiftForward" Id="{b120f7cb-776c-4401-8049-8def62a7f6c4}">
+      <Declaration><![CDATA[METHOD PUBLIC M_ShiftForward : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i		: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Shift buffer spaces (move all items one spot forward)
+
+// Post buffer shift
+FOR i := MM_MAX_BUFFER_INDEX TO 1 BY -1 DO
+	IF (stStationData.astPostBuffer[i].bPresent) THEN
+		stStationData.astPostBuffer[i].nReservedVehicleID := stStationData.astPostBuffer[i-1].nReservedVehicleID;
+		stStationData.astPostBuffer[i].nCurrentVehicleID := stStationData.astPostBuffer[i-1].nCurrentVehicleID;
+		stStationData.astPostBuffer[i].nTicket := stStationData.astPostBuffer[i-1].nTicket;
+		stStationData.astPostBuffer[i].CurrentPriority := stStationData.astPostBuffer[i-1].CurrentPriority;
+	END_IF
+END_FOR
+
+// Station data to post buffer
+stStationData.astPostBuffer[1] := stStationData.stStationData;
+
+// Pre buffer last space to station data
+stStationData.stStationData := stStationData.astPreBuffer[1];
+
+// Pre buffer shift
+FOR i := 1 TO MM_MAX_BUFFER_INDEX-1 BY 1 DO
+	IF (stStationData.astPreBuffer[i].bPresent) THEN
+		stStationData.astPreBuffer[i].nReservedVehicleID := stStationData.astPreBuffer[i+1].nReservedVehicleID;
+		stStationData.astPreBuffer[i].nCurrentVehicleID := stStationData.astPreBuffer[i+1].nCurrentVehicleID;
+		stStationData.astPreBuffer[i].nTicket := stStationData.astPreBuffer[i+1].nTicket;
+		stStationData.astPreBuffer[i].CurrentPriority := stStationData.astPreBuffer[i+1].CurrentPriority;
+	END_IF
+END_FOR
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Station" Id="{331fa504-163f-48df-bc93-b361807bc8e3}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Station
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Into station
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+CASE eStationInState OF
+	E_StationInOutState.Idle:
+		bMoveVehiclePreToOut := FALSE;
+		bMoveVehiclePreToIn := FALSE;
+		eStationInState := E_StationInOutState.Check;
+		
+	E_StationInOutState.Check:
+		IF (bReadyForVehicleInput AND (stStationData.stStationData1.nCurrentVehicleID = 0) ) THEN
+			// Station input location is ready for a vehicle
+			IF (stStationData.astPreBuffer[1].nCurrentVehicleID > 0) THEN
+				// Vehicle is ready in pre buffer location closest to station
+				eStationInState := E_StationInOutState.StartMoveIn;
+			END_IF
+		ELSIF (bReadyForVehicleOutput AND (stStationData.stStationData2.nCurrentVehicleID = 0) ) THEN
+			// Station output location is ready for a vehicle
+			IF (stStationData.astPreBuffer[1].nCurrentVehicleID > 0) THEN
+				// Vehicle is ready in pre buffer location closest to station
+				eStationInState := E_StationInOutState.StartMoveOut;
+			END_IF			
+		END_IF
+	
+	E_StationInOutState.StartMoveOut:
+		bMoveVehiclePreToOut := TRUE;
+		F_LogLine('TC_STAT Move to Out: %d', stStationData.astPreBuffer[1].nCurrentVehicleID);
+		eStationInState := E_StationInOutState.WaitMoveOut;
+	
+	E_StationInOutState.WaitMoveOut:
+		IF (bVehiclePreToOutMoved) THEN
+			bMoveVehiclePreToOut := FALSE;
+			bVehicleReadyAtOutput := TRUE;
+			F_LogLine('TC_STAT Move to Out Done! ', 0);
+			eStationInState := E_StationInOutState.Idle;
+		END_IF
+
+	E_StationInOutState.StartMoveIn:
+		bMoveVehiclePreToIn := TRUE;
+		F_LogLine('TC_STAT Move to In: %d', stStationData.astPreBuffer[1].nCurrentVehicleID);
+		eStationInState := E_StationInOutState.WaitMoveIn;
+	
+	E_StationInOutState.WaitMoveIn:
+		IF (bVehiclePreToInMoved) THEN
+			bMoveVehiclePreToIn := FALSE;
+			bVehicleReadyAtInput := TRUE;
+			F_LogLine('TC_STAT Move to In Done! ', 0);
+			eStationInState := E_StationInOutState.Idle;
+		END_IF
+	
+	ELSE
+		eStationInState := E_StationInOutState.Idle;
+		
+END_CASE
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Out from station
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+CASE eStationOutState OF
+	E_StationInOutState.Idle:
+		bMoveVehicleInToPost := FALSE;
+		bMoveVehicleOutToPost := FALSE;
+		eStationOutState := E_StationInOutState.Check;
+		
+	E_StationInOutState.Check:
+		IF ((bCompletedInput OR bTEST_ForceCompletedInput) AND (stStationData.stStationData1.nCurrentVehicleID > 0) ) THEN
+			// Station input location is completed and has a vehicle
+			bTEST_ForceCompletedInput := FALSE;
+			IF (stStationData.astPostBuffer[1].nCurrentVehicleID = 0) THEN
+				// No vehicle in post buffer location closest to station
+				eStationOutState := E_StationInOutState.StartMoveIn;
+			END_IF
+		ELSIF ((bCompletedOutput OR bTEST_ForceCompletedOutput) AND (stStationData.stStationData2.nCurrentVehicleID > 0) ) THEN
+			// Station output location is ready for a vehicle
+			bTEST_ForceCompletedOutput := FALSE;
+			IF (stStationData.astPostBuffer[1].nCurrentVehicleID = 0) THEN
+				// No vehicle in post buffer location closest to station
+				eStationOutState := E_StationInOutState.StartMoveOut;
+			END_IF			
+		END_IF
+	
+	E_StationInOutState.StartMoveOut:
+		bMoveVehicleOutToPost := TRUE;
+		bVehicleReadyAtOutput := FALSE;
+		F_LogLine('TC_STAT Move from Out: %d', stStationData.stStationData2.nCurrentVehicleID);
+		eStationOutState := E_StationInOutState.WaitMoveOut;
+	
+	E_StationInOutState.WaitMoveOut:
+		IF (bVehicleOutToPostMoved) THEN
+			bMoveVehicleOutToPost := FALSE;
+			F_LogLine('TC_STAT Move from Out Done! ', 0);
+			eStationOutState := E_StationInOutState.Idle;
+		END_IF
+
+	E_StationInOutState.StartMoveIn:
+		bMoveVehicleInToPost := TRUE;
+		bVehicleReadyAtInput := FALSE;
+		F_LogLine('TC_STAT Move from In: %d', stStationData.stStationData1.nCurrentVehicleID);
+		eStationOutState := E_StationInOutState.WaitMoveIn;
+	
+	E_StationInOutState.WaitMoveIn:
+		IF (bVehicleInToPostMoved) THEN
+			bMoveVehicleInToPost := FALSE;
+			F_LogLine('TC_STAT Move from In Done! ', 0);
+			eStationOutState := E_StationInOutState.Idle;
+		END_IF
+	
+	ELSE
+		eStationOutState := E_StationInOutState.Idle;
+		
+END_CASE
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bPresent" Id="{2a65e457-fc1f-4b9a-b048-8460134a5d3c}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bPresent : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1096e25b-f9a7-4bb3-a58b-eb9d96d52f5f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bPresent := stStationData.bPresent;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{93308344-3c27-457a-8c66-b081229fc8a7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[stStationData.bPresent := P_bPresent;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bReInit" Id="{0d0550fa-524f-4df1-a508-1fc01ae57b70}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_bReInit : BOOL]]></Declaration>
+      <Set Name="Set" Id="{ce86c991-92c6-495c-91fe-e0fdbab0d20f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bInitDone := P_bReInit;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bVehicleReadyAtInput" Id="{b713f461-20af-4b59-9ac1-9a53a99d01ad}">
+      <Declaration><![CDATA[/// NOTE; Only needed because VehicleReadyAtInput is set from decision point logic and not from inside StationControl FB
+PROPERTY PUBLIC P_bVehicleReadyAtInput : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e701664f-569b-4d17-b53f-39dca5e97ae9}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bVehicleReadyAtInput := bVehicleReadyAtInput;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{a3e79edf-09d0-48d9-8675-5f9b64dd4c11}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bVehicleReadyAtInput := P_bVehicleReadyAtInput;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sCellID" Id="{28a88eed-c379-4f8d-8f7a-5e94a1a35269}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sCellID : STRING(30)]]></Declaration>
+      <Get Name="Get" Id="{f65cfe8d-412e-4369-b03a-66fd331459c2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sCellID := stStationData.sCellID;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{97b4edde-7423-43b4-955b-15c9803131e8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[stStationData.sCellID := P_sCellID;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sStationID" Id="{a9f54ec8-8436-487c-bde3-ab954e61d9b6}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sStationID : STRING(30)]]></Declaration>
+      <Get Name="Get" Id="{c11e3c70-ac4a-479b-9e83-824e37ae6eee}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sStationID := stStationData.sStationID;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{dd25fac6-2d4f-4ea1-9a41-61781121c40f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[stStationData.sStationID := P_sStationID;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_StationControl">
+      <LineId Id="297" Count="2" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="130" Count="0" />
+      <LineId Id="235" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="236" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_AddVehicle">
+      <LineId Id="5" Count="0" />
+      <LineId Id="33" Count="2" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="28" Count="1" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="65" Count="1" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="16" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_Buffers">
+      <LineId Id="51" Count="0" />
+      <LineId Id="95" Count="2" />
+      <LineId Id="27" Count="1" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="8" Count="5" />
+      <LineId Id="21" Count="4" />
+      <LineId Id="33" Count="2" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="42" Count="4" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="52" Count="1" />
+      <LineId Id="98" Count="2" />
+      <LineId Id="55" Count="29" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="85" Count="3" />
+      <LineId Id="54" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_ClearAll">
+      <LineId Id="36" Count="8" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="29" Count="1" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="16" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_Init">
+      <LineId Id="6" Count="1" />
+      <LineId Id="38" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_PostBufferEmpty">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_PreBufferEmpty">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_RemoveVehicle">
+      <LineId Id="31" Count="0" />
+      <LineId Id="9" Count="2" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_ShiftForward">
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="30" Count="2" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="33" Count="3" />
+      <LineId Id="24" Count="2" />
+      <LineId Id="20" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.M_Station">
+      <LineId Id="86" Count="113" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_bPresent.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_bPresent.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_bReInit.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_bVehicleReadyAtInput.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_bVehicleReadyAtInput.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_sCellID.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_sCellID.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_sStationID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_StationControl.P_sStationID.Set">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

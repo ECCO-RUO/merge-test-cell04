@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_OPCUA_Client_ReadVar" Id="{61e9c7b1-4ad1-4da3-aac9-977f29b80f54}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_OPCUA_Client_ReadVar EXTENDS FB_OPCUA_Client_Basic
+VAR_INPUT
+	iTargetSize	: UDINT;	// Size of local target variable
+	pTarget		: pVoid;	// Address of local target variable
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	(* Declarations for UA_Read *)
+	fbUA_Read				: UA_Read;
+	stIndexRange			: ARRAY [1..nMaxIndexRange] OF ST_UAIndexRange;
+	nIndexRangeCount		: UINT;
+	stNodeAddInfo			: ST_UANodeAdditionalInfo;
+	cbDataRead				: UDINT;
+END_VAR
+VAR PERSISTENT
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE eState OF
+	E_OPCUA_Client_Seq.Idle:
+		IF (bExecute) THEN
+			M_Init();
+			eState := E_OPCUA_Client_Seq.CheckData;
+		END_IF
+
+	E_OPCUA_Client_Seq.CheckData:
+		IF ((pTarget <> 0) AND (iTargetSize > 1)) THEN
+			eState := E_OPCUA_Client_Seq.OpenSession;
+		ELSE
+			bError := TRUE;
+			bBusy := FALSE;
+			eState := E_OPCUA_Client_Seq.Done;
+		END_IF
+
+	E_OPCUA_Client_Seq.OpenSession:
+		CASE M_OpenSession() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.GetNameSpace;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.Idle;			
+		END_CASE
+
+	E_OPCUA_Client_Seq.GetNameSpace:
+		CASE M_GetNameSpace() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.GetNode;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.CloseSession;			
+		END_CASE
+
+
+	E_OPCUA_Client_Seq.GetNode:
+		CASE M_GetNode() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.Read;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.CloseSession;			
+		END_CASE
+
+
+	E_OPCUA_Client_Seq.Read:
+		CASE M_ReadVar() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.ReleaseNode;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.ReleaseNode;
+		END_CASE
+
+	E_OPCUA_Client_Seq.ReleaseNode:
+		CASE M_ReleaseNode() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.CloseSession;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.CloseSession;
+		END_CASE
+
+	E_OPCUA_Client_Seq.CloseSession:
+		CASE M_CloseSession() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.Done;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.Done;
+		END_CASE
+		
+	E_OPCUA_Client_Seq.Done:
+		bBusy := FALSE;
+		IF (NOT bExecute) THEN
+			bDone := FALSE;
+			bError := FALSE;
+			eState := E_OPCUA_Client_Seq.Idle;
+		END_IF
+
+	ELSE
+		eState := E_OPCUA_Client_Seq.Idle;
+
+END_CASE
+]]></ST>
+    </Implementation>
+    <Method Name="M_Init" Id="{e9e2e531-338f-4bad-9247-ca3b2d37fcf6}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	
+	SUPER^.M_Init();	
+
+	stNodeAddInfo.nIndexRangeCount := nIndexRangeCount;
+	stNodeAddInfo.stIndexRange := stIndexRange;
+
+	M_Init := E_Method.Done;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ReadVar" Id="{1c72bd70-e86e-4320-9de5-f15492fabc7f}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ReadVar : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	fbUA_Read(	Execute := TRUE,
+				ConnectionHdl := nConnectionHdl,
+				NodeHdl := nNodeHdl,
+				cbData := iTargetSize,
+				stNodeAddInfo := stNodeAddInfo,
+				pVariable := pTarget	);
+
+	IF (fbUA_Read.Busy) THEN
+		// Reading
+		M_ReadVar := E_Method.Busy;
+	ELSIF (fbUA_Read.Error) THEN
+		// Error reading
+		fbUA_Read(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_Read.ErrorID;
+		M_ReadVar := E_Method.Error;
+	ELSIF (fbUA_Read.Done) THEN
+		// Data read OK
+		fbUA_Read(Execute := FALSE);
+		M_ReadVar := E_Method.Done;
+	ELSE
+		M_ReadVar := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_OPCUA_Client_ReadVar">
+      <LineId Id="14" Count="1" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="358" Count="0" />
+      <LineId Id="33" Count="1" />
+      <LineId Id="287" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="289" Count="0" />
+      <LineId Id="291" Count="0" />
+      <LineId Id="294" Count="2" />
+      <LineId Id="298" Count="0" />
+      <LineId Id="290" Count="0" />
+      <LineId Id="288" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="343" Count="0" />
+      <LineId Id="346" Count="1" />
+      <LineId Id="349" Count="0" />
+      <LineId Id="344" Count="0" />
+      <LineId Id="341" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="352" Count="5" />
+      <LineId Id="77" Count="2" />
+      <LineId Id="359" Count="5" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="102" Count="1" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="368" Count="3" />
+      <LineId Id="366" Count="0" />
+      <LineId Id="125" Count="1" />
+      <LineId Id="372" Count="5" />
+      <LineId Id="145" Count="1" />
+      <LineId Id="378" Count="5" />
+      <LineId Id="226" Count="1" />
+      <LineId Id="510" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="384" Count="0" />
+      <LineId Id="386" Count="0" />
+      <LineId Id="229" Count="1" />
+      <LineId Id="214" Count="1" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_ReadVar.M_Init">
+      <LineId Id="27" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="24" Count="2" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_ReadVar.M_ReadVar">
+      <LineId Id="23" Count="0" />
+      <LineId Id="6" Count="7" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="19" Count="1" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="29" Count="3" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="37" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

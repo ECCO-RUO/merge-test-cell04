@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToPositionDataIn" Id="{9434c4f2-ecf8-431f-9215-37623488a31b}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_MoveToPositionDataIn :
+STRUCT
+	eInputType					: UINT;										(* The vehicle/vehicles that will be moved. *)
+	sInput						: STRING(30);								(* Depending on the input type, the input can be the ID of a vehicle, last, article, last type, cell or station. *)
+	nPathID						: UINT;										(* The ID of the target Path *)
+	fPosition					: REAL;										(* The position on the speciied Path *)
+	eDirection					: BYTE;										(* 0: BiDirectional, 1: Forward, 2: Backward *)
+	nFollowID					: UINT := 0;
+	fVelocity					: REAL;
+	fAcceleration				: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_DecisionPointState" Id="{e0dd7577-51a0-49f1-8267-a1a9802eb14a}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_DecisionPointState :
+(
+	Idle := 0,				// Wait state
+	ReadVehicleData,		// Make sure vehicle data has been read from track server
+	CheckTicket,			// Check if ticket is in the reservation buffer for this cell
+	CheckPriority,			// Check if priority is correct
+// If vehicle is to be used in this cell
+	TakeOwnership,			// Take ownership of the vehicle (via. Track Server)
+	WaitStationReady,		// Wait station ready
+	MoveStation,			// Move vehicle to station (via. Track Server)
+	WaitMoveStation,			// Wait for vehicle on station
+	RemoveReservation,		// Remove ticket from reservation (via. Track Server)
+// If it should not be used in this cell
+	AddExtraToList,			// Add vehicle to extra list
+	WaitStationEmpty,
+	MoveNextCell,			// 
+	WaitMoveNextCell		// 
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

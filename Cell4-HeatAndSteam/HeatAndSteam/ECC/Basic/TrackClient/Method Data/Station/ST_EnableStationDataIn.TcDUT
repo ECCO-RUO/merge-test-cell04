@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_EnableStationDataIn" Id="{26e52b7c-91c7-406d-99e3-a04bab75290f}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_EnableStationDataIn :
+STRUCT
+	sCellID						: STRING(30);
+	sID							: STRING(30);
+	bPresent					: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

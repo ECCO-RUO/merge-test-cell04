@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleMappingDataDataIn" Id="{c8e2f5b5-02f2-49e0-a069-3ee485a5c570}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_UpdateVehicleMappingDataDataIn :
+STRUCT
+	nVehicleID					: UINT;										(* Magnemotion vehicle ID *)
+	sCarrierID					: STRING(30);								(* arrier ID (from RFID scan) *)
+	bTool						: BOOL;										(* TRUE/FALSE (True if Tool mounted) *)
+	sToolID						: STRING(30);								(* Tool ID (from RFID scan) *)
+	bMaterial					: BOOL;										(* TRUE/FALSE (True if material in tray) *)
+	sMaterialID					: STRING(30);								(* Material ID (from RFID Scan) (Optional) *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

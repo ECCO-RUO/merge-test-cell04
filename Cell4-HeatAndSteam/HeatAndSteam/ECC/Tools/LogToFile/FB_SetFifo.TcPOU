@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_SetFifo" Id="{6493c459-da0c-4815-9225-d6eb3d172717}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SetFifo
+VAR_INPUT
+	in_STRING:STRING(255);
+END_VAR
+VAR_OUTPUT
+	bFIFO_Full:BOOL;
+END_VAR
+VAR_IN_OUT
+	DB:ST_String_FIFO;
+END_VAR
+VAR
+	TempString:STRING(255);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* Insert data to fifo*)
+bFIFO_Full := FALSE;
+IF DB.Count <= DB.DataTop THEN
+
+	(* Calculate new insert pointer *)
+	DB.Input_Pointer := DB.Input_Pointer + 1;
+	IF DB.Input_Pointer > DB.DataTop THEN
+		DB.Input_Pointer := 0;
+	END_IF
+
+	(* If data is impty, sync output pointer *)
+	IF DB.Count = 0 THEN
+		DB.Output_Pointer := DB.Input_Pointer;
+	END_IF
+
+	(* Store data *)
+	DB.DB[DB.Input_Pointer] := in_STRING;
+
+	DB.Count := DB.Count + 1;
+
+ELSE
+	bFIFO_Full := TRUE;
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_SetFifo">
+      <LineId Id="19" Count="18" />
+      <LineId Id="50" Count="1" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

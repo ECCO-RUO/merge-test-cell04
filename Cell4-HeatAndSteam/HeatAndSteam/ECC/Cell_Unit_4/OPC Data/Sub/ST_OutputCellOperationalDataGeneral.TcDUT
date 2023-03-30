@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputCellOperationalDataGeneral" Id="{1cee5f2a-faab-4f1c-93d4-a70ed436c2c5}">
+    <Declaration><![CDATA[TYPE ST_OutputCellOperationalDataGeneral :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'E-Stop status'}
+	bEStop						: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Doors status'}
+	bDoors						: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell lights status'}
+	bCellLight					: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'PLC CPU Temperature'}
+	rPLCCPUTemp					: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Safety CPU Temperature'}
+	rSafetyCPUTemp				: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station communication status'}
+	bStationCommOK				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station PLC serial no'}
+	sPLCSerial					: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station PLC mainboard serial no'}
+	sPLCMBSerial				: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'CPU load/usage for the PLC runtime'}
+	rPLCCPULoad					: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'CPU load/usage for the OS/system'}
+	rOSCPULoad					: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Actual CPU frequency'}
+	rCPUFrequency				: REAL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

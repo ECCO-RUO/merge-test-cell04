@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputCellAdditionalDataSettings" Id="{b22f7afe-5bb4-413d-8cff-22d977c60b63}">
+    <Declaration><![CDATA[TYPE ST_InputCellAdditionalDataSettings :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Cell ModeState update Enable'}
+	DataChangeStatusModeStateEnable			: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell OEE update Enable'}
+	DataChangeStatusOEEEnable				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell ErrorWarning update Enable'}
+	DataChangeStatusErrorWarningEnable		: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell Operationaldata update Enable'}
+	DataChangeStatusOperationalDataEnable	: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

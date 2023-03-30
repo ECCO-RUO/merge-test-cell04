@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StatusPath" Id="{5a374d6c-d992-4064-96aa-29e8c17b68cd}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_StatusPath :
+STRUCT
+	nPathID						: UINT;
+	sCellID						: STRING(30);
+	bPathPresent				: BOOL;
+	nState						: UINT;			// E_MMPathState
+	nMotionStatus				: UINT;			// E_MMPathMotionStatus
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

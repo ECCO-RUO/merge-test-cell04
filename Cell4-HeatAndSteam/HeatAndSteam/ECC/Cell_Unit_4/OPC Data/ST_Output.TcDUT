@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_Output" Id="{e570520a-9424-48d3-907c-ec79b883fcf2}">
+    <Declaration><![CDATA[TYPE ST_Output :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Bridge header'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	Header					: ST_OutputHeader;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Cell Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Cell					: ST_OutputCell;
+
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Station 1 Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Station					: ST_OutputStation;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Bridge transport data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Transport				: ST_OutputTransport;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

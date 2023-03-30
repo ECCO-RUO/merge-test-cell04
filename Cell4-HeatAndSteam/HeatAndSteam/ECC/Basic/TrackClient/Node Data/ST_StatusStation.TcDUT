@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StatusStation" Id="{b5dbd258-9317-4078-af21-6be3402db3cf}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_StatusStation :
+STRUCT
+	sCellID						: STRING(30);
+	sStationID					: STRING(30);
+	bStationPresent				: BOOL;
+	nVehicleIDDecisionPoint		: UINT;				(* ID of the vehicle ready at station decision point. ZERO of no vehicle is ready *)	
+	sCarrierIDDecisionPoint		: STRING(30);		(* ID of the carrier ready at station decision point *)
+	nVehicleIDStationIn			: UINT;				(* ID of the vehicle ready at station location In location. ZERO of no vehicle is ready *)	
+	sCarrierIDStationIn			: STRING(30);		(* ID of the carrier ready at station location In location *)
+	nVehicleIDStationOut		: UINT;				(* ID of the vehicle ready at station location Out ZERO of no vehicle is ready *)	
+	sCarrierIDStationOut		: STRING(30);		(* ID of the carrier ready at station location Out location *)
+//	stStation					: ST_StatusBuffer;
+//	aPreBuffer					: ARRAY [1..MM_MAX_BUFFER_INDEX] OF ST_StatusBuffer;
+//	aPostBuffer					: ARRAY [1..MM_MAX_BUFFER_INDEX] OF ST_StatusBuffer;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

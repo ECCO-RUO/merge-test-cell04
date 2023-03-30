@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ManipulateMLX" Id="{227c6fdb-29f4-499f-9404-2664f29e696c}">
+    <Declaration><![CDATA[TYPE ST_ManipulateMLX :
+STRUCT
+	iNumberOfDataPoint		: USINT;			// Indicator for how many OF the data points that are filled out.
+	ScaleOriginX 			: REAL;				// Origin of scale point. X value.
+	ScaleOriginY			: REAL;				// Origin of scale point. Y value.
+	ScaleOriginZ			: REAL;				// Origin of scale point. Z value.
+	ScaleOriginQ1			: REAL;				// Origin of scale point. Quaternion scalar part
+	ScaleOriginQ2			: REAL;				// Origin of scale point. Quaternion x vector part
+	ScaleOriginQ3			: REAL;				// Origin of scale point. Quaternion y vector part
+	ScaleOriginQ4			: REAL;				// Origin of scale point. Quaternion z vector part
+	ScaleFactorX			: REAL;				// Scale factor in x direction.
+	ScaleFactorYZ			: REAL;				// Scale factor in y and z direction.
+	CalibrationOffsetX		: REAL;				// Offset from calibration of machine last. X value.
+	CalibrationOffsetY		: REAL;				// Offset from calibration of machine last. Y value.
+	CalibrationOffsetZ		: REAL;				// Offset from calibration of machine last. Z value.
+	CalibrationOffsetQ1		: REAL;				// Offset from calibration of machine last. Quaternion scalar part
+	CalibrationOffsetQ2		: REAL;				// Offset from calibration of machine last. Quaternion x vector part
+	CalibrationOffsetQ3		: REAL;				// Offset from calibration of shoe last. Quaternion y vector part
+	CalibrationOffsetQ4		: REAL;				// Offset FROM calibration OF shoe last. Quaternion z vector part	
+	aDataPoints				: ARRAY [0..199] OF ST_DataPointX;// Parameters for first point on shoe/machine last.
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

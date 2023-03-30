@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MMVehicleFlagData" Id="{f242febd-b326-4e33-afb6-dd247b6f8910}">
+    <Declaration><![CDATA[TYPE ST_MMVehicleFlagData :
+STRUCT
+	bVehicleSignal				: BOOL;
+	bObstructedStatus			: BOOL;
+	bHinderedStatus				: BOOL;
+	nPIDLoopSetIndex			: USINT;
+	bSuspectStatus				: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

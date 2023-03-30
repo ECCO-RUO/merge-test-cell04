@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddTrafficLightData" Id="{f6b53518-d8af-441a-84a7-20fac61eebca}">
+    <Declaration><![CDATA[TYPE ST_AddTrafficLightData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_AddTrafficLight';
+	iStatus						: INT;						// Calling status (-1: error, 0: not called, 1: calling, 2: completed OK)
+	iNoOfInputArgs				: BYTE := 4;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_AddTrafficLightDataIn;
+	stOutput					: ST_AddTrafficLightDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

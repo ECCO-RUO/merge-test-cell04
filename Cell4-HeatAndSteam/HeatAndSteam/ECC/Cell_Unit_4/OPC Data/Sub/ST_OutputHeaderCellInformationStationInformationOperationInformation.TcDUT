@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputHeaderCellInformationStationInformationOperationInformation" Id="{d2d354a9-1b27-46de-9f54-e16de1acd54f}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderCellInformationStationInformationOperationInformation :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Operation information'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OperationInformation		: ARRAY [1..4] OF ST_OutputHeaderCellInformationStationInformationOperationInformationX;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputHeader" Id="{d3f86357-34fc-476f-8299-d27fc66eb137}">
+    <Declaration><![CDATA[/// Standard Header for cells
+TYPE ST_InputHeader :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Header (0-100, 2 Hz)'}
+	HeartBeat				: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

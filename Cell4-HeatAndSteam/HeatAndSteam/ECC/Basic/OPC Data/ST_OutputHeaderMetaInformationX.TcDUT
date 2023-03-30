@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputHeaderMetaInformationX" Id="{6e67c93d-c772-4eaf-bb64-5a2ddbc3e229}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderMetaInformationX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Interface version'}
+	InterfaceVersion		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'PLC version'}
+	PLCVersion				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Serial Number'}
+	SerialNumber			: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell type'}
+	CellType				: STRING;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

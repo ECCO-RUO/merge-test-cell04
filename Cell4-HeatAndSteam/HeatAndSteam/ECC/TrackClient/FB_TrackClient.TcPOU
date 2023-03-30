@@ -1,0 +1,2651 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_TrackClient" Id="{167c4be1-0c16-4c42-80ce-103c054906e6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_TrackClient EXTENDS FB_TrackClient_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+	// Station FB's
+	afbStationCtrl			: ARRAY [1..5] OF FB_StationControl;
+	
+	// Decision Point
+	eDecisionPointState		: E_DecisionPointState;
+	nLastVehicleAtDecisionPoint: UINT;
+	nLastVehicleAtStation1	: UINT;
+	nLastVehicleAtStation2	: UINT;
+	nLastPriorityInStation	: UINT;
+	bDecisionPointBusy		: BOOL;
+//	nDecisionPointVehicleNo	: UINT;
+	nDecisionPointCellNo	: UINT;
+	nDecisionPointBufferIdx	: USINT;
+	sDecisionPointStationID	: STRING;
+	tonDecisionPointDelay	: TON;
+	bDecisionPoint_PAUSE	: BOOL;
+	iDecisionPointMoveCmdID	: UINT;
+	eDecisionPointMoveState	: E_VehicleMoveState;
+	
+	// Exit point
+	eExitPointState			: E_ExitPointState;
+	iExitPointStation		: UINT;
+	iExitPointTicket		: UINT;
+	iExitPointIndex			: UINT;
+	iExitPointFirstIdx		: UINT;
+	iExitPointBufferIdx		: UINT;
+	tonExitPointDelay		: TON;
+//	aExitPointVehicleNo		: ARRAY [1..MM_MAX_BUFFER_INDEX] OF UINT;	// Vehicle No's to be moved out by exit point logic
+	iStation2MoveCmdID		: UINT;
+	eStation2MoveState		: E_VehicleMoveState;
+	arVehicleCommandBuffer	: ARRAY[0..10] OF ST_InputTransportCommand;
+	bVehicleFoundCmdBuffer	: BOOL;
+	bVehicleCmdPointer		: UINT;
+	
+	// Buffers handling
+	ePostBufferIn			: E_PostBufferInState;
+	ePostBufferOut			: E_PostBufferOutState;
+	ePostBufferIn_Old		: E_PostBufferInState;
+	ePostBufferOut_Old		: E_PostBufferOutState;
+	eStationState			: E_StationState;
+	eBufferStates			: E_BufferStates;
+	eBufferState			: E_BufferState;
+	iBufferStation			: UINT;
+	iBufferTargetIDx		: USINT;
+	iBufferSourceIDx		: UINT;
+	tonBuffersDelay			: TON;
+	iBufferMoveCmdID		: UINT;
+	eBufferMoveState		: E_VehicleMoveState;
+	afbBufferControlPre		: ARRAY[1..5] OF FB_BufferControl;
+	afbBufferControlPost	: ARRAY[1..5] OF FB_BufferControl;
+	
+	// Vehicle FIFO (vehicles that are read from TrackServer but not belongs to this cell)
+	aVehiclesStationFIFO	: ARRAY[1..10] OF ST_VehicleInHS;
+	
+	(* Misc *)
+	stVehicleOnStation		: ST_ReadVehicleData;
+	diBufferINStateTimer	: UINT;
+	diBufferOUTStateTimer	: UINT;
+	diStationStateTimer		: UINT;
+	bBufferINStateChangeOS	: BOOL;
+	bBufferOUTStateChangeOS	: BOOL;
+	bStationStateChangeOS	: BOOL;
+	eStationState_Old		: E_StationState;
+	bStationEmpty			: BOOL;
+	iVehicleFIFOOut			: UINT;
+	bNextCell				: BOOL;
+	bBufferFull				: BOOL;
+	bVehicleAtStation		: BOOL;
+	bIncludeStation			: BOOL;
+	iVehicleCount			: UINT;
+	iIDinx					: USINT;
+	iIDoutx					: USINT;
+	iBufferIdx				: UINT;
+	iVehicleReadyStation1	: UINT;
+	iVehicleReadyStation2	: UINT;
+	iTicketToRemove			: UINT;
+	iCurrentTicket			: UINT;
+	iVehicleMoveBufferIN	: UINT;
+	nVehicleNoToRemove		: UINT := 0;		// Vehicle number to remove from track system!
+	bVehicleMovedFromSt1	: BOOL;
+
+	iScanCnt: UINT;
+	iNodeReads: UINT;
+	iNodeReadErrs: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(	stCommand := stCommand,
+		stMappingIn := stMappingIn,
+		stAdditionalDataIn := stAdditionalDataIn,
+		stStatus := stStatus,
+		stMappingOut := stMappingOut,
+		stAdditionaldataOut := stAdditionaldataOut 	);
+
+// Decision point
+M_CTL_DecisionPoint();
+
+// Exit point
+//M_CTL_ExitPoint();
+
+// Buffer handling
+//M_CTL_Buffers();
+
+// Station
+M_CTL_Station();
+]]></ST>
+    </Implementation>
+    <Method Name="M_ClearAll" Id="{8150436b-8956-4aad-b402-fc4095e8fb67}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Clear data on buffer locations
+FOR i:=1 TO 5 DO
+	IF aStations[i].bPresent THEN
+		IF afbBufferControlPre[i].P_iBufferSize > 0 THEN
+			afbBufferControlPre[i].M_ClearAll();
+		END_IF
+		IF afbBufferControlPost[i].P_iBufferSize > 0 THEN
+			afbBufferControlPost[i].M_ClearAll();
+		END_IF
+	END_IF
+END_FOR
+
+//Clear data on station(s)
+FOR i:=1 TO 5 DO
+	IF aStations[i].bPresent THEN
+		aStations[i].stStationData1.nTicket := 0;
+		aStations[i].stStationData1.nTicketSize := 0;
+		aStations[i].stStationData1.CurrentPriority := 0;
+		aStations[i].stStationData1.nCurrentVehicleID := 0;
+		aStations[i].stStationData1.nReservedVehicleID := 0;
+		aStations[i].stStationData2.nTicket := 0;
+		aStations[i].stStationData2.nTicketSize := 0;
+		aStations[i].stStationData2.CurrentPriority := 0;
+		aStations[i].stStationData2.nCurrentVehicleID := 0;
+		aStations[i].stStationData2.nReservedVehicleID := 0;
+	END_IF
+END_FOR
+
+//Clear statemachines
+eBufferState := E_BufferState.Idle;
+eExitPointState := E_ExitPointState.Idle;
+eDecisionPointState := E_DecisionPointState.Idle;
+//eMoveVehiclesOnCell := E_VehicleMoveState.Unknown;
+
+////Clear various variables
+bVehicleFoundCmdBuffer := FALSE;
+MEMSET(ADR(arVehicleCommandBuffer), 0, SIZEOF(arVehicleCommandBuffer));
+//bReadyStationIn[1] := FALSE;
+//bReadyStationOut[1] := FALSE;
+//bReadyStationOut[2] := FALSE;
+//bST2OutVehicleOnTarget := FALSE;
+//bST2InVehicleOnTarget := FALSE;
+//bST1InVehicleOnTarget := FALSE;
+
+//Clear StationControl
+FOR i:= 1 TO 5 DO
+	IF aStations[i].bPresent THEN
+		afbStationCtrl[i].M_ClearAll();
+		afbStationCtrl[i].bVehiclePreMoved := FALSE;
+		afbStationCtrl[i].bVehiclePostMoved := FALSE;
+		afbStationCtrl[i].bVehiclePreToInMoved := FALSE;
+		afbStationCtrl[i].bVehiclePreToOutMoved := FALSE;
+		afbStationCtrl[i].bVehicleInToOutMoved := FALSE;
+		afbStationCtrl[i].bVehicleInToPostMoved := FALSE;
+		afbStationCtrl[i].bVehicleOutToPostMoved := FALSE;
+	END_IF
+END_FOR
+
+F_Logfile('TrackClient - All data cleared!');
+
+M_ClearAll := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CommandData" Id="{853fa5e1-4296-41c9-b611-5273011b6872}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CommandData
+VAR_INPUT
+END_VAR
+VAR
+	i				: USINT;
+	iRes			: UINT;
+	bVehicleInCell	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Handle the command data from OPC UA (stCommand)
+
+// *** Speciel handling for this cell - addReservation have been moved to M_CTL_Station logic to delay until vehicle is fully complete ***
+
+CASE eCommandDataState OF
+	// Init state
+	E_CommandDataState.Undefined:
+		eCommandDataState := E_CommandDataState.CheckRequest;		
+
+	// Check command data request
+	E_CommandDataState.CheckRequest:
+		IF ((stCommand.ChangeRequest <> stStatus.ChangeStatus) AND (stCommand.ChangeRequest > 0)) THEN
+			// Check if changes is allowed on mapping data (from LC)
+			IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusTransportStatus = stStatus.DataChange) THEN
+				stStatus.ChangeAcknowledge := stCommand.ChangeRequest;
+				stStatus.DataChange := stStatus.DataChange + 1;
+			
+				// Find vehicle ID for specified Carrier ID
+				iCommandDataVehicleID := M_CarrierIDToVehicleID(stCommand.CarrierID);
+				IF ((iCommandDataVehicleID > 0) AND (iCommandDataVehicleID <= MM_MAX_NUMBER_OF_VEHICLE_ELEMENTS)) THEN
+					// Specified vehicle found
+					IF (F_StringCompNoCase(aReadVehicleData[iCommandDataVehicleID].stVehicle.sOwnerCell, sCellID)) THEN
+						// Vehicle belongs to this cell
+						stStatus.ValidRequest := TRUE;
+						IF (stCommand.Ticket <= 0) THEN
+							// Clear reservation data for this carrier (do not add reservation)
+							eCommandDataState := E_CommandDataState.UpdateJobData;
+						ELSE
+							// Check if specified vehicle is inside this cell 
+							bVehicleInCell := FALSE;
+							FOR i := 1 TO 10 BY 1 DO
+								IF F_StringCompNoCase(aVehiclesStationFIFO[i].sCarrierID, stCommand.CarrierID) THEN
+									// Vehicle found
+									bVehicleInCell := TRUE;
+									EXIT;
+								END_IF
+							END_FOR
+							IF (bVehicleInCell) THEN
+								// Vehicle is currently being operated in this cell
+								// Add reservation to buffer - to be send when ticket is complete
+								FOR i := 0 TO 10 DO
+									IF F_StringCompNoCase(arVehicleCommandBuffer[i].CarrierID, stCommand.CarrierID) THEN
+										arVehicleCommandBuffer[i] := stCommand;
+										F_LogLine(CONCAT('TC_CD: Command added to buffer (same), CarrierID: ', stCommand.CarrierID), 0);
+										EXIT;
+									ELSIF arVehicleCommandBuffer[i].CarrierID = '' THEN
+										arVehicleCommandBuffer[i] := stCommand;
+										F_LogLine(CONCAT('TC_CD: Command added to buffer (empty), CarrierID: ', stCommand.CarrierID), 0);
+										EXIT;
+									END_IF
+								END_FOR
+								eCommandDataState := E_CommandDataState.UpdateJobData;
+							ELSE
+								// Vehicle is NOT inside this cell
+								// Add reservation to track server now
+								F_LogLine(CONCAT('TC_CD: Handle command for CarrierID: ', stCommand.CarrierID), 0);
+								eCommandDataState := E_CommandDataState.AddReservation;
+							END_IF
+						END_IF
+					ELSE
+						eCommandDataState := E_CommandDataState.Error;
+					END_IF
+				ELSE
+					eCommandDataState := E_CommandDataState.Error;
+				END_IF
+			END_IF
+		END_IF
+		
+	E_CommandDataState.AddReservation:
+		iRes := M_CallAddReservation(	sStationID := stCommand.TargetStation,
+										sCarrierID := stCommand.CarrierID,
+										nTicket := stCommand.Ticket,
+										nTicketSize := stCommand.CarriersInPackage,
+										nPriority := stCommand.Priority 	);
+		IF (iRes = 2) THEN
+			// Success
+			eCommandDataState := E_CommandDataState.UpdateJobData;
+		ELSIF (iRes = 3) THEN
+			// Error!
+			eCommandDataState := E_CommandDataState.Error;
+		END_IF
+	
+	E_CommandDataState.UpdateJobData:
+		iRes := M_CallUpdateVehicleReservationData(	nVehicleID := iCommandDataVehicleID,
+													sTargetStationID := stCommand.TargetStation,
+													sCarrierID := stCommand.CarrierID,
+													nTicket := stCommand.Ticket,
+													nCarriersInPackage := stCommand.CarriersInPackage,
+													nPriority := stCommand.Priority,
+													sJobID := stCommand.JobID 	);
+		IF (iRes = 2) THEN
+			// Success
+			eCommandDataState := E_CommandDataState.Done;
+		ELSIF (iRes = 3) THEN
+			// Error!
+			eCommandDataState := E_CommandDataState.Error;
+		END_IF
+	
+	E_CommandDataState.Done:
+		stStatus.LatestTicket := stCommand.Ticket;
+		stStatus.NumberOfCarriers := stCommand.CarriersInPackage;
+		stStatus.ChangeStatus := stCommand.ChangeRequest;
+		stStatus.DataChange := stStatus.DataChange + 1;
+		eCommandDataState := E_CommandDataState.Undefined;
+		
+	E_CommandDataState.Error:
+		stStatus.ValidRequest := FALSE;
+		stStatus.ChangeStatus := stCommand.ChangeRequest;
+		stStatus.DataChange := stStatus.DataChange + 1;
+		eCommandDataState := E_CommandDataState.Undefined;
+		
+END_CASE
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CommandData_OLD" Id="{be5041a3-62de-4f06-b3bf-d3fc72b6f19b}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CommandData_OLD
+VAR_INPUT
+END_VAR
+VAR
+	i			: USINT;
+	iRes		: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Handle the command data from OPC UA (stCommand)
+
+// *** Speciel handling for this cell - addReservation have been moved to M_CTL_Station logic to delay until vehicle is fully complete ***
+
+CASE eCommandDataState OF
+	// Init state
+	E_CommandDataState.Undefined:
+		eCommandDataState := E_CommandDataState.CheckRequest;		
+
+	// Check command data request
+	E_CommandDataState.CheckRequest:
+		IF ((stCommand.ChangeRequest <> stStatus.ChangeStatus) AND (stCommand.ChangeRequest > 0)) THEN
+			// Check if changes is allowed on mapping data (from LC)
+			IF (stAdditionalDataIn.MESHandShakes.DataChangeStatusTransportStatus = stStatus.DataChange) THEN
+				stStatus.ChangeAcknowledge := stCommand.ChangeRequest;
+				stStatus.DataChange := stStatus.DataChange + 1;
+			
+				// Find vehicle ID for specified Carrier ID
+				iCommandDataVehicleID := M_CarrierIDToVehicleID(stCommand.CarrierID);
+				IF ((iCommandDataVehicleID > 0) AND (iCommandDataVehicleID <= MM_MAX_NUMBER_OF_VEHICLE_ELEMENTS)) THEN
+					// Specified vehicle found
+					IF (F_StringCompNoCase(aReadVehicleData[iCommandDataVehicleID].stVehicle.sOwnerCell, sCellID)) THEN
+						// Vehicle belongs to this cell
+						stStatus.ValidRequest := TRUE;
+						IF (stCommand.Ticket <= 0) THEN
+							// Clear reservation data for this carrier (do not add reservation)
+							eCommandDataState := E_CommandDataState.UpdateJobData;
+						ELSE
+//							// Add reservation to track server
+//							eCommandDataState := E_CommandDataState.AddReservation;
+
+							//Add reservation to buffer - to be send when ticket is complete
+							FOR i := 0 TO 10 DO
+								IF F_StringCompNoCase(arVehicleCommandBuffer[i].CarrierID, stCommand.CarrierID) THEN
+									arVehicleCommandBuffer[i] := stCommand;
+									F_LogLine('TC_CD: Command added to buffer same spot, VehicleID: %d', TO_UINT(stCommand.CarrierID));
+									EXIT;
+								ELSIF arVehicleCommandBuffer[i].CarrierID = '' THEN
+									arVehicleCommandBuffer[i] := stCommand;
+									F_LogLine('TC_CD: Command added to buffer empty spot, VehicleID: %d', TO_UINT(stCommand.CarrierID));
+									EXIT;
+								END_IF
+							END_FOR
+							eCommandDataState := E_CommandDataState.UpdateJobData;
+						END_IF
+					ELSE
+						eCommandDataState := E_CommandDataState.Error;
+					END_IF
+				ELSE
+					eCommandDataState := E_CommandDataState.Error;
+				END_IF
+			END_IF
+		END_IF
+		
+	E_CommandDataState.AddReservation:
+		iRes := M_CallAddReservation(	sStationID := stCommand.TargetStation,
+										sCarrierID := stCommand.CarrierID,
+										nTicket := stCommand.Ticket,
+										nTicketSize := stCommand.CarriersInPackage,
+										nPriority := stCommand.Priority 	);
+		IF (iRes = 2) THEN
+			// Success
+			eCommandDataState := E_CommandDataState.UpdateJobData;
+		ELSIF (iRes = 3) THEN
+			// Error!
+			eCommandDataState := E_CommandDataState.Error;
+		END_IF
+	
+	E_CommandDataState.UpdateJobData:
+		iRes := M_CallUpdateVehicleReservationData(	nVehicleID := iCommandDataVehicleID,
+													sTargetStationID := stCommand.TargetStation,
+													sCarrierID := stCommand.CarrierID,
+													nTicket := stCommand.Ticket,
+													nCarriersInPackage := stCommand.CarriersInPackage,
+													nPriority := stCommand.Priority,
+													sJobID := stCommand.JobID 	);
+		IF (iRes = 2) THEN
+			// Success
+			eCommandDataState := E_CommandDataState.Done;
+		ELSIF (iRes = 3) THEN
+			// Error!
+			eCommandDataState := E_CommandDataState.Error;
+		END_IF
+	
+	E_CommandDataState.Done:
+		stStatus.LatestTicket := stCommand.Ticket;
+		stStatus.NumberOfCarriers := stCommand.CarriersInPackage;
+		stStatus.ChangeStatus := stCommand.ChangeRequest;
+		stStatus.DataChange := stStatus.DataChange + 1;
+		eCommandDataState := E_CommandDataState.Undefined;
+		
+	E_CommandDataState.Error:
+		stStatus.ValidRequest := FALSE;
+		stStatus.ChangeStatus := stCommand.ChangeRequest;
+		stStatus.DataChange := stStatus.DataChange + 1;
+		eCommandDataState := E_CommandDataState.Undefined;
+		
+END_CASE
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_Buffer" Id="{8719cfd6-79f0-4a02-ae40-4c87e6cf228c}">
+      <Declaration><![CDATA[METHOD M_CTL_Buffer : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	iVehicleAtStation1 	: UINT;
+	iVehicleAtStation2 	: UINT;
+	iFirstStation		: UINT;
+	i					: UINT;
+	j					: UINT;
+	iRes				: INT;
+	sTempString			: STRING(200);
+
+	bAllMoved			: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[iVehicleAtStation1 := M_CTL_VehicleAtStationX(iStationNo:= 1);
+iVehicleAtStation2 := M_CTL_VehicleAtStationX(iStationNo:= 2);
+//Run stateTimers
+IF bBufferINStateChangeOS THEN
+	diBufferInStateTimer := 0;
+END_IF
+IF diBufferInStateTimer < 64000 THEN
+	diBufferInStateTimer := diBufferInStateTimer + g_iPLCScan_MS;
+END_IF
+IF bBufferOUTStateChangeOS THEN
+	diBufferOutStateTimer := 0;
+END_IF
+IF diBufferOuTStateTimer < 64000 THEN
+	diBufferOuTStateTimer := diBufferOUTStateTimer + g_iPLCScan_MS;
+END_IF
+
+
+//Get first station number
+FOR i := 1 TO MM_MAX_NUMBER_OF_STATION_ELEMENTS DO
+	IF NOT aReadStationData[i].stStationData.bStationPresent THEN EXIT; END_IF
+	IF aReadStationData[i].stStationData.sCellID = 'C000004' THEN
+		iFirstStation := i ;
+		EXIT;
+	END_IF
+END_FOR
+
+
+//Buffer IN
+CASE ePostBufferIn OF
+	E_PostBufferInState.Waiting:
+	
+		IF diBufferInStateTimer > 2000 AND NOT bBufferFull THEN
+			//Vehicle FIFO out
+//			IF LEN(aVehiclesStationFIFO[1].sCarrierID) > 0 THEN
+//				IF aReadVehicleData[aVehiclesStationFIFO[1].nVehicleNo].stVehicle.sCurrentStationID = aStations[2].sStationID THEN
+//					ePostBufferIn := E_PostBufferInState.FindPosition;
+					
+//					F_LogFile(CONCAT('BufferIN - FindPosition by first item in FIFO NO: ', TO_STRING(aVehiclesStationFIFO[1].nVehicleNo)));
+//				END_IF
+			//Vehicle at station
+			IF iVehicleAtStation2 > 0 AND (nLastVehicleAtStation2 <> iVehicleAtStation2) THEN
+				IF aStations[2].sStationID = aReadVehicleData[iVehicleAtStation2].stVehicle.sCurrentStationID THEN
+					nLastVehicleAtStation2 := iVehicleAtStation2;
+					ePostBufferIn := E_PostBufferInState.FindPosition;
+					
+					F_LogFile(CONCAT('BufferIN - FindPosition for vehicle at station NO: ', TO_STRING(iVehicleAtStation2)));
+				END_IF 
+			END_IF
+			IF (iVehicleAtStation2 = 0) THEN
+				// Previous vehicle removed from ST2. Reset Last vehicle ID (To allow same vehicle to arrive two times!)
+				nLastVehicleAtStation2 := 0;
+			END_IF
+		END_IF
+	
+	E_PostBufferInState.FindPosition:
+		IF ePostBufferOut = E_PostBufferOutState.CheckBuffer THEN
+			FOR i := MM_MAX_BUFFER_INDEX TO 1 BY -1 DO
+				IF aStations[2].astPostBuffer[i].bPresent AND aStations[2].astPostBuffer[i].nCurrentVehicleID = 0 THEN
+					iIDinx := TO_USINT(i);
+					ePostBufferIn := E_PostBufferInState.Infeed;
+					
+					iVehicleMoveBufferIN := iVehicleAtStation2;
+					sTempString := CONCAT('BufferIN - Found pos at: ', TO_STRING(i));
+					sTempString := CONCAT(sTempString, ', for vehicle NO: ');
+					F_LogFile(CONCAT(sTempString, TO_STRING(iVehicleAtStation2)));
+					EXIT;
+				END_IF
+			END_FOR
+		
+			//Looped through without finding a free position
+			IF ePostBufferIn = E_PostBufferInState.FindPosition THEN
+				aStations[2].stStationData1.nCurrentVehicleID := aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn;
+				aStations[2].stStationData1.nTicket := aReadVehicleData[iVehicleAtStation2].stVehicle.nTicket;
+				aStations[2].stStationData1.nTicketSize := aReadVehicleData[iVehicleAtStation2].stVehicle.nTicketSize;
+				bBufferFull := TRUE; (* Used in PostBufferOut *)
+				nLastVehicleAtStation2 := 0; //Same vehicle for next check
+				ePostBufferIn := E_PostBufferInState.Waiting;
+				
+				sTempString := ('BufferIN - Buffer full');
+				F_LogFile(sTempString);
+			ELSE
+				bBufferFull := FALSE;
+			END_IF
+		END_IF
+	E_PostBufferInState.Infeed:
+		iRes := M_CallMoveVehicleToBuffer(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+											sInput := UINT_TO_STRING(aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn), 
+											sStationID := afbStationCtrl[2].P_sStationID,
+											eBufferType := E_MMStationBuffer.eMMStationBuffer_PostProcess, 
+											nBufferIndex := iIDinx, 
+											eDirection := E_MMDirection.eMMDirection_Forward, 
+											fVelocity := 1, 
+											fAcceleration := 1	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			//Move data
+			aStations[2].astPostBuffer[iIDinx].nCurrentVehicleID := aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn;
+			aStations[2].astPostBuffer[iIDinx].nTicket := aReadVehicleData[aStations[2].astPostBuffer[iIDinx].nCurrentVehicleID].stVehicle.nTicket;
+			aStations[2].astPostBuffer[iIDinx].nTicketSize := aReadVehicleData[aStations[2].astPostBuffer[iIDinx].nCurrentVehicleID].stVehicle.nTicketSize;
+			
+			sTempString := CONCAT('BufferIN - Move to buffer OK NO: ', TO_STRING(aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn));
+			//Remove from FIFO
+			IF LEN(aVehiclesStationFIFO[1].sCarrierID) > 0 THEN 
+				IF nLastVehicleAtStation2 = aVehiclesStationFIFO[1].nVehicleNo THEN
+					P_bFifoOut := TRUE;
+					sTempString := CONCAT(sTempString, ', nLastVehicle: ');
+					sTempString := CONCAT(sTempString, TO_STRING(nLastVehicleAtStation2));
+					sTempString := CONCAT(sTempString, ', FIFO out carrierID: ');
+					sTempString := CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[1].nVehicleNo));
+//					sTempString := CONCAT(sTempString, ' Removed from FIFO');
+					
+//					aVehiclesStationFIFO[1].nVehicleNo := 0;
+//					aVehiclesStationFIFO[1].sCarrierID := '';
+	
+				END_IF
+			END_IF
+			F_LogFile(sTempString);
+			ePostBufferIn := E_PostBufferInState.ExtraVehicleRemove;
+			
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogFile(CONCAT('BufferIN - Move to buffer FAILED NO: ', TO_STRING(aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn)));
+			ePostBufferIn := E_PostBufferInState.ExtraVehicleRemove;
+
+		END_IF
+		
+	E_PostBufferInState.ExtraVehicleRemove:
+(*	Wait ro remove until moved out from post buffer!
+		IF M_ExtraVehicleRemove(iVehicleNo:= iVehicleMoveBufferIN) THEN
+			F_LogFile(CONCAT('BufferIN - Vehicle removed from extra, NO: ', TO_STRING(aReadStationData[iFirstStation+1].stStationData.nVehicleIDStationIn)));
+			ePostBufferIn := E_PostBufferInState.Waiting;
+		END_IF
+*)
+		ePostBufferIn := E_PostBufferInState.Waiting;
+
+END_CASE
+
+
+//Buffer out
+CASE ePostBufferOut OF
+	E_PostBufferOutState.Waiting:
+		tonPostBufferDelay.IN := FALSE;
+		FOR i := 1 TO MM_MAX_BUFFER_INDEX BY 1 DO
+			aPostBufferVehicleNo[i] := 0;
+		END_FOR
+		ePostBufferOut := E_PostBufferOutState.CheckBufferSpace;
+		F_LogFile('BufferOUT - Waiting -> CheckBufferSpace');
+		
+	E_PostBufferOutState.CheckBuffer:
+		iVehicleCount := 0;
+		bIncludeStation := FALSE;
+		//Loop through buffers and check tickets
+		FOR i := MM_MAX_BUFFER_INDEX TO 1 BY -1 DO
+			IF aStations[2].astPostBuffer[i].bPresent AND aStations[2].astPostBuffer[i].nCurrentVehicleID <> 0 THEN
+				iVehicleCount := iVehicleCount +1;
+				
+				//Ticket number differs	- send out vehicles
+				IF iVehicleCount > 1 AND (aStations[2].astPostBuffer[i+1].nTicket <> aStations[2].astPostBuffer[i].nTicket) THEN
+					iVehicleCount := iVehicleCount - 1;
+					ePostBufferOut := E_PostBufferOutState.SetTrafficLightRed;
+		
+					sTempString := CONCAT('BufferOUT - Diff ticket, found: ', TO_STRING(iVehicleCount+1));
+					sTempString := CONCAT(sTempString, ', of vehicle(s), old ticket: ');
+					sTempString := CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[i+1].nTicket));
+					sTempString := CONCAT(sTempString, ', new ticket: ');
+					F_LogFile(CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[i].nTicket)));
+					EXIT;
+				//Vehicle count with amount of tickets reached
+				ELSIF iVehicleCount > 0 AND (iVehicleCount >= aStations[2].astPostBuffer[i].nTicketSize OR aStations[2].astPostBuffer[i].nTicket = 0) THEN
+					ePostBufferOut := E_PostBufferOutState.SetTrafficLightRed;
+					
+					sTempString := CONCAT('BufferOUT - All tickets found or ticket = 0: ', TO_STRING(iVehicleCount));
+					sTempString := CONCAT(sTempString, ', of vehicle(s), ticket: ');
+					sTempString := CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[i].nTicket));
+					sTempString := CONCAT(sTempString, ', of ticket size: ');
+					F_LogFile(CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[i].nTicketSize)));		
+					EXIT;
+				END_IF
+			END_IF
+		END_FOR
+		//Buffer full check with vehicle on station
+		IF bBufferFull AND iVehicleCount > 1 THEN
+			//Ticket number differs	- send out vehicles
+			IF (aStations[2].stStationData1.nTicket <> aStations[2].astPostBuffer[1].nTicket) THEN
+				ePostBufferOut := E_PostBufferOutState.SetTrafficLightRed;
+				
+				sTempString := CONCAT('BufferOUT - Diff ticket, buffer full found: ', TO_STRING(iVehicleCount));
+				sTempString := CONCAT(sTempString, ', of vehicle(s), ticket on station: ');
+				sTempString := CONCAT(sTempString, TO_STRING(aStations[2].stStationData1.nTicket));
+				sTempString := CONCAT(sTempString, ', ticket on pos 1 buffer: ');
+				F_LogFile(CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[1].nTicket)));
+			//Vehicle count with amount of tickets reached
+			ELSE 
+				bIncludeStation := TRUE;
+				nLastVehicleAtStation2 := iVehicleAtStation2;
+				ePostBufferOut := E_PostBufferOutState.SetTrafficLightRed;
+
+				sTempString := CONCAT('BufferOUT - Buffer full found: ', TO_STRING(iVehicleCount));
+				sTempString := CONCAT(sTempString, ', of vehicle(s), ticket on station: ');
+				sTempString := CONCAT(sTempString, TO_STRING(aStations[2].stStationData1.nTicket));
+				sTempString := CONCAT(sTempString, ', ticket on pos 1 buffer: ');
+				F_LogFile(CONCAT(sTempString, TO_STRING(aStations[2].astPostBuffer[1].nTicket)));		
+			END_IF
+		END_IF
+		
+		iBufferIdx := MM_MAX_BUFFER_INDEX;
+		iIDoutx := TO_USINT(iVehicleCount);
+	
+	E_PostBufferOutState.SetTrafficLightRed:
+		IF diBufferOUTStateTimer > 2000 THEN
+			iRes := M_CallSetTrafficLightColor(	nColor := E_MMTrafficLightColor.eMMTrafficLightColor_Red );
+			IF (iRes = 2) THEN
+				// Call OK
+				ePostBufferOut := E_PostBufferOutState.Outfeed;
+				F_LogFile('BufferOUT - Set trafficlight RED OK');
+			ELSIF (iRes = 3) THEN
+				// Call failed
+				// TODO!!!
+				ePostBufferOut := E_PostBufferOutState.Waiting;
+				F_LogFile('BufferOUT - Set trafficlight FAILED');
+			END_IF
+		END_IF
+		
+	E_PostBufferOutState.Outfeed:
+		IF diBufferOUTStateTimer > 2000 THEN
+			IF aStations[2].astPostBuffer[iBufferIdx].bPresent THEN
+				iRes := M_CallMoveVehicleToDecisionPoint(eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+														 sInput := UINT_TO_STRING(aStations[2].astPostBuffer[iBufferIdx].nCurrentVehicleID), 
+														 sStationID := sNextStationOnTrack,
+														 eDirection := E_MMDirection.eMMDirection_Forward, 
+														 fVelocity := 1, 
+														 fAcceleration := 1	);
+				IF (iRes = 2) THEN
+					// Movement call OK
+					sTempString := CONCAT('BufferOUT - Move vehicle: ', TO_STRING(aStations[2].astPostBuffer[iBufferIdx].nCurrentVehicleID));
+					F_LogFile(CONCAT(sTempString, ', out OK'));
+					// Save vehicle numbers for moved vehicles
+					aPostBufferVehicleNo[iBufferIdx] := aStations[2].astPostBuffer[iBufferIdx].nCurrentVehicleID;
+					// Clear buffer data					
+					aStations[2].astPostBuffer[iBufferIdx].nCurrentVehicleID := 0;
+					aStations[2].astPostBuffer[iBufferIdx].nTicket := 0;
+					aStations[2].astPostBuffer[iBufferIdx].nTicketSize := 0;
+					iBufferIdx := iBufferIdx - 1;
+					iIDoutx := iIDoutx -1;
+		
+					IF (iIDoutx <= 0) THEN
+						// All in buffer move - move on station?
+						IF bIncludeStation THEN
+							ePostBufferOut := E_PostBufferOutState.OutfeedStation;
+							bBufferFull := FALSE;
+							F_LogFile('BufferOUT - include station');
+						ELSE
+							ePostBufferOut := E_PostBufferOutState.WaitOutfeedStation;
+							
+							F_LogFile('BufferOUT - NOT include station');
+						END_IF	
+					END_IF
+				ELSIF (iRes = 3) THEN
+					// Movement call failed
+					// TODO!!!
+				END_IF
+			ELSE
+				iBufferIdx := LIMIT(1, (iBufferIdx - 1), MM_MAX_BUFFER_INDEX);
+			END_IF
+		END_IF
+	
+	E_PostBufferOutState.OutfeedStation:
+		iRes := M_CallMoveVehicleToDecisionPoint(eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+														 sInput := UINT_TO_STRING(aStations[2].stStationData1.nCurrentVehicleID), 
+														 sStationID := sNextStationOnTrack,
+														 eDirection := E_MMDirection.eMMDirection_Forward, 
+														 fVelocity := 1, 
+														 fAcceleration := 1	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Save vehicle numbers for moved vehicles (use index 0 for buffer position)
+			aPostBufferVehicleNo[0] := aStations[2].stStationData1.nCurrentVehicleID;
+			// Clear buffer data					
+			aStations[2].stStationData1.nCurrentVehicleID := 0;
+			aStations[2].stStationData1.nTicket := 0;
+			aStations[2].stStationData1.nTicketSize := 0;
+			ePostBufferOut := E_PostBufferOutState.WaitOutfeedStation;
+			F_LogFile('BufferOUT - Move to station OK');
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+		END_IF
+	
+// TEST
+	E_PostBufferOutState.WaitOutfeedStation:
+		tonPostBufferDelay.IN := TRUE;
+		tonPostBufferDelay.PT := T#60S;
+		IF ((tonPostBufferDelay.ET > T#4S)) THEN
+			bAllMoved := TRUE;
+			// Check if all vehicles are moved away from station path ID
+			FOR i := 0 TO MM_MAX_BUFFER_INDEX BY 1 DO
+				IF (aPostBufferVehicleNo[i] > 0) THEN
+					// Vehicle no to be checked!
+					IF (aReadVehicleData[aPostBufferVehicleNo[i]].stVehicle.nPathID <> aStations[2].stStationData1.stLocation.nPathID) THEN
+						// This vehicle IS away from station path
+						// Stop checking it
+						M_ExtraVehicleRemove(iVehicleNo:= aPostBufferVehicleNo[i]);
+						F_LogFile(CONCAT('BufferOUT - Move to station DONE. NO: ', UINT_TO_STRING(aPostBufferVehicleNo[i])));
+						aPostBufferVehicleNo[i] := 0;
+					ELSE
+						// This vehicle is NOT away from station path
+						bAllMoved := FALSE;
+						EXIT;
+					END_IF
+				END_IF
+			END_FOR
+			IF (bAllMoved OR tonPostBufferDelay.Q) THEN
+				tonPostBufferDelay.IN := FALSE;
+				ePostBufferOut := E_PostBufferOutState.SetTrafficLightGreen;			
+			END_IF
+		END_IF
+// TEST END 
+		
+	E_PostBufferOutState.SetTrafficLightGreen:
+		IF diBufferOutStateTimer > 3000 THEN
+			iRes := M_CallSetTrafficLightColor(	nColor := E_MMTrafficLightColor.eMMTrafficLightColor_Green );
+			IF (iRes = 2) THEN
+				// Call OK
+				bBufferFull := FALSE;
+				ePostBufferOut := E_PostBufferOutState.CheckBufferSpace;
+				F_LogFile('BufferOUT - Traffic light green OK');
+			ELSIF (iRes = 3) THEN
+				bBufferFull := FALSE;
+				// Call failed
+				F_LogFile('BufferOUT - Traffic light green Failed!');
+				// TODO!!!
+				ePostBufferOut := E_PostBufferOutState.CheckBufferSpace;
+			END_IF
+		END_IF
+
+	E_PostBufferOutState.CheckBufferSpace:
+		IF diBufferOutStateTimer > 2000 THEN
+			FOR i := MM_MAX_BUFFER_INDEX TO 1 BY -1 DO
+				IF i > 1 AND
+					aStations[2].astPostBuffer[i].bPresent AND aStations[2].astPostBuffer[i].nCurrentVehicleID = 0 AND
+					aStations[2].astPostBuffer[i-1].nCurrentVehicleID <> 0 THEN
+					ePostBufferOut := E_PostBufferOutState.Acumulate;
+					iIDoutx := TO_USINT(i);
+					
+					sTempString := CONCAT('BufferOUT - Accumulate, move vehicle: ', TO_STRING(aStations[2].astPostBuffer[i-1].nCurrentVehicleID));
+					sTempString := CONCAT(sTempString, ', From buffer pos: ');
+					sTempString := CONCAT(sTempString, TO_STRING(i-1));
+					sTempString := CONCAT(sTempString, ', to buffer pos: ');
+					sTempString := CONCAT(sTempString, TO_STRING(i));
+					sTempString := CONCAT(sTempString, ', for station: ');
+					F_LogFile(CONCAT(sTempString, afbStationCtrl[2].P_sStationID));		
+					EXIT;
+				
+				ELSIF i <= 1 THEN
+					ePostBufferOut := E_PostBufferOutState.CheckBuffer;
+					F_LogFile('BufferOUT - Check buffer space DONE');
+					EXIT;
+				END_IF
+			END_FOR
+		END_IF
+				
+	E_PostBufferOutState.Acumulate:
+		iRes := M_CallMoveVehicleToBuffer(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+											sInput := UINT_TO_STRING(aStations[2].astPostBuffer[iIDoutX-1].nCurrentVehicleID), 
+											sStationID := afbStationCtrl[2].P_sStationID,
+											eBufferType := E_MMStationBuffer.eMMStationBuffer_PostProcess, 
+											nBufferIndex := iIDoutx, 
+											eDirection := E_MMDirection.eMMDirection_Forward, 
+											fVelocity := 1, 
+											fAcceleration := 1	);
+
+		IF (iRes = 2) THEN
+			// Movement call OK
+			//Move data
+			M_CopyAndClearBufferData(stSource:= aStations[2].astPostBuffer[iIDoutx-1], stTarget:= aStations[2].astPostBuffer[iIDoutx]);
+			bBufferFull := FALSE;
+			ePostBufferOut := E_PostBufferOutState.CheckBufferSpace;
+			F_LogFile('BufferOUT - Acummulate OK');
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			bBufferFull := FALSE;
+			ePostBufferOut := E_PostBufferOutState.Waiting;
+			F_LogFile('BufferOUT - Acummulate FAILED');
+		END_IF
+END_CASE
+
+
+//OS state Change
+bBufferINStateChangeOS := ePostBufferIn <> ePostBufferIn_Old;
+ePostBufferIn_Old := ePostBufferIn;
+
+bBufferOUTStateChangeOS := ePostBufferOut <> ePostBufferOut_Old;
+ePostBufferOut_Old := ePostBufferOut;
+
+// Delay
+tonPostBufferDelay(	IN:= ,
+					PT:= ,
+					Q=> ,
+					ET=> 	);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_Buffers" Id="{42b53f9d-67ae-48e4-9e6b-8d87ace1ecd7}">
+      <Declaration><![CDATA[/// Handle buffers
+METHOD PROTECTED M_CTL_Buffers
+VAR_INPUT
+END_VAR
+VAR
+	iRes				: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE eBufferState OF
+	E_BufferState.Idle:
+		tonBuffersDelay.IN := FALSE;
+		IF (bEnable AND bConnectedMethod AND bConnectedNode) THEN
+			eBufferState := E_BufferState.Waiting;
+		ELSE
+			iBufferStation := 1;
+		END_IF
+		
+	E_BufferState.Waiting:
+		//IF ((eDecisionPointState = E_DecisionPointState.Idle) OR (eDecisionPointState = E_DecisionPointState.WaitStationEmpty) OR (eDecisionPointState = E_DecisionPointState.WaitStationReady)) THEN
+			// Buffers can be handled now
+			eBufferState := E_BufferState.CheckBuffer;
+		//END_IF
+		
+	E_BufferState.CheckBuffer:
+		IF (afbStationCtrl[iBufferStation].bMoveVehiclePreToIn) THEN
+			// Station control request a vehicle move from pre buffer to station input location
+			eBufferState := E_BufferState.WaitPreToInOnPos;			
+		ELSIF (afbStationCtrl[iBufferStation].bMoveVehiclePreToOut) THEN
+			// Station control request a vehicle move from pre buffer to station output location
+			eBufferState := E_BufferState.WaitPreToOutOnPos;			
+		ELSIF (afbStationCtrl[iBufferStation].bMoveVehicleInToOut) THEN
+			// Station control request a vehicle move from station input to station output
+			eBufferState := E_BufferState.MoveInToOut;			
+		ELSIF (afbStationCtrl[iBufferStation].bMoveVehicleOutToPost) THEN
+			// Station control request a vehicle move from station output to post buffer
+			eBufferState := E_BufferState.MoveOutToPost;			
+		ELSIF (afbStationCtrl[iBufferStation].bMoveVehicleInToPost) THEN
+			// Station control request a vehicle move from station input to post buffer
+			eBufferState := E_BufferState.MoveInToPost;
+		ELSE
+			iBufferStation := iBufferStation + 1;
+			IF ( (iBufferStation > 5) OR (NOT aStations[iBufferStation].bPresent) ) THEN
+				// Start from beginning
+				iBufferStation := 1;
+			END_IF
+			eBufferState := E_BufferState.Idle;			
+		END_IF
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Station input/pickup
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+	E_BufferState.WaitPreToInOnPos:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#0S;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := afbBufferControlPre[1].P_iCurrentVehicleCmdID,
+												eMoveStatus => eBufferMoveState 	);
+			
+				IF (iRes = 2) THEN
+					tonBuffersDelay.IN := FALSE;
+					// Call OK
+					IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+						// Error with command
+						// TODO!!!
+						
+					ELSIF (eBufferMoveState >= E_VehicleMoveState.Complete) THEN
+						// Command accepted!
+						F_LogLine('TC_BUF: Pre-Buf Vehicle on Pos : %d', afbBufferControlPre[1].P_iCurrentVehicleID);
+						eBufferState := E_BufferState.MovePreToIn;
+					END_IF
+					
+				ELSIF (iRes = 3) THEN
+					tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+				END_IF
+			END_IF
+	
+	E_BufferState.MovePreToIn:
+		iRes := M_CallMoveVehicleToStationIn(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+												sInput := UINT_TO_STRING(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID), 
+												sStationID := afbStationCtrl[iBufferStation].P_sStationID,
+												eDirection := E_MMDirection.eMMDirection_Forward, 
+												fVelocity := 0.5, 
+												fAcceleration := 1,
+												iCmdID => iBufferMoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Trig event-driven reading
+			M_VehicleToReadAdd(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+			F_LogLine('TC_BUF: Pre-Buf To In OK : %d', aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);				
+			eBufferState := E_BufferState.WaitPreToIn;
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogLine('TC_BUF: Error moving Pre-Buf To In! : %d', aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+			eBufferState := E_BufferState.Idle;
+		END_IF
+	
+	E_BufferState.WaitPreToIn:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#1S;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iBufferMoveCmdID,
+											eMoveStatus => eBufferMoveState 	);
+			IF (iRes = 2) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Call OK
+				IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eBufferMoveState = E_VehicleMoveState.Complete) THEN
+					// Command completed!
+					// Trig event-driven reading
+					M_VehicleToReadAdd(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);			
+					// Update buffer data			
+					M_CopyBufferData(stSource := aStations[iBufferStation].astPreBuffer[1], stTarget := aStations[iBufferStation].stStationData1);
+					//Delete from buffercontrol
+					afbBufferControlPre[iBufferStation].M_RemoveVehicle(iVehicleID:= aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+					// signal movement finished
+					afbStationCtrl[iBufferStation].bVehiclePreToInMoved := TRUE;
+					eBufferState := E_BufferState.FinishedPreToIn;
+					
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+			END_IF
+		END_IF
+
+	E_BufferState.FinishedPreToIn:
+		IF (NOT afbStationCtrl[iBufferStation].bMoveVehiclePreToIn) THEN
+			afbStationCtrl[iBufferStation].bVehiclePreToInMoved := FALSE;
+			eBufferState := E_BufferState.Idle;
+		END_IF
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Station output/place
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	E_BufferState.WaitPreToOutOnPos:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#0S;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := afbBufferControlPre[1].P_iCurrentVehicleCmdID,
+												eMoveStatus => eBufferMoveState 	);
+			
+				IF (iRes = 2) THEN
+					tonBuffersDelay.IN := FALSE;
+					// Call OK
+					IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+						// Error with command
+						// TODO!!!
+						
+					ELSIF (eBufferMoveState >= E_VehicleMoveState.Complete) THEN
+						// Command accepted!
+						F_LogLine('TC_BUF: Pre-Buf Vehicle on Pos : %d', afbBufferControlPre[1].P_iCurrentVehicleID);
+						eBufferState := E_BufferState.MovePreToOut;
+					END_IF
+					
+				ELSIF (iRes = 3) THEN
+					tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+				END_IF
+			END_IF
+
+	E_BufferState.MovePreToOut:
+		iRes := M_CallMoveVehicleToStationOut(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+												sInput := UINT_TO_STRING(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID), 
+												sStationID := afbStationCtrl[iBufferStation].P_sStationID,
+												eDirection := E_MMDirection.eMMDirection_Forward, 
+												fVelocity := 0.5, 
+												fAcceleration := 1,
+												iCmdID => iBufferMoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Trig event-driven reading
+			M_VehicleToReadAdd(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+			F_LogLine('TC_BUF: Moving Pre-Buf To Out OK : %d', aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);				
+			eBufferState := E_BufferState.WaitPreToOut;
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogLine('TC_BUF: Error moving Pre-Buf To Out! : %d', aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+			eBufferState := E_BufferState.Idle;
+		END_IF
+	
+	E_BufferState.WaitPreToOut:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#1S;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iBufferMoveCmdID,
+											eMoveStatus => eBufferMoveState 	);
+			IF (iRes = 2) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Call OK
+				IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eBufferMoveState = E_VehicleMoveState.Complete) THEN
+					// Command completed!
+					// Trig event-driven reading
+					M_VehicleToReadAdd(aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);				
+					// Update buffer data			
+					M_CopyBufferData(stSource := aStations[iBufferStation].astPreBuffer[1], stTarget := aStations[iBufferStation].stStationData2);
+					//Delete from buffercontrol
+					afbBufferControlPre[iBufferStation].M_RemoveVehicle(iVehicleID:= aStations[iBufferStation].astPreBuffer[1].nCurrentVehicleID);
+					// signal movement finished
+					afbStationCtrl[iBufferStation].bVehiclePreToOutMoved := TRUE;
+					eBufferState := E_BufferState.FinishedPreToOut;
+					
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+			END_IF
+		END_IF
+
+	E_BufferState.FinishedPreToOut:
+		IF (NOT afbStationCtrl[iBufferStation].bMoveVehiclePreToOut) THEN
+			afbStationCtrl[iBufferStation].bVehiclePreToOutMoved := FALSE;
+			eBufferState := E_BufferState.Idle;
+		END_IF
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Station input to Station output
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+	E_BufferState.MoveInToOut:
+	// TODO!!! - Vehicle ID of vehicle in station IN location?
+		iRes := M_CallMoveVehicleToStationOut(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+												sInput := UINT_TO_STRING(aStations[iBufferStation].stStationData1.nCurrentVehicleID), 
+												sStationID := afbStationCtrl[iBufferStation].P_sStationID,
+												eDirection := E_MMDirection.eMMDirection_Forward, 
+												fVelocity := 0.5, 
+												fAcceleration := 1,
+												iCmdID => iBufferMoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Trig event-driven reading
+			M_VehicleToReadAdd(aStations[iBufferStation].stStationData1.nCurrentVehicleID);		
+			F_LogLine('TC_BUF: Moving In To Out OK : %d', aStations[iBufferStation].stStationData1.nCurrentVehicleID);			
+			eBufferState := E_BufferState.WaitInToOut;
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogLine('TC_BUF: Error moving In To Out! : %d', aStations[iBufferStation].stStationData1.nCurrentVehicleID);
+			eBufferState := E_BufferState.Idle;
+		END_IF
+	
+	E_BufferState.WaitInToOut:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#1S;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iBufferMoveCmdID,
+											eMoveStatus => eBufferMoveState 	);
+			IF (iRes = 2) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Call OK
+				IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eBufferMoveState = E_VehicleMoveState.Complete) THEN
+					// Command completed!
+					// Trig event-driven reading
+					M_VehicleToReadAdd(aStations[iBufferStation].stStationData1.nCurrentVehicleID);				
+					// Update buffer data			
+					M_CopyAndClearBufferData(stSource := aStations[iBufferStation].stStationData1, stTarget := aStations[iBufferStation].stStationData2);
+					// signal movement finished
+					afbStationCtrl[iBufferStation].bVehicleInToOutMoved := TRUE;
+					eBufferState := E_BufferState.FinishedInToOut;
+					
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+			END_IF
+		END_IF
+
+	E_BufferState.FinishedInToOut:
+		IF (NOT afbStationCtrl[iBufferStation].bMoveVehicleInToOut) THEN
+			afbStationCtrl[iBufferStation].bVehicleInToOutMoved := FALSE;
+			eBufferState := E_BufferState.Idle;
+		END_IF
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Station output to post buffer
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+	E_BufferState.MoveOutToPost:
+	// TODO!!! - Vehicle ID of vehicle in station OUT location?
+		iRes := M_CallMoveVehicleToBuffer(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+											sInput := UINT_TO_STRING(aStations[iBufferStation].stStationData2.nCurrentVehicleID), 
+											sStationID := afbStationCtrl[iBufferStation].P_sStationID,
+											eBufferType := E_MMStationBuffer.eMMStationBuffer_PostProcess, 
+											nBufferIndex := TO_USINT(afbBufferControlPost[iBufferStation].P_iBufferSize), // Last location in buffer 
+											eDirection := E_MMDirection.eMMDirection_Forward, 
+											fVelocity := 0.5, 
+											fAcceleration := 1,
+											iCmdID => iBufferMoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Trig event-driven reading
+			M_VehicleToReadAdd(aStations[iBufferStation].stStationData2.nCurrentVehicleID);				
+			eBufferState := E_BufferState.WaitOutToPost;
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogLine('TC_BUF: Error moving Out To Post-Buf! : %d', aStations[iBufferStation].stStationData2.nCurrentVehicleID);
+			eBufferState := E_BufferState.Idle;
+		END_IF
+	
+	E_BufferState.WaitOutToPost:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#500MS;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iBufferMoveCmdID,
+											eMoveStatus => eBufferMoveState 	);
+			IF (iRes = 2) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Call OK
+				IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eBufferMoveState = E_VehicleMoveState.Moving OR eBufferMoveState = E_VehicleMoveState.Complete) THEN
+					// Command completed!
+					// Trig event-driven reading
+					M_VehicleToReadAdd(aStations[iBufferStation].stStationData2.nCurrentVehicleID);				
+		
+					// Check if ticket size in 1 
+					IF (aStations[1].stStationData2.nTicketSize = 1) THEN
+						// Clear station output as occipied (to allow station to start oepration with only one station occupied)			
+						afbStationCtrl[1].P_bVehicleReadyAtInput := FALSE;
+					END_IF
+
+					afbBufferControlPost[iBufferStation].M_AddVehicle(
+														iVehicleID:= aStations[iBufferStation].stStationData2.nCurrentVehicleID, 
+														iTicket:= aStations[iBufferStation].stStationData2.nTicket, 
+														iTicketSize:= aStations[iBufferStation].stStationData2.nTicketSize, 
+														iPriority:= aStations[iBufferStation].stStationData2.CurrentPriority, 
+														iMoveCmdID:= iBufferMoveCmdID);
+					aStations[iBufferStation].stStationData2.nTicket := 0;
+					aStations[iBufferStation].stStationData2.nTicketSize := 0;
+					aStations[iBufferStation].stStationData2.CurrentPriority := 0;
+					aStations[iBufferStation].stStationData2.nCurrentVehicleID := 0;
+					aStations[iBufferStation].stStationData2.nReservedVehicleID := 0;
+					// signal movement finished
+					afbStationCtrl[iBufferStation].bVehicleOutToPostMoved := TRUE;
+					eBufferState := E_BufferState.FinishedOutToPost;
+										
+					F_LogLine('TC_BUF: Moving Out To Post-Buf CMD complete : %d', aStations[iBufferStation].stStationData2.nCurrentVehicleID);
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+			END_IF
+		END_IF
+
+	E_BufferState.FinishedOutToPost:
+		IF (NOT afbStationCtrl[iBufferStation].bMoveVehicleOutToPost) THEN
+			afbStationCtrl[iBufferStation].bVehicleOutToPostMoved := FALSE;
+			eBufferState := E_BufferState.Idle;
+		END_IF
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Station input to post buffer
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+	E_BufferState.MoveInToPost:
+	// TODO!!! - Vehicle ID of vehicle in station OUT location?
+		iRes := M_CallMoveVehicleToBuffer(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+											sInput := UINT_TO_STRING(aStations[iBufferStation].stStationData1.nCurrentVehicleID), 
+											sStationID := afbStationCtrl[iBufferStation].P_sStationID,
+											eBufferType := E_MMStationBuffer.eMMStationBuffer_PostProcess, 
+											nBufferIndex := TO_USINT(afbBufferControlPost[iBufferStation].P_iBufferSize), // Last location in buffer  
+											eDirection := E_MMDirection.eMMDirection_Forward, 
+											fVelocity := 0.5, 
+											fAcceleration := 1,
+											iCmdID => iBufferMoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Trig event-driven reading
+			M_VehicleToReadAdd(aStations[iBufferStation].stStationData1.nCurrentVehicleID);
+			F_LogLine('TC_BUF: Moving In To Post-Buf OK : %d', aStations[iBufferStation].stStationData1.nCurrentVehicleID);	
+			eBufferState := E_BufferState.WaitInToPost;
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogLine('TC_BUF: Error moving In To Post-Buf! : %d', aStations[iBufferStation].stStationData1.nCurrentVehicleID);
+			eBufferState := E_BufferState.Idle;
+		END_IF
+	
+	E_BufferState.WaitInToPost:
+		tonBuffersDelay.IN := TRUE;
+		tonBuffersDelay.PT := T#500MS;
+		IF (tonBuffersDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iBufferMoveCmdID,
+											eMoveStatus => eBufferMoveState 	);
+			IF (iRes = 2) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Call OK
+				IF (eBufferMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eBufferMoveState = E_VehicleMoveState.Moving OR eBufferMoveState = E_VehicleMoveState.Complete) THEN
+					// Command completed!
+					// Trig event-driven reading
+					M_VehicleToReadAdd(aStations[iBufferStation].stStationData1.nCurrentVehicleID);				
+				
+					afbBufferControlPost[iBufferStation].M_AddVehicle(
+														iVehicleID:= aStations[iBufferStation].stStationData1.nCurrentVehicleID, 
+														iTicket:= aStations[iBufferStation].stStationData1.nTicket, 
+														iTicketSize:= aStations[iBufferStation].stStationData1.nTicketSize, 
+														iPriority:= aStations[iBufferStation].stStationData1.CurrentPriority, 
+														iMoveCmdID:= iBufferMoveCmdID);
+					aStations[iBufferStation].stStationData1.nTicket := 0;
+					aStations[iBufferStation].stStationData1.nTicketSize := 0;
+					aStations[iBufferStation].stStationData1.CurrentPriority := 0;
+					aStations[iBufferStation].stStationData1.nCurrentVehicleID := 0;
+					aStations[iBufferStation].stStationData1.nReservedVehicleID := 0;
+					// signal movement finished
+					afbStationCtrl[iBufferStation].bVehicleInToPostMoved := TRUE;
+					eBufferState := E_BufferState.FinishedInToPost;
+					
+					F_LogLine('TC_BUF: Moving In To Post-Buf CMD complete : %d', aStations[iBufferStation].stStationData2.nCurrentVehicleID);
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonBuffersDelay.IN := FALSE;
+				// Movement call failed... Retry
+				
+			END_IF
+		END_IF
+
+	E_BufferState.FinishedInToPost:
+		IF (NOT afbStationCtrl[iBufferStation].bMoveVehicleInToPost) THEN
+			afbStationCtrl[iBufferStation].bVehicleInToPostMoved := FALSE;
+			eBufferState := E_BufferState.Idle;
+		END_IF
+END_CASE
+
+tonBuffersDelay(IN := ,
+				PT := ,
+				Q => ,
+				ET => 	);			
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_CheckStationsPostBuffer" Id="{7c9fe257-bf43-42cd-a82b-96441a10e50b}">
+      <Declaration><![CDATA[/// Checks if any buffers are ready for the specified ticket and priority
+/// Returns the station number which is ready to deliver vehicles from post buffer!
+METHOD PROTECTED M_CTL_CheckStationsPostBuffer
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	iTicket			: UINT;
+	iStationID		: UINT;
+	iBufferIndex	: UINT;
+END_VAR
+VAR
+	i				: USINT;
+	j				: USINT;
+	iTicketSize		: UINT;
+	iTicketCount	: UINT;
+	iPostBufferSize	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check if Vehicle can be used at stations 
+
+// TODO!!! Handle multiple stations with priority!
+
+iTicket := 0;
+iTicketSize := 0;
+iTicketCount := 0;
+
+// NOTE: Only one station!!!
+i := 2;
+
+	// Check if station is active/present
+	IF (afbStationCtrl[i].P_bPresent) THEN
+		FOR j := MM_MAX_BUFFER_INDEX TO 1 BY -1 DO
+			IF (aStations[i].astPostBuffer[j].bPresent) THEN
+				// Check post buffer vehicles
+				IF (aStations[i].astPostBuffer[j].nCurrentVehicleID > 0) THEN
+					IF (iTicket = 0) THEN
+						// First vehicle (closest to exit point in buffer)... Save ticket
+						iTicket := aStations[i].astPostBuffer[j].nTicket;
+						iTicketSize := aStations[i].astPostBuffer[j].nTicketSize;
+						iTicketCount := iTicketCount+1;
+					ELSE
+						IF (aStations[i].astPostBuffer[j].nTicket = iTicket) THEN
+							// One more vehicle with same ticket
+							iTicketCount := iTicketCount+1;
+							IF (iTicketCount >= iTicketSize) THEN
+								// All with this ticket is ready in buffer. Release them
+								iStationID := i;
+								iBufferIndex := j;
+								RETURN;
+								
+							ELSIF (j = 1) THEN
+								// First index (closest to station) is reached
+								// Check if another vehicle with same ticket is at the station
+								IF (aStations[i].stStationData1.nTicket = iTicket) AND (afbStationCtrl[i].bCompletedInput OR afbStationCtrl[i].bCompletedOutput) THEN
+									// Vehicle ready at station
+									iStationID := i;
+									iBufferIndex := j;
+									RETURN;
+									
+								END_IF
+							END_IF
+						ELSE
+							// New ticket, release the previous number of vehicles!
+							iStationID := i;
+							iBufferIndex := j;
+							RETURN;
+						END_IF
+					END_IF
+					
+					// Check if vehicle Priority is the last on the ticket.
+					IF (aStations[i].astPostBuffer[j].CurrentPriority >= aStations[i].astPostBuffer[j].nTicketSize) THEN
+						iStationID := i;
+						iBufferIndex := j;
+						RETURN;
+						
+					END_IF
+				ELSE
+					// Empty buffer spot... Skip check
+					iStationID := i;
+					iBufferIndex := 0;
+					RETURN;
+				END_IF
+			ELSIF (j = 1) THEN
+				// No post buffer on the station... special Exit Point situation
+				// (Use station location and pre buffer for check)
+				// TODO!!!
+			END_IF
+		END_FOR
+	END_IF
+		
+
+iTicket := 0;
+iStationID := 0;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_CheckStationsPreBuffer" Id="{502b7717-bcc7-4e36-8541-cc940e9541ee}">
+      <Declaration><![CDATA[/// Checks if any buffers are ready for the specified ticket and priority
+METHOD PROTECTED M_CTL_CheckStationsPreBuffer
+VAR_INPUT
+	sStationID		: STRING(30);
+	nVehicleID		: UINT;
+	nTicket			: UINT;
+	nPriority		: UINT;
+END_VAR
+VAR_OUTPUT
+	nBufferIndex	: USINT;
+END_VAR
+VAR
+	i				: USINT;
+	iStat			: UINT;
+	iBuf			: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//NO Pre buffer on stations for this cell
+
+// Check if Vehicle can be used at stations 
+
+// TODO!!! Handle multiple stations with priority!
+
+//CASE eCellType OF
+//	// Cell with own/separate track system
+//	E_CellType.Type_Outline:
+//		FOR i := 1 TO 5 BY 1 DO
+//			// Check if station is active/present
+//			IF (afbStationCtrl[i].P_bPresent) THEN
+//				// Check if station has correct ID
+//				IF (sStationID = afbStationCtrl[i].P_sStationID) THEN
+//					// Check if station has free space in Pre-buffer
+//					nBufferIndex := afbStationCtrl[i].M_AddVehicle(	nTicket := nTicket, 
+//																	nVehicleID := nVehicleID, 
+//																	nPriority := nPriority);
+//					IF (nBufferIndex > 0) THEN
+//						// Pre-Buffer space found, index saved in nBufferIndex
+//						RETURN;	
+//					END_IF
+//				END_IF
+//			ELSE
+//				// No more stations present!
+//				EXIT;
+//			END_IF
+//		END_FOR
+	
+//	// Cell located on main track system
+//	E_CellType.Type_Inline:
+//		FOR i := 1 TO 5 BY 1 DO
+//			// Check if station is active/present
+//			IF (afbStationCtrl[i].P_bPresent) THEN
+//				// Check if station has correct ID
+//				IF (sStationID = afbStationCtrl[i].P_sStationID) THEN
+//					// Check if station has free space in Pre-buffer
+//					nBufferIndex := afbStationCtrl[i].M_AddVehicle(	nTicket := nTicket, 
+//																	nVehicleID := nVehicleID, 
+//																	nPriority := nPriority);
+//					IF (nBufferIndex > 0) THEN
+//						// Pre-Buffer space found, index saved in nBufferIndex
+//						RETURN;	
+//					END_IF
+//				END_IF
+//			ELSE
+//				// No more stations present!
+//				EXIT;
+//			END_IF
+//		END_FOR
+	
+//	// Cell with only one track for both inlet and outlet
+//	E_CellType.Type_InOut:
+//		FOR i := 1 TO 5 BY 1 DO
+//			// Check if station is active/present
+//			IF (afbStationCtrl[i].P_bPresent) THEN
+//				// Check if station has correct ID
+//				IF (sStationID = afbStationCtrl[i].P_sStationID) THEN
+//					// Check if station is occupied (only one ticket at a time to allow to move vehicles out of the cell after production
+//					IF ( (aStations[i].stStationData1.nTicket = 0) OR (aStations[i].stStationData1.nTicket = nTicket) ) THEN  
+//						// Check if station has free space in Pre-buffer
+//						nBufferIndex := afbStationCtrl[i].M_AddVehicle(	nTicket := nTicket, 
+//																		nVehicleID := nVehicleID, 
+//																		nPriority := nPriority);
+//						IF (nBufferIndex > 0) THEN
+//							// Pre-Buffer space found, index saved in nBufferIndex
+//							RETURN;	
+//						END_IF
+//					END_IF
+//				END_IF
+//			ELSE
+//				// No more stations present!
+//				EXIT;
+//			END_IF
+//		END_FOR
+
+//END_CASE
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_CheckTicket" Id="{b8f08216-2330-4e98-9edc-7343eac37a97}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CTL_CheckTicket : BOOL
+VAR_INPUT
+	nTicket			: UINT;
+END_VAR
+VAR
+	i				: UINT;
+	bFound			: BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+bFound := FALSE;
+
+// Check if the specified ticket is expected at the specified station
+FOR i := 1 TO MM_MAX_RESERVATIONLIST_ELEMENTS BY 1 DO
+	IF (aReadCellData.stCell.astReservations[i].nTicket = nTicket) THEN
+		// Set found status and exit FOR loop
+		bFound := TRUE;
+		EXIT;
+	END_IF
+END_FOR
+
+// return status
+M_CTL_CheckTicket := bFound;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_DecisionPoint" Id="{a0ad6f96-d17b-4e46-a4dd-6778599ed837}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CTL_DecisionPoint : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i					: INT;
+	iRes				: INT;
+	sTempString			: STRING(200);
+END_VAR
+VAR 
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// State machine for decision point
+CASE eDecisionPointState OF
+	E_DecisionPointState.Idle:
+		bReadyStationIn[1] := FALSE;
+		nDecisionPointVehicleNo := M_CTL_VehicleAtDecisionPoint();
+		nDecisionPointCellNo := M_ThisCellDataIndex();
+		IF (P_bTrackReady AND NOT bDecisionPoint_PAUSE) THEN
+			IF ((nDecisionPointVehicleNo > 0) AND (nDecisionPointCellNo > 0) AND (nDecisionPointVehicleNo <> nLastVehicleAtDecisionPoint) ) THEN
+				// New vehicle at decision point
+				nLastVehicleAtDecisionPoint := nDecisionPointVehicleNo;
+				// Force reading the vehicle data from track server!
+				bReadDecPointVehicle := TRUE;
+				// Log
+				sTempString := CONCAT('TC_DP: New Vehicle NO: ', TO_STRING(nDecisionPointVehicleNo));
+				IF (iCurrentTicket <> aReadCellData.stCell.astReservations[1].nTicket) THEN
+					sTempString := CONCAT(sTempString, ', PriorityCount reset due to new ticket: ');
+					sTempString := CONCAT(sTempString, TO_STRING(aReadCellData.stCell.astReservations[1].nTicket));
+					nLastPriorityInStation := 0;
+	
+				END_IF
+				F_LogFile(sTempString);
+
+				eDecisionPointState := E_DecisionPointState.ReadVehicleData;
+			END_IF
+			IF (nDecisionPointVehicleNo = 0) THEN
+				// Previous vehicle removed from DP. reset Last vehicle ID (To allow same vehicle to arrive two times!)
+				nLastVehicleAtDecisionPoint := 0;
+			END_IF
+		END_IF
+		
+	E_DecisionPointState.ReadVehicleData:
+		IF (NOT bReadDecPointVehicle AND NOT bReadDecPointVehicleBusy) THEN
+			// Decision point vehicle data has been read!
+			IF (aReadVehicleData[nDecisionPointVehicleNo].stVehicle.bDataValid) THEN
+				bReadDecPointCellDone := FALSE;
+				F_LogFile(CONCAT('TC_DP: Data Valid CheckTicket NO: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.CheckTicket;
+			ELSIF (P_bTrackReady) THEN
+				F_LogFile(CONCAT('TC_DP: Data NOT valid MoveToNextCell NO: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.AddExtraToList;
+			ELSE
+				// Disabled
+				eDecisionPointState := E_DecisionPointState.Idle;
+			END_IF
+		END_IF			
+		
+	E_DecisionPointState.CheckTicket:
+		// Wait to make sure cell data with reservation list has been read
+		IF (bReadDecPointCellDone) THEN
+			IF ( (aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicket > 0) AND
+				 (aReadCellData.stCell.astReservations[1].nTicket > 0) AND 
+				 (aReadCellData.stCell.astReservations[1].nTicket = aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicket) ) THEN
+				// Ticket is OK... Save current ticket for comparison
+				iCurrentTicket := aReadCellData.stCell.astReservations[1].nTicket;
+				F_LogFile(CONCAT('TC_DP: Ticket Valid for this Cell. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.CheckPriority;
+	
+			ELSE
+				// Ticket NOT ok for this cell
+				F_LogFile(CONCAT('TC_DP: Ticket NOT Valid for this Cell. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.AddExtraToList;
+	
+			END_IF
+		END_IF
+		
+	E_DecisionPointState.CheckPriority:
+		IF (nLastPriorityInStation = (aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nPriority - 1)) THEN
+			// Priority is OK for this cell
+			F_LogFile(CONCAT('TC_DP: Priority Valid for this Cell. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.TakeOwnership;
+
+		ELSE
+			// Priority is NOT ok for this cell... Keep running on highway until it macthes priority!
+			F_LogFile(CONCAT('TC_DP: Priority NOT Valid for this Cell. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.AddExtraToList;
+			
+		END_IF
+		
+	E_DecisionPointState.TakeOwnership:
+		iRes := M_CallUpdateVehicleOwner(	nVehicleID := nDecisionPointVehicleNo,
+											eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+											sInput := UINT_TO_STRING(nDecisionPointVehicleNo), 
+											sCellID := sCellID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			// Increase last priority
+			F_LogFile(CONCAT('TC_DP: Take Ownership OK. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			nLastPriorityInStation := nLastPriorityInStation + 1;
+			eDecisionPointState := E_DecisionPointState.WaitStationReady;
+
+		ELSIF (iRes = 3) THEN
+			// Method call failed... Retry with the same vehicle
+			// Reset Last Vehicle to accept same vehicle again
+			F_LogFile(CONCAT('TC_DP: Take Ownership FAILED. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			nLastVehicleAtDecisionPoint := 0;
+			eDecisionPointState := E_DecisionPointState.Idle;
+
+		END_IF		
+	
+	 E_DecisionPointState.WaitStationReady:
+	 	// Ownership taken... Wait until station is ready for new vehicle
+		IF (afbStationCtrl[1].bReadyForVehicleInput) THEN
+			F_LogFile(CONCAT('TC_DP: Station ready, Veh NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.MoveStation;
+
+		END_IF
+		
+	E_DecisionPointState.MoveStation:
+		//Move vehicle to station
+		iRes := M_CallMoveVehicleToStationIn(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+												sInput := UINT_TO_STRING(nDecisionPointVehicleNo), 
+												sStationID := afbStationCtrl[1].P_sStationID,
+												eDirection := E_MMDirection.eMMDirection_Forward, 
+												fVelocity := 0.5, 
+												fAcceleration := 1,
+												iCmdID => iDecisionPointMoveCmdID 	);
+	
+		IF (iRes = 2) THEN
+			// Movement call OK
+			stVehicleOnStation := aReadVehicleData[nDecisionPointVehicleNo];
+			eDecisionPointState := E_DecisionPointState.WaitMoveStation;
+
+		ELSIF (iRes = 3) THEN
+			// Movement call failed... Try again with same vehicle
+			nLastVehicleAtDecisionPoint := 0;
+			nLastPriorityInStation := nLastPriorityInStation - 1;	// Go back to previous priority
+			F_LogFile(CONCAT('TC_DP: Move to station FAILED, Veh NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.Idle;
+
+		END_IF
+		
+(*	E_DecisionPointState.WaitMoveStation:
+		IF (aReadVehicleData[nDecisionPointVehicleNo].stVehicle.sCurrentStationID = aStations[1].sStationID) THEN
+			bReadyStationIn := TRUE;
+			F_LogFile(CONCAT('TC_DP: Wait station reached, Veh NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			
+			IF ((aReadVehicleData[nDecisionPointVehicleNo].stVehicle.bDataValid) AND  
+				(nLastPriorityInStation = aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicketSize) ) THEN
+				// Last vehicle in ticket handled... Remove reservation
+				iTicketToRemove := aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicket;
+				eDecisionPointState := E_DecisionPointState.RemoveReservation;
+
+			ELSE
+				eDecisionPointState := E_DecisionPointState.Idle;
+
+			END_IF
+			
+		END_IF
+*)		
+	E_DecisionPointState.WaitMoveStation:
+		tonDecisionPointDelay.IN := TRUE;
+		tonDecisionPointDelay.PT := T#1S;
+		IF (tonDecisionPointDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iDecisionPointMoveCmdID,
+											eMoveStatus => eDecisionPointMoveState 	);
+			IF (iRes = 2) THEN
+				tonDecisionPointDelay.IN := FALSE;
+				// Trig event-driven reading
+				M_VehicleToReadAdd(nDecisionPointVehicleNo);
+				// Call completed... Check move status
+				IF (eDecisionPointMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// TODO!!! - Error during movement
+					
+				ELSIF (eDecisionPointMoveState = E_VehicleMoveState.Complete) THEN
+					// Movement completed
+					bReadyStationIn[1] := TRUE;
+					
+					IF ((aReadVehicleData[nDecisionPointVehicleNo].stVehicle.bDataValid) AND  
+						(nLastPriorityInStation = aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicketSize) ) THEN
+						// Last vehicle in ticket handled... Remove reservation
+						iTicketToRemove := aReadVehicleData[nDecisionPointVehicleNo].stVehicle.nTicket;
+						eDecisionPointState := E_DecisionPointState.RemoveReservation;
+		
+					ELSE
+						eDecisionPointState := E_DecisionPointState.Idle;
+		
+					END_IF					
+					F_LogFile(CONCAT('TC_DP: Wait station reached, Veh NO: ', TO_STRING(nDecisionPointVehicleNo)));
+					
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				// TODO!!!
+				// Try again
+				tonDecisionPointDelay(IN := FALSE);
+				// Trig event-driven reading
+				M_VehicleToReadAdd(nDecisionPointVehicleNo);
+				
+			END_IF
+			
+		END_IF
+
+	E_DecisionPointState.RemoveReservation:
+		// Check if the specified ticket is expected at the specified station
+		iRes := M_CallRemoveReservation(sStationID:= afbStationCtrl[1].P_sStationID, nTicket:= iTicketToRemove);
+			
+		IF (iRes = 2) THEN
+			// Movement call OK
+			nLastPriorityInStation := 0;
+			F_LogFile(CONCAT('TC_DP: Removed ticket reservation OK NO: ', TO_STRING(iTicketToRemove)));
+			eDecisionPointState := E_DecisionPointState.Idle;
+
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			// TODO!!!
+			F_LogFile(CONCAT('TC_DP: Remove ticket reservation FAILED NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.Idle;
+			
+		END_IF
+		
+	E_DecisionPointState.AddExtraToList:
+		// Add this vehicle to the list of surveilled vehicles
+		IF ( M_ExtraVehicleAdd(nDecisionPointVehicleNo) ) THEN
+			F_LogFile(CONCAT('TC_DP: Added to extra list without ownership. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.WaitStationEmpty;
+			
+		END_IF
+	 
+	E_DecisionPointState.WaitStationEmpty:
+		IF (bStationEmpty) THEN
+			// Not for this station and device is empty
+			F_LogFile(CONCAT('TC_DP: Station Empty. veh. NO: ', TO_STRING(nDecisionPointVehicleNo)));
+			eDecisionPointState := E_DecisionPointState.MoveNextCell;
+
+		END_IF	
+		
+	E_DecisionPointState.MoveNextCell:
+		IF ((nVehicleNoToRemove > 0) AND (nDecisionPointVehicleNo = nVehicleNoToRemove)) THEN
+			// Remove the vehicle number
+			iRes := M_CallMoveVehicleToPosition(eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID,
+												sInput := UINT_TO_STRING(nDecisionPointVehicleNo),
+												nPathID := 17,
+												fPosition := 0.3, 
+												eDirection := E_MMDirection.eMMDirection_Forward, 
+												fVelocity := 1,
+												fAcceleration := 1 	);
+			IF (iRes = 2) THEN
+				// Movement call OK
+				nVehicleNoToRemove := 0;
+				F_LogFile(CONCAT('TC_DP: Moved vehicle to track out: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.Idle;
+				
+			ELSIF (iRes = 3) THEN
+				// Movement call failed... Retry with same vehicle
+				F_LogFile(CONCAT('TC_DP: Error Moving to track out: ', TO_STRING(nDecisionPointVehicleNo)));
+				nLastVehicleAtDecisionPoint := 0;
+				eDecisionPointState := E_DecisionPointState.Idle;
+				
+			END_IF
+		ELSE			
+			//Move vehicle to station 2  - which will send to next cell
+			iRes := M_CallMoveVehicleToStationIn(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+													sInput := UINT_TO_STRING(nDecisionPointVehicleNo), 
+													sStationID := afbStationCtrl[2].P_sStationID,
+													eDirection := E_MMDirection.eMMDirection_Forward, 
+													fVelocity := 0.5, 
+													fAcceleration := 1,
+													iCmdID => iDecisionPointMoveCmdID 	);
+
+			IF (iRes = 2) THEN
+				// Movement call OK
+				// Trig event-driven reading
+				M_VehicleToReadAdd(nDecisionPointVehicleNo);				
+				eDecisionPointState := E_DecisionPointState.WaitMoveNextCell;
+				
+			ELSIF (iRes = 3) THEN
+				// Movement call failed... Try again with same vehicle
+				nLastVehicleAtDecisionPoint := 0;
+				F_LogFile(CONCAT('TC_DP: Move to next station FAILED NO: ', TO_STRING(nDecisionPointVehicleNo)));
+				eDecisionPointState := E_DecisionPointState.Idle;
+				
+			END_IF
+		END_IF
+
+	E_DecisionPointState.WaitMoveNextCell:
+		tonDecisionPointDelay.IN := TRUE;
+		tonDecisionPointDelay.PT := T#1S;
+		IF (tonDecisionPointDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(	iCommandID := iDecisionPointMoveCmdID,
+												eMoveStatus => eDecisionPointMoveState 	);
+		
+			IF (iRes = 2) THEN
+				tonDecisionPointDelay.IN := FALSE;
+				// Call OK
+				IF (eDecisionPointMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+					// Error with command
+					// TODO!!!
+					
+				ELSIF (eDecisionPointMoveState >= E_VehicleMoveState.Accepted) THEN
+					// Command accepted!
+					F_LogFile(CONCAT('TC_DP: Vehicle moved to next cell: ', TO_STRING(nDecisionPointVehicleNo)));
+					eDecisionPointState := E_DecisionPointState.Idle;			
+					
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				tonDecisionPointDelay.IN := FALSE;
+				// Movement call failed... Retry with same vehicle
+				nLastVehicleAtDecisionPoint := 0;
+				eDecisionPointState := E_DecisionPointState.Idle;
+				
+			END_IF
+
+		END_IF
+
+END_CASE
+
+tonDecisionPointDelay(	IN:= ,
+						PT:= ,
+						Q=> ,
+						ET=> );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_ExitPoint" Id="{a9fb5109-b05a-4d7a-a85b-8462947e7fcb}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CTL_ExitPoint : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	iRes				: INT;
+END_VAR
+VAR 
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// State machine for exit point
+CASE eExitPointState OF
+	E_ExitPointState.Idle:
+		tonExitPointDelay.IN := FALSE;
+		IF (bEnable) THEN
+			eExitPointState := E_ExitPointState.CheckBuffer;
+		END_IF
+
+	E_ExitPointState.CheckBuffer:
+		M_CTL_CheckStationsPostBuffer(iTicket => iExitPointTicket, iStationID => iExitPointStation, iBufferIndex => iExitPointFirstIdx);
+		IF (iExitPointStation > 0) THEN
+			IF ( (iExitPointTicket > 0) AND (iExitPointFirstIdx > 0) ) THEN
+								
+				tonExitPointDelay.IN := TRUE;
+				tonExitPointDelay.PT := TO_TIME(stAdditionalDataIn.ExitPointReleaseDelay * 1000.0);
+				//Delay before releasing a ticket for tickets size of 3 vehicles
+
+				IF (tonExitPointDelay.Q) THEN
+					tonExitPointDelay.IN := FALSE;
+					// A station is ready to deliver from post buffer
+					iExitPointBufferIdx := MM_MAX_BUFFER_INDEX;
+					F_LogLine(CONCAT('TC_EP: Ticket ready at EP (%d) from idx: ', UINT_TO_STRING(iExitPointFirstIdx)), iExitPointTicket);
+					IF stTrafficLightLocation.fPosition > 0 THEN //Traffic light on cell?
+						eExitPointState := E_ExitPointState.SetTrafficLightRd;
+					ELSE
+						eExitPointState := E_ExitPointState.WaitVehicleOnPos;
+					END_IF
+					
+					//Special for this cell. Ready station flags used to handle shoes in right order and are not lowered until now.
+					bReadyStationIn[1] := FALSE;
+					bReadyStationIn[2] := FALSE;
+					bReadyStationOut[2] := FALSE;
+				END_IF
+				
+			ELSIF (afbBufferControlPost[iExitPointStation].P_iCurrentVehicleID > 0 AND afbBufferControlPost[iExitPointStation].P_iCurrentVehicleTicket = 0) THEN
+				 F_LogLine(CONCAT('TC_EP: Ticket MISSING for vehicle at EP (%d) from idx: ', UINT_TO_STRING(iExitPointFirstIdx)), iExitPointTicket);
+			
+				IF stTrafficLightLocation.fPosition > 0 THEN //Traffic light on cell?
+					eExitPointState := E_ExitPointState.SetTrafficLightRd;
+				ELSE
+					eExitPointState := E_ExitPointState.WaitVehicleOnPos;
+				END_IF
+				
+				//Special for this cell. Ready station flags used to handle shoes in right order and are not lowered until now.
+				bReadyStationIn[1] := FALSE;
+				bReadyStationIn[2] := FALSE;
+				bReadyStationOut[2] := FALSE;
+			END_IF
+		END_IF
+	
+	E_ExitPointState.SetTrafficLightRd:
+		iRes := M_CallSetTrafficLightColor(	nTrafficLightNo := 1,
+											nColor := E_MMTrafficLightColor.eMMTrafficLightColor_Red );
+		IF (iRes = 2) THEN
+			// Call OK
+			F_LogLine('TC_EP: TL set to red OK', 0);
+			eExitPointState := E_ExitPointState.TrafficLightRedDelay;
+		ELSIF (iRes = 3) THEN
+			// Call failed
+			// TODO!!!
+			F_LogLine('TC_EP: Error setting TL to red', 0);
+			eExitPointState := E_ExitPointState.TrafficLightRedDelay;
+		END_IF
+	
+	E_ExitPointState.TrafficLightRedDelay:
+		tonExitPointDelay.IN := TRUE;
+		tonExitPointDelay.PT := T#3S;
+		IF (tonExitPointDelay.Q) THEN
+			tonExitPointDelay.IN := FALSE;
+			eExitPointState := E_ExitPointState.WaitVehicleOnPos;			
+		END_IF
+		
+	E_ExitPointState.WaitVehicleOnPos:
+		// Wait for vehicle to be on position
+		iExitPointVehicleID := afbBufferControlPost[iExitPointStation].P_iCurrentVehicleID;
+		iExitPointMoveCmdID := afbBufferControlPost[iExitPointStation].P_iCurrentVehicleCmdID;
+		
+		tonExitPointDelay.IN := TRUE;
+		tonExitPointDelay.PT := T#1S;
+		IF (tonExitPointDelay.Q) THEN
+			iRes := M_CallMoveVehicleStatus(iCommandID := iExitPointMoveCmdID,
+												eMoveStatus => eExitPointMoveState 	);
+			
+				IF (iRes = 2) THEN
+					tonExitPointDelay.IN := FALSE;
+					// Call OK
+					IF (eExitPointMoveState >= E_VehicleMoveState.ErrorLocation) THEN
+						// Error with command
+						// TODO!!!
+						
+					ELSIF (eExitPointMoveState >= E_VehicleMoveState.Complete) THEN
+						// Command accepted!
+						F_LogLine('TC_EP: Vehicle on buffer out: (%d)', iExitPointVehicleID);
+						eExitPointState := E_ExitPointState.MoveVehicle;
+					END_IF
+					
+				ELSIF (iRes = 3) THEN
+					tonExitPointDelay.IN := FALSE;
+					// Movement call failed... Retry with same vehicle
+					eExitPointState := E_ExitPointState.Done;
+				END_IF
+			END_IF
+	
+	E_ExitPointState.MoveVehicle:
+		//Move vehicle from last position in buffer
+		iRes := M_CallMoveVehicleToDecisionPoint(eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+													 sInput := UINT_TO_STRING(iExitPointVehicleID), 
+													 sStationID := sNextStationOnTrack,
+													 eDirection := E_MMDirection.eMMDirection_Forward, 
+													 fVelocity := 1, 
+													 fAcceleration := 1	);
+													 
+			 IF (iRes = 2) THEN
+				// Movement call OK
+				// Read vehicle data
+				M_VehicleToReadAdd(iExitPointVehicleID);
+				F_LogLine('TC_EP: Vehicle moved from Post-Buf (%d)', iExitPointVehicleID);
+				afbBufferControlPost[iExitPointStation].M_RemoveVehicle(iVehicleID:= iExitPointVehicleID);
+				
+				// More vehicles in buffer?
+				IF afbBufferControlPost[iExitPointStation].M_IsEmpty() THEN
+					F_LogLine(CONCAT('TC_EP: Vehicle on buffer moving out, buffer empty: %d', UINT_TO_STRING(iExitPointFirstIdx)), iExitPointTicket);
+					eExitPointState := E_ExitPointState.WaitMoveVehicle;
+				ELSE
+					IF afbBufferControlPost[iExitPointStation].P_iCurrentVehicleTicket <> iExitPointTicket THEN
+						F_LogLine(CONCAT('TC_EP: Vehicle on buffer moving out, New ticket: %d', UINT_TO_STRING(iExitPointFirstIdx)), iExitPointTicket);
+						eExitPointState := E_ExitPointState.WaitMoveVehicle;
+					ELSE
+						F_LogLine(CONCAT('TC_EP: Vehicle on buffer moving out, more vehicles: %d', UINT_TO_STRING(iExitPointFirstIdx)), iExitPointTicket);
+						eExitPointState := E_ExitPointState.WaitVehicleOnPos;	
+					END_IF
+				END_IF
+				
+			ELSIF (iRes = 3) THEN
+				// Movement call failed
+				// TODO!!!
+				F_LogLine('TC_EP: Failed moving vehicle moved from Post-Buf (%d)', iExitPointVehicleID);
+				F_LogLine(CONCAT('Message: ', WSTRING_TO_STRING(stMoveToDecisionPointData.stOutput.sMessage)), 0); 
+				IF stTrafficLightLocation.fPosition > 0 THEN //Traffic light on cell?
+					eExitPointState := E_ExitPointState.SetTrafficLightGr;
+				ELSE
+					eExitPointState := E_ExitPointState.Done;
+				END_IF
+			END_IF
+			
+	E_ExitPointState.WaitMoveVehicle:
+		tonExitPointDelay.IN := TRUE;
+		tonExitPointDelay.PT := T#60S;
+		M_VehicleToReadAdd(iExitPointVehicleID);
+		IF ((tonExitPointDelay.ET > T#0S)) THEN
+			IF (aReadVehicleData[iExitPointVehicleID].stVehicle.nPathID <> aStations[iExitPointStation].stStationData1.stLocation.nPathID) THEN
+				F_LogLine('TC_EP: Vehicle moved from path set green light (%d)', aStations[iExitPointStation].astPostBuffer[iExitPointBufferIdx].nCurrentVehicleID);
+				IF stTrafficLightLocation.fPosition > 0 THEN //Traffic light on cell?
+					eExitPointState := E_ExitPointState.SetTrafficLightGr;
+				ELSE
+					eExitPointState := E_ExitPointState.Done;
+				END_IF
+			END_IF
+		END_IF
+		
+	E_ExitPointState.SetTrafficLightGr:
+		IF stTrafficLightLocation.fPosition > 0 THEN //Traffic light on cell?
+			iRes := M_CallSetTrafficLightColor(	nTrafficLightNo := 1,
+												nColor := E_MMTrafficLightColor.eMMTrafficLightColor_Green );
+			IF (iRes = 2) THEN
+				// Call OK
+				F_LogLine('TC_EP: TL set to green OK', 0);
+				eExitPointState := E_ExitPointState.Idle;
+			ELSIF (iRes = 3) THEN
+				// Call failed
+				F_LogLine('TC_EP: Error setting TL to green', 0);
+				eExitPointState := E_ExitPointState.Idle;
+			END_IF
+		ELSE
+			eExitPointState := E_ExitPointState.Done;
+		END_IF
+		
+	E_ExitPointState.Done:
+		eExitPointState := E_ExitPointState.Idle;
+	
+END_CASE
+
+// Delay
+tonExitPointDelay(	IN:= ,
+					PT:= ,
+					Q=> ,
+					ET=> 	);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_Station" Id="{46e0f3e1-bc47-4c74-82b4-e2146c394e30}">
+      <Declaration><![CDATA[METHOD M_CTL_Station : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	iRes				: INT;
+	sTempString			: STRING(200);
+	i					: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF bVehicleMovedFromSt1 THEN
+	aStations[1].stStationData1.nReservedVehicleID := 0;
+	aStations[1].stStationData1.nCurrentVehicleID := 0;
+	aStations[1].stStationData1.nTicket := 0;
+	aStations[1].stStationData1.nTicketSize := 0;
+	aStations[1].stStationData1.CurrentPriority := 0;
+	bVehicleMovedFromSt1 := FALSE;
+END_IF
+
+
+iVehicleReadyStation1 := M_CTL_VehicleAtStationX(iStationNo:= 1);
+iVehicleReadyStation2 := M_CTL_VehicleAtStationX(iStationNo:= 2);
+
+//Run stateTimers
+IF bStationStateChangeOS THEN
+	diStationStateTimer := 0;
+END_IF
+IF diStationStateTimer < 64000 THEN
+	diStationStateTimer := diStationStateTimer + g_iPLCScan_MS;
+END_IF
+
+//Station 2 sequence
+CASE eStationState OF
+	E_StationState.Idle:
+		IF (P_bTrackReady) THEN
+			bVehicleFoundCmdBuffer := FALSE;
+			eStationState := E_StationState.CheckStations;
+		END_IF
+		
+	E_StationState.CheckStations:
+		IF ( (iVehicleReadyStation2 > 0) AND (iVehicleReadyStation2 <> nLastVehicleAtStation2) ) THEN
+			iVehicleMoveBufferIN := iVehicleReadyStation2;
+			sTempString := CONCAT('TC_STAT2: Vehicle NO: ', TO_STRING(iVehicleReadyStation2));
+			F_LogFile(CONCAT(sTempString, ', Ready out'));
+			
+			// Check if post buffer is activated
+			IF (aStations[2].astPostBuffer[1].bPresent) THEN
+				// Use post buffer
+				IF (aStations[2].stStationData1.bPresent AND ((iVehicleMoveBufferIN > 0) AND (iVehicleMoveBufferIN <= MM_MAX_NUMBER_OF_VEHICLE_ELEMENTS))) THEN
+					// Update station data with correct values
+					aStations[2].stStationData1.nReservedVehicleID := iVehicleMoveBufferIN;
+					aStations[2].stStationData1.nCurrentVehicleID := iVehicleMoveBufferIN;
+					aStations[2].stStationData1.nTicket := aReadVehicleData[iVehicleMoveBufferIN].stVehicle.nTicket;
+					aStations[2].stStationData1.nTicketSize := aReadVehicleData[iVehicleMoveBufferIN].stVehicle.nTicketSize;
+					aStations[2].stStationData1.CurrentPriority := aReadVehicleData[iVehicleMoveBufferIN].stVehicle.nPriority;
+					// Log
+					F_LogFile('Send to post buffer');
+					// Signal that vehicle can be moved from station
+					afbStationCtrl[2].bCompletedInput := TRUE;
+					eStationState := E_StationState.MoveToPostBuf;
+	
+				END_IF
+			ELSE
+				// No post buffer on this station, send directly to next cell
+				F_LogFile('Send to next cell');
+				eStationState := E_StationState.MoveToNextCell;
+				
+			END_IF
+			// JLH_21.11.16: Test - To make sure vehicle is removed form FIFO!
+			P_iVehicleFifoOut := iVehicleMoveBufferIN;
+
+		ELSIF (NOT P_bTrackReady) THEN
+			// Disabled!
+			eStationState := E_StationState.Idle;
+
+		END_IF
+		IF (iVehicleReadyStation2 = 0) THEN
+			// Previous vehicle removed from ST2. Reset Last vehicle ID (To allow same vehicle to arrive two times!)
+			nLastVehicleAtStation2 := 0;
+
+		END_IF
+	
+	E_StationState.MoveToPostBuf:
+		IF (aStations[2].stStationData1.nCurrentVehicleID <> iVehicleMoveBufferIN) THEN
+			P_iVehicleFifoOut := iVehicleMoveBufferIN;
+			afbStationCtrl[2].bCompletedInput := FALSE;
+			eStationState := E_StationState.Idle;
+			
+		END_IF
+	
+	E_StationState.MoveToNextCell:
+		iRes := M_CallMoveVehicleToDecisionPoint(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+//												 	sInput := UINT_TO_STRING(iVehicleReadyStation2), 
+												 	sInput := UINT_TO_STRING(iVehicleMoveBufferIN), 
+												 	sStationID := sNextStationOnTrack,
+												 	eDirection := E_MMDirection.eMMDirection_Forward, 
+												 	fVelocity := 1, 
+													fAcceleration := 1,
+													iCmdId => iStation2MoveCmdID 	);
+		IF (iRes = 2) THEN
+			// Movement call OK
+			sTempString := CONCAT('TC_STAT2: Move vehicle call: ', TO_STRING(iVehicleMoveBufferIN));
+			F_LogFile(CONCAT(sTempString, ', out OK'));
+			eStationState := E_StationState.ExtraVehicleRemove;
+
+		ELSIF (iRes = 3) THEN
+			// Movement call failed... Retry with same vehicle
+			sTempString := CONCAT('TC_STAT2: Move vehicle call: ', TO_STRING(iVehicleMoveBufferIN));
+			F_LogFile(CONCAT(sTempString, ', out Failed'));
+			F_LogFile(CONCAT(' - Error message: ', TO_STRING(stMoveToDecisionPointData.stOutput.sMessage)));
+			// reset last vehicle to make sure it will handle it again!
+			nLastVehicleAtStation2 := 0;
+			eStationState := E_StationState.Idle;
+			
+		END_IF
+				
+	E_StationState.ExtraVehicleRemove:
+		// Remove the vehicle from the list of vehicles to be surveilled
+		IF (M_ExtraVehicleRemove(iVehicleNo:= iVehicleMoveBufferIN)) THEN
+			F_LogFile(CONCAT('TC_STAT2: Vehicle removed from extra, NO: ', TO_STRING(iVehicleMoveBufferIN)));
+			eStationState := E_StationState.AddReservation;
+			
+		ELSE
+			F_LogFile(CONCAT('TC_STAT2: Vehicle NOT removed from extra, NO: ', TO_STRING(iVehicleMoveBufferIN)));
+			eStationState := E_StationState.AddReservation;
+		
+		END_IF
+	
+	E_StationState.AddReservation:
+		//Speciel handling for this cell - find and addReservation for this vehicle based on command data in buffer
+		IF NOT bVehicleFoundCmdBuffer THEN
+			FOR i:=0 TO 10 DO
+				IF M_CarrierIDToVehicleID(arVehicleCommandBuffer[i].CarrierID) = iVehicleMoveBufferIN THEN
+					bVehicleFoundCmdBuffer := TRUE;
+					bVehicleCmdPointer := i;
+					EXIT;
+				END_IF		
+			END_FOR
+			
+			IF NOT bVehicleFoundCmdBuffer THEN
+				F_LogLine('TC_EP: WARNING Command data NOT found in buffer, VehicleID: %d', TO_UINT(iVehicleMoveBufferIN));
+				eStationState := E_StationState.Done;
+			END_IF
+		END_IF
+		
+		IF bVehicleFoundCmdBuffer THEN
+			iRes := M_CallAddReservation(	sStationID := arVehicleCommandBuffer[bVehicleCmdPointer].TargetStation,
+											sCarrierID := arVehicleCommandBuffer[bVehicleCmdPointer].CarrierID,
+											nTicket := arVehicleCommandBuffer[bVehicleCmdPointer].Ticket,
+											nTicketSize := arVehicleCommandBuffer[bVehicleCmdPointer].CarriersInPackage,
+											nPriority := arVehicleCommandBuffer[bVehicleCmdPointer].Priority 	);
+			IF (iRes = 2) THEN
+				// Success
+				MEMSET(ADR(arVehicleCommandBuffer[bVehicleCmdPointer]), 0, SIZEOF(arVehicleCommandBuffer[bVehicleCmdPointer]));
+				F_LogLine('TC_EP: Command data deleted from buffer, VehicleID: %d', TO_UINT(iVehicleMoveBufferIN));
+				eStationState := E_StationState.Done;
+			ELSIF (iRes = 3) THEN
+				// Error!
+				F_LogLine('TC_EP: AddReservation failed, VehicleID: %d', TO_UINT(iVehicleMoveBufferIN));
+				eStationState := E_StationState.Done;
+			END_IF
+		END_IF	
+
+	E_StationState.Done:
+		nLastVehicleAtStation2 := iVehicleMoveBufferIN;
+		sTempString := CONCAT('TC_STAT2: Move vehicle: ', TO_STRING(iVehicleMoveBufferIN));
+		F_LogFile(CONCAT(sTempString, ', State done'));
+		eStationState := E_StationState.Idle;
+
+END_CASE
+
+//OS state Change
+bStationStateChangeOS := eStationState <> eStationState_Old;
+eStationState_Old := eStationState;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_VehicleAtDecisionPoint" Id="{f79ab171-e531-461d-82e0-0cf90f965a30}">
+      <Declaration><![CDATA[/// Returns the Vehicle ID of the vehicle at the station decision point (0 if no vehicle ready)
+METHOD M_CTL_VehicleAtDecisionPoint : UINT
+VAR_INPUT
+END_VAR
+VAR
+	iCellNo		: UINT;
+	
+	iStationNo	: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Get cell number/index
+iCellNo := M_ThisCellDataIndex();
+
+(* OLD!
+IF (iCellNo > 0) THEN
+	// Check Cell ID
+	IF (aReadCellData.stCell.nVehicleIDDecisionPoint > 0) THEN
+//		IF (aReadCellData.stCell.nVehicleIDDecisionPoint <> nLastVehicleAtDecisionPoint) THEN
+			// New vehicle arrived at decision point
+			M_CTL_VehicleAtDecisionPoint := aReadCellData.stCell.nVehicleIDDecisionPoint;
+			RETURN;
+//		END_IF
+		M_CTL_VehicleAtDecisionPoint := 0;
+	END_IF
+	M_CTL_VehicleAtDecisionPoint := 0;
+END_IF
+*)
+
+ //NEW - One decision point FOR each station
+IF (iCellNo > 0) THEN
+	iStationNo := 1;
+	WHILE (iStationNo <= MM_MAX_NUMBER_OF_STATION_ELEMENTS) DO
+	// Find correct station data
+	// NOTE! only one station in this cell
+		IF (aReadStationData[iStationNo].stStationData.sStationID = aStations[1].sStationID) THEN
+			// Find first vehicle at station decision point
+			IF (aReadStationData[iStationNo].stStationData.nVehicleIDDecisionPoint > 0) THEN
+				M_CTL_VehicleAtDecisionPoint := aReadStationData[iStationNo].stStationData.nVehicleIDDecisionPoint;
+				RETURN;
+			END_IF
+		END_IF
+		iStationNo := iStationNo + 1;
+	END_WHILE
+END_IF
+
+
+// None found
+M_CTL_VehicleAtDecisionPoint := 0;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CTL_VehicleAtStationX" Id="{7512ab52-9a3e-4422-8d9e-3bafd124fe06}">
+      <Declaration><![CDATA[/// Returns the Vehicle ID of the vehicle at the station x defined on input (0 if no vehicle)
+METHOD M_CTL_VehicleAtStationX : UINT
+VAR_INPUT
+	iStationNo	: UINT;
+END_VAR
+VAR
+	iCellNo		: UINT;
+	i			: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Get cell number/index
+iCellNo := M_ThisCellDataIndex();
+
+IF (iCellNo > 0) THEN
+	i := 1;
+	WHILE (i <= MM_MAX_NUMBER_OF_STATION_ELEMENTS) DO
+	// Find correct station data
+		IF (aReadStationData[i].stStationData.sStationID = aStations[iStationNo].sStationID) THEN
+			// Find vehicle at station x
+			IF (aReadStationData[i].stStationData.nVehicleIDStationIn > 0) THEN
+				M_CTL_VehicleAtStationX := aReadStationData[i].stStationData.nVehicleIDStationIn;
+				RETURN;
+			END_IF
+		END_IF
+		i := i + 1;
+	END_WHILE
+END_IF
+
+
+// None found
+M_CTL_VehicleAtStationX := 0;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_DefineStation" Id="{ef5be9e8-f37f-47cb-a9e2-d69da14a987a}">
+      <Declaration><![CDATA[// Set data for traffic light
+METHOD PUBLIC M_DefineStation : BOOL
+VAR_INPUT
+	nStationNo			: UINT(1..5);
+	sStationID			: STRING(30);
+	nLoc1PathID			: UINT;		// Path number for input location
+	rLoc1Position		: REAL;		// Distance on the specified path for input location
+	nLoc2PathID			: UINT;		// Path number for output location (0 if single station)
+	rLoc2Position		: REAL;		// Distance on the specified path for output location (0.0 if single station)
+	nLocDecPathID		: UINT;		// Path number for decision point location
+	rLocDecPosition		: REAL;		// Distance on the specified path for decision point location
+	nPreBufferSize		: UINT;		// Size of pre buffer (number of positions)
+	nPostBufferSize		: UINT;		// Size of post buffer (number of positions)
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Call Base class method and add data to BufferControl FB's if it returns TRUE
+IF (SUPER^.M_DefineStation(	nStationNo := nStationNo,
+							sStationID := sStationID,
+							nLoc1PathID := nLoc1PathID,
+							rLoc1Position := rLoc1Position,
+							nLoc2PathID := nLoc2PathID,
+							rLoc2Position := rLoc2Position,
+							nLocDecPathID := nLocDecPathID,
+							rLocDecPosition := rLocDecPosition,
+							nPreBufferSize := nPreBufferSize,
+							nPostBufferSize := nPostBufferSize)) THEN
+
+	//Set buffersize and type in BufferControl
+	afbBufferControlPre[nStationNo].P_iBufferSize := nPreBufferSize;
+	afbBufferControlPost[nStationNo].P_iBufferSize := nPostBufferSize;
+	afbBufferControlPre[nStationNo].P_sBufferType := 'Pre';
+	afbBufferControlPost[nStationNo].P_sBufferType := 'Post';
+	
+	M_DefineStation := TRUE;
+
+ELSE
+	M_DefineStation := FALSE;
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{405cde02-a445-45ee-a883-e9931ee5a3e8}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i : UINT;
+	sTemp : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+M_Init := SUPER^.M_Init();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{b1df561c-69b6-4e91-a75f-2037a30840ad}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i	: USINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Call base class FB
+// Handles method calls to trackserver and status data reading from trackserver
+SUPER^.M_Run();
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// FB's for Station data handling
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+afbStationCtrl[1].bCompletedInput := abStation1Done[1];
+afbStationCtrl[1].bCompletedOutput := abStation2Done[1];
+afbStationCtrl[1](stStationData := aStations[1]);
+afbStationCtrl[2].bCompletedInput := abStation1Done[2];
+afbStationCtrl[2].bCompletedOutput := abStation2Done[2];
+afbStationCtrl[2](stStationData := aStations[2]);
+afbStationCtrl[3].bCompletedInput := abStation1Done[3];
+afbStationCtrl[3].bCompletedOutput := abStation2Done[3];
+afbStationCtrl[3](stStationData := aStations[3]);
+afbStationCtrl[4].bCompletedInput := abStation1Done[4];
+afbStationCtrl[4].bCompletedOutput := abStation2Done[4];
+afbStationCtrl[4](stStationData := aStations[4]);
+afbStationCtrl[5].bCompletedInput := abStation1Done[5];
+afbStationCtrl[5].bCompletedOutput := abStation2Done[5];
+afbStationCtrl[5](stStationData := aStations[5]);
+
+//New buffer handling
+		FOR i := 1 TO 5 DO
+			afbBufferControlPre[i](stMMBuffer:= aStations[i].astPreBuffer);
+			afbBufferControlPost[i](stMMBuffer:= aStations[i].astPostBuffer);
+		END_FOR
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_bStationEmpty" Id="{986678bc-4df0-4a6e-828a-9760581b5da3}">
+      <Declaration><![CDATA[PROPERTY P_bStationEmpty : BOOL]]></Declaration>
+      <Set Name="Set" Id="{748c8dd7-b636-4f05-82f3-cb7ff5d41788}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bStationEmpty := P_bStationEmpty;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_bVehicleMovedFromSt1" Id="{21b9d5de-a7a8-4ce3-9587-fd32d41d68f0}">
+      <Declaration><![CDATA[PROPERTY P_bVehicleMovedFromSt1 : BOOL]]></Declaration>
+      <Get Name="Get" Id="{34e2f32f-573b-45c2-86d4-c84d79754b83}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_bVehicleMovedFromSt1 := bVehicleMovedFromSt1; ]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{8d09fb66-d267-4d56-a4d2-673d7d8cc6d3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bVehicleMovedFromSt1 := P_bVehicleMovedFromSt1;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_CarriersFIFO" Id="{c4ceb9ce-74a7-4fd3-8533-1c882def0f32}">
+      <Declaration><![CDATA[PROPERTY P_CarriersFIFO : ARRAY[1..10] OF ST_VehicleInHS]]></Declaration>
+      <Get Name="Get" Id="{4b7d0926-5464-4242-9849-322f92068509}">
+        <Declaration><![CDATA[PUBLIC 
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_CarriersFIFO := aVehiclesStationFIFO;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e168cca4-35a3-4364-a745-d3afa0fd6c7d}">
+        <Declaration><![CDATA[PUBLIC
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[aVehiclesStationFIFO := P_CarriersFIFO;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_eTrafficLightColor" Id="{85829858-5205-4ad4-8a77-23cab9c49a31}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_eTrafficLightColor : E_MMTrafficLightColor]]></Declaration>
+      <Get Name="Get" Id="{eb7f1341-8904-46c3-ab87-817470369d55}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_eTrafficLightColor := stTrafficLightColorData.stOutput.nTrafficLightColor;
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_iVehicleFifoOut" Id="{7bb6d8b0-5401-4d85-80af-ab24b223deee}">
+      <Declaration><![CDATA[PROPERTY P_iVehicleFifoOut : UINT]]></Declaration>
+      <Get Name="Get" Id="{d03e00fb-07b9-4b9f-b6b0-c033ca9604d4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_iVehicleFifoOut := iVehicleFIFOOut;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0cbba873-2348-44dd-858d-c5177cbd1c70}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[iVehicleFIFOOut := P_iVehicleFifoOut;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_StationEmptyReady" Id="{b11bdc94-fa9e-4c62-959b-654271515d17}">
+      <Declaration><![CDATA[PROPERTY P_StationEmptyReady : BOOL]]></Declaration>
+      <Set Name="Set" Id="{5b59f554-7d2e-4985-93ef-44f928a33f59}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[afbStationCtrl[1].bReadyForVehicleInput := P_StationEmptyReady;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_stReservation" Id="{d2d1c8b2-470a-426a-b710-4ce7f98f5cd5}">
+      <Declaration><![CDATA[PROPERTY P_stReservation : ST_ReservationData]]></Declaration>
+      <Get Name="Get" Id="{9e49634e-d34c-46bd-b7fa-c70f256b27a6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_stReservation := aReadCellData.stCell.astReservations[1];]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="P_stVehicleDataOnStation" Id="{24dde2d2-a28f-40c7-a42f-2f89221a84b1}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_stVehicleDataOnStation : ST_ReadVehicleData]]></Declaration>
+      <Get Name="Get" Id="{80464053-18b4-42f0-b549-7359c91e5c14}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_stVehicleDataOnStation := stVehicleOnStation;
+
+]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <LineIds Name="FB_TrackClient">
+      <LineId Id="3" Count="17" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_ClearAll">
+      <LineId Id="3" Count="59" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CommandData">
+      <LineId Id="3" Count="111" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CommandData_OLD">
+      <LineId Id="3" Count="97" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_Buffer">
+      <LineId Id="3" Count="400" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_Buffers">
+      <LineId Id="3" Count="447" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_CheckStationsPostBuffer">
+      <LineId Id="3" Count="74" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_CheckStationsPreBuffer">
+      <LineId Id="3" Count="77" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_CheckTicket">
+      <LineId Id="3" Count="13" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_DecisionPoint">
+      <LineId Id="3" Count="311" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_ExitPoint">
+      <LineId Id="3" Count="186" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_Station">
+      <LineId Id="3" Count="163" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_VehicleAtDecisionPoint">
+      <LineId Id="3" Count="38" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_CTL_VehicleAtStationX">
+      <LineId Id="3" Count="20" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_DefineStation">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_Init">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.M_Run">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_bStationEmpty.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_bVehicleMovedFromSt1.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_bVehicleMovedFromSt1.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_CarriersFIFO.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_CarriersFIFO.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_eTrafficLightColor.Get">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_iVehicleFifoOut.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_iVehicleFifoOut.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_StationEmptyReady.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_stReservation.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TrackClient.P_stVehicleDataOnStation.Get">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_JobDataOut" Id="{c9eff4e2-f914-454e-9542-915a29643213}">
+    <Declaration><![CDATA[TYPE ST_JobDataOut :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	ChangeStatus				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Job data type'}
+	JobDataType					: STRING(7);
+
+	{attribute 'OPC.UA.DA.Description' := 'Job state (0: Undefined, 1: Idle, 2: Executing, 3: Completed'}
+	JobState					: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

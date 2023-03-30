@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ToolDataX" Id="{e263d18d-ef7e-47dc-a80f-2337af4c74b1}">
+    <Declaration><![CDATA[TYPE ST_ToolDataX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Job data type'}
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

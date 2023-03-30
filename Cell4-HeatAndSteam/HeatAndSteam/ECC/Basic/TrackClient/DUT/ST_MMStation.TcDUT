@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MMStation" Id="{10390661-bb8b-4812-977c-bc5430784020}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA.StructuredType':='1'}
+TYPE ST_MMStation :
+STRUCT
+	sCellID						: STRING := '';												(* The cell that the station belongs to. *)
+	sStationID					: STRING(30) := '';											(* The identifier for the station. *)
+	bPresent					: BOOL := FALSE;											(* Flag for indicating if the station is present. *)
+	stStationData1				: ST_MMBuffer;												(* The location of the station. *)
+	stStationData2				: ST_MMBuffer;												(* The location of the station. *)
+	stDecisionLocation			: ST_MMLocation;											(* The location of the decision point of the station. *)
+	astPreBuffer				: ARRAY[1..MM_MAX_BUFFER_INDEX] OF ST_MMBuffer;				(* The stations prebuffer. *)
+	astPostBuffer				: ARRAY[1..MM_MAX_BUFFER_INDEX] OF ST_MMBuffer;				(* The stations postbuffer. *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

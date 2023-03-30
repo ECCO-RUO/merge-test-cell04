@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <GVL Name="GVL_Components" Id="{b1526297-8820-4709-909d-f581f9f151cb}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	bTestMode			: BOOL;	// TEST mode activated
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '3'}
+	{attribute 'OPC.UA.DA.Description' := 'Use Simulation mode'}
+	bSIMUMode			: BOOL;	// TRUE to activate Simulation mode
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

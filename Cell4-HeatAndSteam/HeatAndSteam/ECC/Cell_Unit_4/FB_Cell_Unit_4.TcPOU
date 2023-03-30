@@ -1,0 +1,1132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="FB_Cell_Unit_4" Id="{cf72db96-7eb8-446e-8d8b-cf954633afc7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Cell_Unit_4 EXTENDS FB_Cell_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	bError						: BOOL;
+	iErrorID					: BOOL;
+END_VAR
+VAR_IN_OUT
+	// Bridge data
+	Input						: ST_Input;
+	Output						: ST_Output;
+END_VAR
+VAR
+// Local vars
+	eSeq						: E_VehicleOnStation;
+	tonSeqTimer					: TON;
+	aVehiclesStationFIFO		: ARRAY[1..10] OF ST_VehicleInHS;
+	aDummyVehicleStationData	: ST_VehicleInHS;
+	fDistanceStation2Station	: REAL; //Distance between stations
+
+	stDeviceInfo				: ST_DeviceIdentification;			// Device information such as serial no.
+	stVehicleDataOnStation		: ST_ReadVehicleData;
+	nPLCVersion					: UINT:=0;
+	nScannerInterfaceVersion	: UINT:=0;	
+	bInitDone					: BOOL;
+	bVehicleEnterStationOS	 	: BOOL;
+	bVehicleMoveToStation		: BOOL;
+	iRes						: INT;
+	diFifoLogTimer				: UINT;
+	diVehiclesInDevice			: UINT;
+	
+	tonVehicleDataRead			: TON;	// To trig reading of data for vehicles in the FIFO buffer
+
+// FunctionBlocks:
+	fbStationINHeatAndSteam		: FB_HeatAndSteamIN;
+	fbStationOUTHeatAndSteam	: FB_HeatAndSteamOUT;
+	fbTrack						: FB_TrackClient;
+	
+// Start op procedure
+	bBypassTrack	:	BOOL;
+	nCheckValid		:	UINT;
+	nIndx			:	UINT;
+	nIndxStart		:	UINT;
+	nIndxDone		:	UINT;
+	fVel			:	REAL;
+	fAcc			:	REAL;
+	bStartupPrd		:	BOOL;
+	
+// Error / Warnings
+	iST1ErrWarDataChange	: UINT;
+	iST2ErrWarDataChange	: UINT;
+	iTCErrWarDataChange		: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(	stModeStateIn := Input.Cell.ModeState,
+		stModeStateOut := Output.Cell.ModeState,
+		stOEE := Output.Cell.OEE,
+		stErrorWarning := Output.Cell.ErrorWarning);
+
+// Init FB's
+M_Init();
+
+// Run components
+M_Components();
+		
+// Device controller
+M_Device_Sequence();
+
+// Error and warnings
+M_ErrorWarning();
+
+//Sustainability Data
+M_SustainabilityDataHandling();
+
+//Clear all ticket data
+IF Input.Cell.AdditionalData.ClearAll THEN
+	Input.Cell.AdditionalData.ClearAll R= M_ClearAll();
+END_IF
+
+// Update PackML state/modes variables from local values
+bEStopOK := TRUE;
+bStartLocal;
+bStopLocal;
+bClearLocal;
+bResetLocal := ((eCurrentState = E_PMLState.ePMLState_Complete) AND (eCommand = E_PMLCommand.ePMLCommand_Undefined)); // Automatic back to Idle when finished
+bHoldLocal;
+bProductionLocal;
+bManualLocal;
+
+
+]]></ST>
+    </Implementation>
+    <Method Name="M_Aborted" Id="{bd5ef03b-c85f-4d2a-a4a8-7a23819ab30a}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Aborted'}
+METHOD M_Aborted
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Aborting" Id="{f032b205-ce1d-4f55-91d2-574ed0ceed44}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Aborting'}
+METHOD M_Aborting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Stop all moving parts
+
+
+// Abort is handled internally in Brushing Station FB, follows Cell unit state!
+//IF (fbScanner1.stModeStateOut.CurrentMode = E_PML_State.Aborted) THEN
+//	M_StateComplete();	
+//END_IF
+
+
+// No moving parts, go straight to nest state
+//eCommand := E_PML_Command.Undefined;
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CarrierFinishInfeedToTrack" Id="{dba39cb8-0210-461c-8c36-8f3d93d09e3c}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CarrierFinishInfeedToTrack : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// TODO!!!
+M_CarrierFinishInfeedToTrack := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CarrierFinishOutfeedToTrack" Id="{ce7e7569-4c4f-42ec-b032-36e2f2064bef}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CarrierFinishOutfeedToTrack : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// TODO!!!
+M_CarrierFinishOutfeedToTrack := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CarrierReadyInfeedFromTrack" Id="{05f25346-51f8-463e-bff8-24a9766a672e}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CarrierReadyInfeedFromTrack : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// TODO!!!
+M_CarrierReadyInfeedFromTrack := FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_CarrierReadyOutfeedFromTrack" Id="{e22f3d78-6c65-41e0-85c9-88e46210268c}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CarrierReadyOutfeedFromTrack : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// TODO!!!
+M_CarrierReadyOutfeedFromTrack := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ClearAll" Id="{33b633c0-ab68-4c11-baf7-42afe5ed56fe}">
+      <Declaration><![CDATA[METHOD M_ClearAll : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i : USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Clear all ticket data on cell from OPC command
+
+//Clear Station(s) and TrackClient
+IF fbStationINHeatAndSteam.M_ClearAll() AND fbStationOUTHeatAndSteam.M_ClearAll() THEN
+	M_ClearAll := fbTrack.M_ClearAll();
+END_IF
+	
+//Clear Cell
+IF M_ClearAll THEN
+	 eSeq := E_VehicleOnStation.Idle;
+	 
+	 //Clean out FIFO
+	FOR i := 1 TO 9 DO
+		aVehiclesStationFIFO[i] := aDummyVehicleStationData;
+	END_FOR	
+	F_Logfile('Cell - All data cleared!');
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Clearing" Id="{1f28b6ef-5ce2-4043-829f-d41b6b7dff02}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Clearing'}
+METHOD M_Clearing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Reset safety system
+
+//fbScanner1.nCellStateCmd := E_PML_Command.Clear;
+
+//fbTrack.bReset := TRUE;
+
+//IF ((fbScanner1.stModeStateOut.CurrentMode = E_PML_State.idle) OR (fbScanner1.stModeStateOut.CurrentMode = E_PML_State.stopped)) THEN
+//	M_StateComplete();
+	
+//	fbTrack.bReset := FALSE;
+//END_IF
+//eCommand := E_PML_Command.Undefined;
+M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Complete" Id="{8ba5fce4-72bf-4241-a26e-ef399922eb7e}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Complete'}
+METHOD M_Complete
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Completing" Id="{0f82d758-93ae-47a0-a12f-b6204f954ecd}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Completing'}
+METHOD M_Completing
+
+VAR
+	sLowHighUpperID : STRING;	
+	iRes			: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+//eCommand := E_PML_Command.Undefined;
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Components" Id="{e1a891fa-bb2d-4c6f-abec-ac4f57ea3823}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Components : BOOL
+VAR_INPUT
+END_VAR
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Run component blocks
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Device_Sequence" Id="{5be8b572-02f0-4d3b-86b5-8808796a0409}">
+      <Declaration><![CDATA[METHOD M_Device_Sequence
+VAR_INPUT
+END_VAR
+VAR
+	i			: UINT;
+	iRes		: INT;
+	bMoveToNext	: BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Heart beat
+iHeartBeatFromMES := Input.Header.HeartBeat;
+Output.Header.HeartBeat := iHeartBeatToMES;
+
+// Run Station(s) (define when each needs to run)
+fbStationINHeatAndSteam(
+	aVehiclesStationFIFO:= aVehiclesStationFIFO,
+	stReservation:= fbTrack.P_stReservation,
+	stModeStateIn:= Input.Station.Station1.ModeState, 
+	stModeStateOut := Output.Station.Station1.ModeState,
+	bVehicleReadyAtInput:= eSeq <> E_VehicleOnStation.Idle, 
+	bVehicleReadyAtOutput:= , 
+	nCellStateCmd:= DINT_TO_UINT(eCommand),
+	stJobDataIn:= Input.Station.Station1.JobData,  
+	stConfigIn:= Input.Station.Station1.CurrentConfiguration, 
+	stUpcomingConfigIn:= Input.Station.Station1.UpcomingConfiguration, 
+	stControlIn := Input.Station.Station1.Control,
+	stAdditionalDataIn := Input.Station.Station1.AdditionalData,
+	sDistanceInDevice := Input.Transport.Configuration.Stations[2].StationLocation1.Position - Input.Transport.Configuration.Stations[1].StationLocation1.Position,
+	stVehicleDataStaion := fbTrack.P_stVehicleDataOnStation,
+	stJobDataOut := Output.Station.Station1.JobData,  
+	stOEE := Output.Station.Station1.OEE, 
+	stErrorWarning := Output.Station.Station1.ErrorWarning, 
+	stConfigOut := Output.Station.Station1.CurrentConfiguration,
+	stUpcomingConfigOut := Output.Station.Station1.UpcomingConfiguration,
+	stOperationalDataOut := Output.Station.Station1.OperationalData, 
+	stSustainabilityData := Output.Station.Station1.SustainabilityData, 
+	stAdditionalDataOut := Output.Station.Station1.AdditionalData 	);
+	
+fbStationOUTHeatAndSteam(
+	stModeStateIn:= Input.Station.Station2.ModeState, 
+	stModeStateOut := Output.Station.Station2.ModeState,
+	bVehicleReadyAtInput:= , 
+	bVehicleReadyAtOutput:= , 
+	nCellStateCmd:= DINT_TO_UINT(eCommand),
+	stJobDataIn:= Input.Station.Station2.JobData,  
+	stConfigIn:= Input.Station.Station2.CurrentConfiguration, 
+	stUpcomingConfigIn:= Input.Station.Station2.UpcomingConfiguration, 
+	stControlIn := Input.Station.Station2.Control,
+	stAdditionalDataIn := Input.Station.Station1.AdditionalData,
+	stJobDataOut := Output.Station.Station2.JobData,  
+	stOEE := Output.Station.Station2.OEE, 
+	stErrorWarning := Output.Station.Station2.ErrorWarning, 
+	stConfigOut := Output.Station.Station2.CurrentConfiguration,
+	stUpcomingConfigOut := Output.Station.Station2.UpcomingConfiguration,
+	stOperationalDataOut := Output.Station.Station2.OperationalData, 
+	stSustainabilityData := Output.Station.Station2.SustainabilityData, 
+	stAdditionalDataOut := Output.Station.Station2.AdditionalData 	);
+
+	
+// Run Track Client
+fbTrack(bEnable := , // Enabled in State Resetting
+		bEStopOK := TRUE,
+		bSuspend := , 
+		bReset:= , 
+		stCommand:= Input.Transport.Command,
+		stMappingIn:= input.Transport.Mapping,
+		stAdditionalDataIn:= Input.Transport.AdditionalData,
+		bConnectedMethod=> , 
+		bBusyMethod=> , 
+		bConnectedNode=> , 
+		bErrorMethod=> , 
+		nErrorMethodID=> , 
+		bErrorNode=> , 
+		nErrorNodeID=> , 
+		stStatus := Output.Transport.Status,
+		stMappingOut := Output.Transport.Mapping, 
+		stAdditionaldataOut := Output.Transport.AdditionalData,
+		bStarted=> , 
+		bSuspended=> 	);
+
+
+//Set Station ready for vehicle to track
+fbTrack.P_StationEmptyReady := eSeq = E_VehicleOnStation.Idle;
+//fbTrack.P_bStationReady:=fbStationINHeatAndSteam.bStationReadyIn;
+
+//Vehicles on station FIFO handling
+M_VehicleOnStation(iCarrierCount=>diVehiclesInDevice);
+
+
+//Set station empty for track - for vehicles going straight through
+fbTrack.P_bStationEmpty:= diVehiclesInDevice = 0;
+
+//Set FIFO for Station IN and Track Client
+//fbStationINHeatAndSteam.P_CarriersFIFO := aVehiclesStationFIFO;
+fbTrack.P_CarriersFIFO := aVehiclesStationFIFO;
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ErrorWarning" Id="{e0206f18-b51e-4411-902d-37cc4f2cfe12}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorWarning
+VAR_INPUT
+END_VAR
+VAR
+	iAlNo				: UINT;
+	iNoOfAlarms			: UINT;
+	iNoOfWarnings		: UINT;
+	bST1ErrWarDataChange: BOOL;
+	bST2ErrWarDataChange: BOOL;
+	bCellDataChange		: BOOL;
+	bTCErrWarDataChange	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Alarm / Warnings Cell
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= eLineCtrl_EStop <> E_TwinSAFE_Logic_State.RUN, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.Safety + 0, 
+//	sDeviceID:= 'Global Safety',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Emergency stop Line Controller');
+
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= NOT bEStop_OK, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.Safety + 20, 
+//	sDeviceID:= 'Local Safety',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Emergency stop Cell');
+
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= eSHL_F70 <> E_TwinSAFE_Logic_State.RUN, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.Safety + 21, 
+//	sDeviceID:= 'Local Safety',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Emergency stop Robot');
+	
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= NOT bDoor_OK, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.Safety + 22, 
+//	sDeviceID:= 'Local Safety',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Cell Door 1 Not OK');
+	
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= stStatusData.e03_11_AK01_M3011 = E_Cylinder_Sta.Cyl_Sta_Err, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.LifterStation1Device + 0, 
+//	sDeviceID:= 'Lifter Station 1',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Error Radial Gripper');
+	
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= stStatusData.e03_11_AK01_M3015 = E_Cylinder_Sta.Cyl_Sta_Err, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.LifterStation1Device + 1, 
+//	sDeviceID:= 'Lifter Station 1',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Error Lifter Cylinder');
+	
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= stStatusData.e03_11_AK01_M3111 = E_Cylinder_Sta.Cyl_Sta_Err, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.LifterStation2Device + 0, 
+//	sDeviceID:= 'Lifter Station 2',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Error Radial Gripper');
+	
+//bCellDataChange S= 
+//M_ErrorWarningObj(arErrorWaringData:= arErrorWarningDataCell,
+//	bActive:= stStatusData.e03_11_AK01_M3115 = E_Cylinder_Sta.Cyl_Sta_Err, 
+//	iErrorWarningType:= 2, 
+//	diErrorWarningID:= E_AlarmCategory.LifterStation2Device + 1, 
+//	sDeviceID:= 'Lifter Station 2',
+//	iSeverity:= 2, 
+//	iNativeID:= 0, 
+//	sNativeMessage:= 'Error Lifter Cylinder');
+
+	
+(*------------------------------------------------------------------------------------------------*)	
+	
+//Update alarm / warning list output to OPC
+bST1ErrWarDataChange := iST1ErrWarDataChange <> Output.Station.Station1.ErrorWarning.DataChange;
+iST1ErrWarDataChange := Output.Station.Station1.ErrorWarning.DataChange;
+bST2ErrWarDataChange := iST2ErrWarDataChange <> Output.Station.Station2.ErrorWarning.DataChange;
+iST2ErrWarDataChange := Output.Station.Station2.ErrorWarning.DataChange;
+bTCErrWarDataChange := iTCErrWarDataChange <> fbTrack.stErrorWarning.DataChange;
+iTCErrWarDataChange := fbTrack.stErrorWarning.DataChange;
+
+IF bST1ErrWarDataChange OR bTCErrWarDataChange OR bCellDataChange THEN
+	//Clear alarm list
+	M_ErrorWarningClear();
+
+	//Add alarm/warnings for Cell
+	M_ErrorWarningAdd(arInErrorWarningList:= arErrorWarningDataCell, sLocationID:= 'C000004');
+	
+	//Add alarm/warnings for Station 1
+	M_ErrorWarningAdd(arInErrorWarningList:= Output.Station.Station1.ErrorWarning.ErrorWarningData, sLocationID:= 'S000003');
+	
+	//Add alarm/warnings for Station 2
+	M_ErrorWarningAdd(arInErrorWarningList:= Output.Station.Station2.ErrorWarning.ErrorWarningData, sLocationID:= 'S00000C');
+	
+	//Add alarm/warnings for Track Client
+	M_ErrorWarningAdd(arInErrorWarningList:= fbTrack.stErrorWarning.ErrorWarningData, sLocationID:= 'TrackClient');
+	
+	stErrorWarning.DataChange := stErrorWarning.DataChange +1;
+	//Output.Cell.ErrorWarning := stErrorWarning;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Execute" Id="{28dee9b7-cc77-437a-a807-8c73988812a1}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Execute'}
+METHOD M_Execute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (output.Station.Station1.ModeState.CurrentState = E_PML_State.Holding) THEN
+	bHoldLocal := TRUE;
+ELSIF (output.Station.Station1.ModeState.CurrentState = E_PML_State.Suspending) THEN
+	bSuspendLocal := TRUE;
+ELSIF (output.Station.Station1.ModeState.CurrentState <> E_PML_State.Execute) THEN
+	// Exit execute state when all station(s) are not executing
+	
+	M_StateComplete();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Held" Id="{571d4bd8-243c-4a0a-8f5a-58be9b79ee1b}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Held'}
+METHOD M_Held
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Holding" Id="{f21895e2-f54a-498c-9547-bba747a18276}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Holding'}
+METHOD M_Holding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+(*
+// Check station(s) state
+IF (fbBrushing.stOutput.stModeState.iCurrentState = E_PML_State.Held) THEN
+	M_StateComplete();
+END_IF
+*)
+
+// Do not wait for station state
+//eCommand := E_PML_Command.Undefined;
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Idle" Id="{847ad4d7-a27d-43e7-8f1e-47703d33fac3}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Idle'}
+METHOD M_Idle
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{75dd1a25-2768-471b-80df-eaf04e3d2031}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+
+VAR
+	SerialNumber: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (NOT bInitDone) THEN
+	// Set init done to TRUE. Set to false during init if needed
+	bInitDone := TRUE;
+	
+// Track Client setup
+	fbTrack.P_eCellType := E_CellType.Type_Inline;
+	fbTrack.P_sCellID := 'C000004';
+	fbTrack.P_sTrackserverURL := GVL.sVars.sTrackserver;
+	fbTrack.P_sTrackserverNetID := GVL.sVars.sTrackserver_AMS;
+	fbTrack.P_nTrackserverPort := 851;
+	//Next station on track
+	//fbTrack.P_sNextStationOnTrack := 'S000001';	// Cell 5
+	fbTrack.P_sNextStationOnTrack := 'MMDP1C000000';	// Cell 5
+	// Paths
+	
+	// Station(s)
+	bInitDone := bInitDone AND
+	fbTrack.M_DefineStation(nStationNo := 1,
+							sStationID := Input.Transport.Configuration.Stations[1].StationID,							//S000003
+							nLoc1PathID := Input.Transport.Configuration.Stations[1].StationLocation1.Path,				//17
+							rLoc1Position := Input.Transport.Configuration.Stations[1].StationLocation1.Position,		//1.000
+							nLoc2PathID := 0, //Input.Transport.Configuration.Stations[1].StationLocation2.Path,
+							rLoc2Position := 0, //Input.Transport.Configuration.Stations[1].StationLocation2.Position,
+							nLocDecPathID := Input.Transport.Configuration.DecisionPointLocation.Path,					//17
+							rLocDecPosition := Input.Transport.Configuration.DecisionPointLocation.Position,			//0.650
+							nPreBufferSize := 0, //Input.Transport.Configuration.Stations[1].PreBufferSize,
+							nPostBufferSize := 0); //Input.Transport.Configuration.Stations[1].PostBufferSize );
+							
+		fbTrack.M_DefineStation(nStationNo := 2,
+							sStationID := Input.Transport.Configuration.Stations[2].StationID,							//S00000C
+							nLoc1PathID := Input.Transport.Configuration.Stations[2].StationLocation1.Path,				//17
+							rLoc1Position := Input.Transport.Configuration.Stations[2].StationLocation1.Position,		//1.850
+							nLoc2PathID := 0, //Input.Transport.Configuration.Stations[2].StationLocation2.Path,
+							rLoc2Position := 0, //Input.Transport.Configuration.Stations[2].StationLocation2.Position,
+							nLocDecPathID := Input.Transport.Configuration.DecisionPointLocation.Path,					//17
+							rLocDecPosition := Input.Transport.Configuration.DecisionPointLocation.Position,			//0.650
+							nPreBufferSize := 0, //Input.Transport.Configuration.Stations[2].PreBufferSize,
+							nPostBufferSize := 0); //Input.Transport.Configuration.Stations[2].PostBufferSize );
+	
+	// Cell information
+	Output.Header.CellInformation.CellID := 'C000004';
+	Output.Header.CellInformation.CellName := 'Cell 4';
+	Output.Header.CellInformation.NumberOfStations := 2;
+	Output.Header.MetaInformation.CellType := 'Inline';
+	Output.Header.MetaInformation.InterfaceVersion := 0;
+	Output.Header.MetaInformation.PLCVersion := nPLCVersion;
+	Output.Header.MetaInformation.SerialNumber := sSerialIPC;
+	
+	// Station information
+	Output.Header.CellInformation.StationInformation[1].NumberOfOperations := 1;
+	Output.Header.CellInformation.StationInformation[1].StationID := 'S000003';
+	Output.Header.CellInformation.StationInformation[1].StationName := 'HeatAndSteam In';
+	Output.Station.Station1.CurrentConfiguration.OP11600.ToolCapacity := 0;
+	Output.Station.Station1.CurrentConfiguration.OP11600.MaterialCapacity := 0;
+	
+	Output.Header.CellInformation.StationInformation[2].NumberOfOperations := 0;
+	Output.Header.CellInformation.StationInformation[2].StationID := 'S00000C';
+	Output.Header.CellInformation.StationInformation[2].StationName := 'HeatAndSteam Out';
+//	Output.Station.Station2.CurrentConfiguration.OP11601.ToolCapacity := 0;
+//	Output.Station.Station2.CurrentConfiguration.OP11601.MaterialCapacity := 0;
+
+	
+	// Operation information
+	Output.Header.CellInformation.StationInformation[1].OperationInformation[1].OperationID := 'OP11600';
+	Output.Header.CellInformation.StationInformation[1].OperationInformation[1].OperationName := 'HeatAndSteam Step 1';
+	
+	// Transport information
+	Output.Header.CellInformation.TransportInformation.TransportName := 'C000004';
+	Output.Header.CellInformation.TransportInformation.TransportType := 'Inline';
+	
+	// Components
+	
+	//Specify Sustainability data
+	Output.Cell.SustainabilityData.Energy[1] := F_NewDeviceDataX(	'HS', 						'Heat and Steam', 
+																	E_AlarmCategory.OP11600 +0, 	'Instant Power', 				E_Units._KW);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_OEEHandling" Id="{1651d004-966e-4363-9b75-d59ecbe3ffbb}">
+      <Declaration><![CDATA[METHOD PROTECTED M_OEEHandling
+VAR_INPUT
+END_VAR
+VAR
+	bChanged			: BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Call base FB method
+SUPER^.M_OEEHandling();
+
+
+// Product counters
+IF ( stOEE.ProcessedProduct <> (Output.Station.Station1.OEE.ProcessedProduct) ) THEN
+	stOEE.ProcessedProduct := Output.Station.Station1.OEE.ProcessedProduct;
+	bChanged := TRUE;
+END_IF
+IF ( stOEE.GoodProduct <> (Output.Station.Station1.OEE.GoodProduct) ) THEN
+	stOEE.GoodProduct := Output.Station.Station1.OEE.GoodProduct;
+	bChanged := TRUE;
+END_IF
+IF ( stOEE.RejectedProduct <> (Output.Station.Station1.OEE.RejectedProduct) ) THEN
+	stOEE.RejectedProduct := Output.Station.Station1.OEE.RejectedProduct;
+	bChanged := TRUE;
+END_IF
+
+// Update Event ID!
+// TODO!!!
+stOEE.EventID;
+
+// Increment DataChange to signal to LC that sometihng has changed
+IF (bChanged) THEN
+	// Update time for changes
+	stOEE.DateTime := SYSTEMTIME_TO_DT(TIMESTR := fbGetTime.TIMESTR);
+	
+	stOEE.DataChange := stOEE.DataChange + 1;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Resetting" Id="{2fdd21d2-a990-4667-9106-acf03222cb12}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Resetting'}
+METHOD M_Resetting
+VAR
+	bDone : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Track
+fbTrack.bEnable := TRUE;
+
+IF (fbTrack.bStarted AND fbTrack.bTrackInitDone AND fbTrack.bVehicleInitDone) OR bBypassTrack THEN
+	eCommand := E_PML_Command.Undefined;
+	M_StateComplete();
+	bBypassTrack := FALSE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Starting" Id="{a60de467-f229-499b-8e88-c6927986861b}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Starting'}
+METHOD M_Starting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*
+// Check station(s)
+IF (fbBrushing.stModeStateOut.CurrentState = E_PML_State.Execute) THEN
+	bStartLocal := FALSE;
+	M_StateComplete();
+END_IF
+*)
+
+eCommand := E_PML_Command.Undefined;
+M_StateComplete();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopped" Id="{931b482f-5496-4ddb-906b-a6aceac7a73c}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Stopped'}
+METHOD M_Stopped
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Stopping" Id="{2c5f712f-481a-44e9-861e-7bf6ef8d2cf1}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Stopping'}
+METHOD M_Stopping
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//eCommand := E_PML_Command.Undefined;
+M_StateComplete();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspended" Id="{294525d0-143c-49bf-97ca-e286c0560736}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Suspended'}
+METHOD M_Suspended
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Suspending" Id="{bf6c2962-41f6-4895-8541-33c003a75579}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Suspending'}
+METHOD M_Suspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//fbTrack.bSuspend := TRUE;
+
+// Check station(s) state
+//IF ( (output.Station.Station1.ModeState.CurrentState = E_PML_State.Suspended) AND fbTrack.bSuspended ) THEN
+//	eCommand := E_PML_Command.Undefined;
+	M_StateComplete();
+//END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_SustainabilityDataHandling" Id="{5afc830c-a50d-4fbb-99f5-22720297eb3f}">
+      <Declaration><![CDATA[METHOD M_SustainabilityDataHandling
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[Output.Cell.SustainabilityData.Energy[1].Value := Output.Station.Station1.OperationalData.OP11600.DeviceData[4].Value;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Undefined" Id="{ec9a929f-dd65-479f-aa10-98470ce9f5b2}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Undefined'}
+METHOD M_Undefined
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unholding" Id="{98f96dd1-8741-4e46-981d-c154dfce5209}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Unholding'}
+METHOD M_Unholding
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Check station(s) state
+IF ((output.Station.Station1.ModeState.CurrentState  <> E_PML_State.Held)) THEN
+//	eCommand := E_PML_Command.Undefined;
+	M_StateComplete();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Unsuspending" Id="{eca99120-3737-4391-a84d-308a8ab99264}">
+      <Declaration><![CDATA[{attribute 'object_name' := 'M_Unsuspending'}
+METHOD M_Unsuspending
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//eCommand := E_PML_Command.Undefined;
+fbTrack.bSuspend := FALSE;
+M_StateComplete();
+(*
+// Check station(s) state
+IF (fbBrushing.stModeStateOut.CurrentState <> E_PML_State.Suspended) THEN
+	M_StateComplete();
+END_IF
+*)]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_VehicleOnStation" Id="{3789e47b-1d60-4826-b66d-484cd2582ee3}">
+      <Declaration><![CDATA[METHOD M_VehicleOnStation : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	bVehiclePresent			: BOOL;
+	iCarrierIndex			: UINT;
+	iCarrierID				: STRING;
+	i						: UINT;
+	j						: UINT;
+	fPositionOut			: REAL;
+	sTempString				: STRING(200);
+END_VAR
+VAR_OUTPUT
+	iCarrierCount			: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Carrier count
+iCarrierCount := 0;
+FOR i := 1 TO 10 DO
+	IF (aVehiclesStationFIFO[i].sCarrierID = '') THEN
+		EXIT;//End reached
+	ELSE
+		iCarrierCount := iCarrierCount + 1;
+	END_IF 
+END_FOR
+
+CASE eSeq OF
+	E_VehicleOnStation.Idle:
+		IF fbTrack.bReadyStationIn[1] THEN
+			stVehicleDataOnStation := fbTrack.P_stVehicleDataOnStation; //Read out vehicle data to temp
+			eSeq := E_VehicleOnStation.VehicleAtStation;
+			F_LogFile(CONCAT('Cell Vehicle On Station - New Vehicle station IN, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+		END_IF
+		
+	E_VehicleOnStation.VehicleAtStation:
+		tonSeqTimer(IN := TRUE, PT := T#10S);
+		IF output.Station.Station1.ModeState.CurrentState = E_PML_State.Starting (*AND NOT fbStationINHeatAndSteam.P_bSkipVehicle*) THEN
+			tonSeqTimer(IN := FALSE);
+			eSeq := E_VehicleOnStation.AddToFIFO;
+			F_LogFile(CONCAT('Cell Vehicle On Station - Vehicle at station, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+//		ELSIF fbStationINHeatAndSteam.P_bSkipVehicle THEN
+//			tonSeqTimer(IN := FALSE);
+//			eSeq := E_VehicleOnStation.WaitStationStart;
+//			F_LogFile(CONCAT('Cell Vehicle On Station - Vehicle at station SKIPPED, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+		END_IF
+		
+		// Check if vehicle is waiting for station start or skip
+		IF (tonSeqTimer.Q) THEN
+			// Force update of vehicle status to OPC/Line Controller
+			tonSeqTimer(IN := FALSE);
+			fbTrack.P_bForceVehicleUpdateOPC := TRUE;
+		END_IF
+		
+	E_VehicleOnStation.AddToFIFO:
+		
+		FOR i := 1 TO 10 DO
+			IF (aVehiclesStationFIFO[i].sCarrierID = '') THEN
+				aVehiclesStationFIFO[i].sCarrierID := stVehicleDataOnStation.stVehicle.sCarrierID;
+				aVehiclesStationFIFO[i].nVehicleNo := stVehicleDataOnStation.stVehicle.nVehicleID;
+				aVehiclesStationFIFO[i].JobData := Output.Station.Station1.JobData.OP11600;
+				aVehiclesStationFIFO[i].fVelocity := fbStationINHeatAndSteam.fVelocityCal;
+				
+				sTempString := CONCAT('Station FIFO - Carrier with ID: ', TO_STRING(aVehiclesStationFIFO[i].sCarrierID));
+				sTempString := CONCAT(sTempString, ' added to FIFO, Vehicle no: ');
+				sTempString := CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].nVehicleNo));
+				sTempString := CONCAT(sTempString, ', Velocity: ');
+				F_LogFIle(CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].fVelocity)));
+				
+				EXIT;
+			END_IF
+		END_FOR
+		
+		eSeq := E_VehicleOnStation.WaitStationStart;
+		F_LogFile(CONCAT('Cell Vehicle On Station - Add FIFO, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+		
+	E_VehicleOnStation.WaitStationStart:
+	
+		IF output.Station.Station1.ModeState.CurrentState = E_PML_State.Completing THEN
+			//fbStationINHeatAndSteam.P_bSkipVehicle := FALSE;
+			eSeq := E_VehicleOnStation.MoveVehicle;
+			F_LogFile(CONCAT('Cell Vehicle On Station - Station completing, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+		END_IF
+		
+	E_VehicleOnStation.MoveVehicle:
+		IF (fbStationINHeatAndSteam.P_bSkipVehicle) THEN
+			// Set vehicle velocity to 1 if skipped!
+			iRes := fbTrack.M_CallMoveVehicleToStationIn(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+															sInput := UINT_TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID), 
+															sStationID := fbTrack.aStations[2].sStationID,//'S00000C',
+															eDirection := E_MMDirection.eMMDirection_Forward, 
+															fVelocity := 1.0, 
+															fAcceleration := 1	);
+		ELSE
+			iRes := fbTrack.M_CallMoveVehicleToStationIn(	eInputType := E_MMVehicleInputType.eMMVehicleInputType_VehicleID, 
+															sInput := UINT_TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID), 
+															sStationID := fbTrack.aStations[2].sStationID,//'S00000C',
+															eDirection := E_MMDirection.eMMDirection_Forward, 
+															fVelocity := fbStationINHeatAndSteam.fVelocityCal, 
+															fAcceleration := 1	);
+		END_IF
+
+		IF (iRes = 2) THEN
+			// Movement call OK
+			fbTrack.P_bVehicleMovedFromSt1 := TRUE;
+			eSeq := E_VehicleOnStation.VehicleLeftStation;
+			
+			sTempString := CONCAT('Cell Vehicle On Station - Vehicle No: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID));
+			sTempString := CONCAT(sTempString, ' Move OK towards station 2, with velocity: ');
+			F_LogFIle(CONCAT(sTempString, TO_STRING(fbStationINHeatAndSteam.fVelocityCal)));
+		ELSIF (iRes = 3) THEN
+			// Movement call failed
+			eSeq := E_VehicleOnStation.VehicleLeftStation;
+			
+			sTempString := CONCAT('Cell Vehicle On Station - Vehicle No: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID));
+			sTempString := CONCAT(sTempString, ' Move FAILED towards station 2, with velocity: ');
+			F_LogFIle(CONCAT(sTempString, TO_STRING(fbStationINHeatAndSteam.fVelocityCal)));
+		END_IF
+	
+	E_VehicleOnStation.VehicleLeftStation:
+		eSeq := E_VehicleOnStation.Idle;
+		
+		F_LogFile(CONCAT('Cell Vehicle - Vehicle left station, Veh NO: ', TO_STRING(stVehicleDataOnStation.stVehicle.nVehicleID)));
+END_CASE
+
+//Remove from FIFO
+IF fbTrack.P_iVehicleFifoOut > 0 THEN
+	FOR i := 1 TO 9 DO
+		IF aVehiclesStationFIFO[i].nVehicleNo = fbTrack.P_iVehicleFifoOut THEN
+			sTempString := CONCAT('Cell VehicleOnStat: Vehicle#: ', TO_STRING(aVehiclesStationFIFO[1].nVehicleNo));
+			fbTrack.M_VehicleToReadRemove(aVehiclesStationFIFO[1].nVehicleNo);
+			sTempString := CONCAT(sTempString, ' Removed from FIFO place: ');
+			F_LogFile(CONCAT(sTempString, TO_STRING(i)));
+			
+			aVehiclesStationFIFO[i] := aDummyVehicleStationData;
+		END_IF
+	END_FOR
+	fbTrack.P_iVehicleFifoOut := 0;
+END_IF
+//IF fbTrack.P_bFifoOut THEN
+	
+//	IF (aVehiclesStationFIFO[1].sCarrierID <> '') THEN
+//		sTempString := CONCAT('Station FIFO - FIFO out carrierID: ', TO_STRING(aVehiclesStationFIFO[1].sCarrierID));
+//		fbTrack.M_VehicleToReadRemove(aVehiclesStationFIFO[1].nVehicleNo);
+//		F_LogFIle(CONCAT(sTempString, ' Removed from FIFO'));
+//	END_IF
+		
+//	aVehiclesStationFIFO[1].sCarrierID := '';
+//	aVehiclesStationFIFO[1].fCalculatedTIA := 0.0;
+//	aVehiclesStationFIFO[1].fVelocity := 0.0;
+//	aVehiclesStationFIFO[1].nVehicleNo := 0;
+//	fbTrack.P_bFifoOut := FALSE;
+//END_IF
+
+
+//Clean up FIFO
+FOR i := 1 TO 9 DO
+//	IF LEN(aVehiclesStationFIFO[i].sCarrierID) = 0 AND LEN(aVehiclesStationFIFO[i+1].sCarrierID) <> 0 THEN
+	IF (aVehiclesStationFIFO[i].sCarrierID = '') AND (aVehiclesStationFIFO[i+1].sCarrierID <> '') THEN 
+		aVehiclesStationFIFO[i] := aVehiclesStationFIFO[i+1]; // Move next item here
+		aVehiclesStationFIFO[i+1] := aDummyVehicleStationData;
+	END_IF
+END_FOR	
+
+//Update estimated time to reach station 2
+tonVehicleDataRead(IN := TRUE, PT := T#1S);	// Read vehicle data every second
+fPositionOut := Input.Transport.Configuration.Stations[2].StationLocation1.Position;
+FOR i := 1 TO 10 DO
+	IF (aVehiclesStationFIFO[i].sCarrierID = '') THEN
+		EXIT;
+	END_IF //End reached
+	
+	// Trig vehicle data reading
+	IF (tonVehicleDataRead.Q) THEN
+		fbTrack.M_VehicleToReadAdd(aVehiclesStationFIFO[i].nVehicleNo);
+	END_IF
+	
+	FOR j := 1 TO 1000 DO
+		IF (Output.Transport.Status.Carrier[i].CarrierID = '') THEN
+			EXIT;
+		END_IF //End reached
+		
+		IF (aVehiclesStationFIFO[i].sCarrierID = Output.Transport.Status.Carrier[j].CarrierID) THEN
+			IF (aVehiclesStationFIFO[i].fVelocity > 0.001) THEN
+				// Calculate remaining time for reaching station 2 location using remaining distance and commanded velocity
+				aVehiclesStationFIFO[i].fCalculatedTIA := (Input.Transport.Configuration.Stations[2].StationLocation1.Position - Output.Transport.Status.Carrier[j].CurrentPosition) / aVehiclesStationFIFO[i].fVelocity;
+			END_IF
+		END_IF
+	END_FOR
+END_FOR
+// Timer for reading vehicle data for vehicles in the FIFO buffer
+IF (tonVehicleDataRead.Q) THEN
+	tonVehicleDataRead(IN := FALSE);
+END_IF
+
+//Set empty out
+M_VehicleOnStation := iCarrierCount = 0;
+
+//Cyclic log FIFO timer
+IF iCarrierCount > 0 THEN
+	diFifoLogTimer := diFifoLogTimer + g_iPLCScan_MS;
+	IF diFifoLogTimer > 10000 THEN
+		FOR i := 1 TO iCarrierCount DO
+			sTempString := CONCAT('Station FIFO - Status, Carrier ID: ', TO_STRING(aVehiclesStationFIFO[i].sCarrierID));
+			sTempString := CONCAT(sTempString, ', Vehicle no: ');
+			sTempString := CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].nVehicleNo));
+			sTempString := CONCAT(sTempString, ', Velocity: ');
+			sTempString := CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].fVelocity));
+			sTempString := CONCAT(sTempString, ', TIA: ');
+			F_LogFIle(CONCAT(sTempString, TO_STRING(aVehiclesStationFIFO[i].fCalculatedTIA)));
+		END_FOR
+		diFifoLogTimer := 0;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Cell_Unit_4">
+      <LineId Id="3" Count="1" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="5" Count="32" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Aborted">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Aborting">
+      <LineId Id="3" Count="11" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_CarrierFinishInfeedToTrack">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_CarrierFinishOutfeedToTrack">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_CarrierReadyInfeedFromTrack">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_CarrierReadyOutfeedFromTrack">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_ClearAll">
+      <LineId Id="3" Count="15" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Clearing">
+      <LineId Id="3" Count="11" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Complete">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Completing">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Components">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Device_Sequence">
+      <LineId Id="3" Count="87" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_ErrorWarning">
+      <LineId Id="3" Count="109" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Execute">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Held">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Holding">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Idle">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Init">
+      <LineId Id="3" Count="7" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="12" Count="2" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="15" Count="61" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_OEEHandling">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Resetting">
+      <LineId Id="3" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Starting">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Stopped">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Stopping">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Suspended">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Suspending">
+      <LineId Id="3" Count="6" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_SustainabilityDataHandling">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Undefined">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Unholding">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_Unsuspending">
+      <LineId Id="3" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Cell_Unit_4.M_VehicleOnStation">
+      <LineId Id="3" Count="196" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

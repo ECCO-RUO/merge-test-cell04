@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_DataPointX" Id="{6704684d-5fc4-4c83-a74c-f6cd53efb04d}">
+    <Declaration><![CDATA[TYPE ST_DataPointX :
+STRUCT
+	X					: REAL;	// Point on shoe. X value.
+	Y					: REAL;	// Point on shoe. Y value.
+	Z					: REAL;	// Point on shoe. Z value.
+	Q1					: REAL;	// Point on shoe. Quaternion scalar part
+	Q2					: REAL;	// Point on shoe. Quaternion x vector part
+	Q3					: REAL;	// Point on shoe. Quaternion y vector part
+	Q4					: REAL;	// Point on shoe. Quaternion z vector part
+	Speed				: REAL;	// Speed setting.
+	Acceleration		: REAL;	// Acceleration setting
+	Zone				: REAL;	// Zone setting
+//	ExternalTCP			: UINT;	// ID of external TCP. This can be referencepoints for tools or otherpoints of interests.
+	ExternalTCPOffsetX	: REAL;	// External TCP offset. X value.
+	ExternalTCPOffsetY	: REAL;	// External TCP offset. Y value.
+	ExternalTCPOffsetZ	: REAL;	// External TCP offset. Z value.
+	ExternalTCPOffsetQ1	: REAL;	// External TCP offset. Quaternion scalar part
+	ExternalTCPOffsetQ2	: REAL;	// External TCP offset. Quaternion x vector part
+	ExternalTCPOffsetQ3	: REAL;	// External TCP offset. Quaternion y vector part
+	ExternalTCPOffsetQ4	: REAL;	// External TCP offset. Quaternion z vector part
+	Validate			: BOOL;	// Indicator that a validation from the bridge is required before moving to a point. Robot will move to a safepos untill validation is recieved from the bridge
+	arDeviceParameters	: ARRAY [0..9] OF REAL;	// See "E_StationJobData" for array specification
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputArgInfoAndData_Basis" Id="{32f0fecd-9b7f-491f-a3e2-d7578d2600d9}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_OutputArgInfoAndData_Basis :
+STRUCT
+	nNumberOfOutputArguments: UDINT; // determined amount of output parameters
+	nReserved: ARRAY[1..4] OF BYTE; // Reserved padding
+	stOutputArgInfo: ARRAY[1..1] OF ST_UAMethodArgInfo; // number of output parameters - M_Mul has 1 output parameter 
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

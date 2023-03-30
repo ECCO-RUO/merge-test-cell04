@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputTransportMapping" Id="{a037c783-768f-429d-94f2-8ffb8687525a}">
+    <Declaration><![CDATA[TYPE ST_InputTransportMapping :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	ChangeRequest			: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track carrier mapping data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Carrier					: ST_TransportMappingCarrier;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track station mapping data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationBuffer			: ST_TransportMappingStationBuffer;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

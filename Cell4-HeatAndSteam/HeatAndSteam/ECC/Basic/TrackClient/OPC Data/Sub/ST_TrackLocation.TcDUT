@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_TrackLocation" Id="{983984a5-e9b8-4610-8534-de8672af3616}">
+    <Declaration><![CDATA[TYPE ST_TrackLocation :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Location path (ID)'}
+	Path			: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Location position (m)'}
+	Position		: REAL;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

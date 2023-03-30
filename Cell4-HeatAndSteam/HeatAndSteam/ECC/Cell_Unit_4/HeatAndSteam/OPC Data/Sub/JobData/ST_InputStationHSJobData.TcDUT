@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputStationHSJobData" Id="{338739d9-d306-48a6-b722-7d36a7345d40}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSJobData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	{attribute 'TcIgnorePersistent'}
+	ChangeRequest				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Job data type'}
+	JobDataType				: STRING(7);
+
+	{attribute 'OPC.UA.DA.Description' := '0: Undefined, 1: Different station, 2: Same station'}
+	NextJobStation				: UINT;
+
+			(* Might not be the same struct *)
+	{attribute 'OPC.UA.DA.Description' := 'Job data HeatAndSteam Step 1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	OP11600						: ST_InputStationHSJobDataOP11600;
+
+//	{attribute 'OPC.UA.DA.Description' := 'Job data HeatAndSteam Step 2'}
+//	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+//	OP11601						: ST_InputStationHSJobDataOP11601;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

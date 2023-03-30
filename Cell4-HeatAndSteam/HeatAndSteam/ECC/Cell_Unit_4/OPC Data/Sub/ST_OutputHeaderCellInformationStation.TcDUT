@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OutputHeaderCellInformationStation" Id="{55400a41-5c13-45fc-a16d-b493e62d445e}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderCellInformationStation :
+STRUCT
+	StationInformation			: ARRAY [1..2] OF ST_OutputHeaderCellInformationStationHS;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

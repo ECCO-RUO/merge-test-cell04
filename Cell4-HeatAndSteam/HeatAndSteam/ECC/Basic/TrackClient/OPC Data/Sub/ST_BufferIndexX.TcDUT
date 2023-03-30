@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_BufferIndexX" Id="{06468015-8057-42fe-aad7-78a57d6252a2}">
+    <Declaration><![CDATA[TYPE ST_BufferIndexX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'TRUE if carrier is on the index'}
+	Present					: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Ticket for the carrier on the index (0-65536)'}
+	Ticket					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Carrier ID fir the carrier in the index'}
+	CarrierID				: STRING(30);
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

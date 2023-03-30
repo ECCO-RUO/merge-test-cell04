@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_CellType" Id="{b04d224e-4635-4f90-bbb4-a95b52a315da}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_CellType :
+(
+	Type_Outline := 0,		// Cell has own track with inlet and outlet tracks
+	Type_Inline := 1,		// Cell/station is placed on the main track
+	Type_InOut := 2			// Cell has only one track for handling both inlet and outlet (no queue functionality)
+	
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

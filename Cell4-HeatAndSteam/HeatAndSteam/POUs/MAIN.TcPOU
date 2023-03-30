@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="MAIN" Id="{e099f760-829f-42a0-bf37-df04f387259b}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	// OPC UA mapper for cell
+	{attribute 'OPC.UA.DA':='1'}
+	Bridge					: FB_OPC_Cell_Unit_4;
+
+// Cell handling, PackML etc.
+	fbUnit4					: FB_Cell_Unit_4;
+
+// Log to file
+	fbLogToFile				: FB_LogToFile;
+	
+//	LicenseState	AT %I*	: UINT;
+	bInitDone 				: BOOL;
+	
+	// read config file
+	fbReadFile					:FB_ReadFile;
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// read config file
+fbReadFile();
+
+M_Init();
+
+// Cell handling
+fbUnit4(stModeStateIn := Bridge.Input.Cell.ModeState, 
+		stModeStateOut := Bridge.Output.Cell.ModeState,
+		stOEE := Bridge.Output.Cell.OEE,
+		stErrorWarning := Bridge.Output.Cell.ErrorWarning,
+		bResetEStop:= Bridge.P_bResetEStop,
+		bLockDoor:= Bridge.P_bLockDoors, 
+		bUnlockDoor:= Bridge.P_bUnlockDoors, 
+		bCellLight:= Bridge.P_bCellLight,
+		iHeartBeatFromMES:= Bridge.P_iHeartBeat,
+		Input := Bridge.Input,		// Bridge Data Inputs
+		Output := Bridge.Output, 	// Bridge Data Outputs
+		bModeChangeInProcess=> 	);
+		
+
+// OPC handling
+	// OPC handling
+	Bridge.P_bEStop := fbUnit4.bEStopOK; 
+	Bridge.P_bDoors := fbUnit4.bDoorsOK;
+	Bridge.P_bCellLight := fbUnit4.bCellLightOn;
+	Bridge.P_rPLCCPUTemp := fbUnit4.rCPUTemp;
+	Bridge.P_rSafetyCPUTemp := fbUnit4.rSafetyTemp;
+	Bridge.P_sPLCSerial := fbUnit4.sSerialIPC;
+	Bridge.P_sPLCMBSerial := fbUnit4.sSerialMB;
+	Bridge.P_bStationCommOK := NOT fbUnit4.bStationCommError;
+	Bridge.P_iHeartBeat := fbUnit4.iHeartBeatToMES;
+	Bridge.P_rOSCPULoad := fbUnit4.rCPULoad;
+	Bridge.P_rPLCCPULoad := fbUnit4.rCPULoadPLC;
+	Bridge.P_rCPUFrequency := fbUnit4.rCPUFrequency;
+	Bridge();
+
+//File logging
+fbLocalTime(
+	sNetID:= '', 
+	bEnable:= TRUE, 
+	dwCycle:= 5, 
+	dwOpt:= 0, 
+	tTimeout:=DEFAULT_ADS_TIMEOUT );	
+	
+fbLogToFile(Busy=> );]]></ST>
+    </Implementation>
+    <Method Name="M_Init" Id="{e826824d-1859-4451-a7c9-63865682eeed}">
+      <Declaration><![CDATA[METHOD M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Init
+IF (NOT bInitDone) THEN
+
+	bInitDone := TRUE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="MAIN">
+      <LineId Id="354" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="355" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="20" Count="1" />
+      <LineId Id="158" Count="1" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="299" Count="0" />
+      <LineId Id="160" Count="6" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="111" Count="1" />
+      <LineId Id="147" Count="9" />
+      <LineId Id="317" Count="2" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="268" Count="0" />
+      <LineId Id="280" Count="0" />
+      <LineId Id="275" Count="4" />
+      <LineId Id="261" Count="0" />
+      <LineId Id="281" Count="0" />
+      <LineId Id="234" Count="0" />
+    </LineIds>
+    <LineIds Name="MAIN.M_Init">
+      <LineId Id="6" Count="1" />
+      <LineId Id="11" Count="2" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

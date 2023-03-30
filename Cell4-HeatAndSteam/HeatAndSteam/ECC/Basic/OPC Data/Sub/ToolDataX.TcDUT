@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ToolDataX" Id="{679837d4-dbba-4451-896c-221972c607dd}">
+    <Declaration><![CDATA[TYPE ToolDataX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Unique ID of Tool'}
+	TooID					: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'ID of the location of Tool'}
+	Location				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Usage cycles since tool configuration'}
+	CurrentCycles			: UDINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Max allowed cycles for tool'}
+	MaxCycles				: UDINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

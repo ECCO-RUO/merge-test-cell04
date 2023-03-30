@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_ADS_Comm_Type" Id="{1b7a85e1-57ba-41f1-b02c-0ec03ce0a9ee}">
+    <Declaration><![CDATA[{attribute 'strict'}
+TYPE E_ADS_Comm_Type :
+(
+	ADS_RD_FAST := 0,
+	ADS_RD_SLOW,
+	ADS_WR_FAST,
+	ADS_WR_SLOW,
+	ADS_RD_TRIG1,
+	ADS_RD_TRIG2,
+	ADS_RD_TRIG3,
+	ADS_WR_TRIG1,
+	ADS_WR_TRIG2,
+	ADS_WR_TRIG3
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

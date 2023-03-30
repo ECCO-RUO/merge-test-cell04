@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_Input" Id="{f5bf9046-174d-4081-89bf-149c374db343}">
+    <Declaration><![CDATA[/// Specialized Bridge input for SOR cell
+TYPE ST_Input :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Bridge header'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	Header					: ST_InputHeader;
+
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Cell Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Cell					: ST_InputCell;
+
+	{attribute 'OPC.UA.DA.Description' := 'Bridge Station Data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Station					: ST_InputStation;
+
+	{attribute 'OPC.UA.DA.Description' := 'Bridge additional data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Transport				: ST_InputTransport;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

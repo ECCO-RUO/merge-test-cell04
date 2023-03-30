@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputTransportMapping" Id="{d70935ef-fc1e-4a07-9048-bd08a128f872}">
+    <Declaration><![CDATA[TYPE ST_OutputTransportMapping :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledge (0-255)'}
+	ChangeAcknowlegde		: UINT;						// Indicator to acknowledge that a new mapping will be handled
+	
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus			: UINT;						// Indicator that a new mapping has been handled
+	
+// Data part
+	{attribute 'OPC.UA.DA.Description' := 'Data Change (0-65535)'}
+	DataChange				: UINT;						// Indicator that output variables in Mapping has been updated
+	
+	{attribute 'OPC.UA.DA.Description' := 'The request is valid'}
+	ValidRequest				: BOOL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Track carrier mapping data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Carrier					: ST_TransportMappingCarrier;	// 
+	
+	{attribute 'OPC.UA.DA.Description' := 'Track station mapping data'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationBuffer			: ST_TransportMappingStationBuffer;	// 
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

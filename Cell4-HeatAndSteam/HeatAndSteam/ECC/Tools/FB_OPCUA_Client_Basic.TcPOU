@@ -1,0 +1,374 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_OPCUA_Client_Basic" Id="{2c392f4f-c048-4828-91bc-8abf87b09400}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_OPCUA_Client_Basic
+VAR_INPUT
+	bExecute 			: BOOL;	// Start reading
+	sVarName			: STRING(MAX_STRING_LENGTH); // Variable to read from OPC UA server
+	eUAIdentifierType	: Tc3_PLCopen_OpcUa.E_UAIdentifierType := Tc3_PLCopen_OpcUa.eUAIdentifierType_Numeric;
+END_VAR
+VAR_OUTPUT
+	bDone		: BOOL;		// TRUE when completed without errors
+	bBusy		: BOOL;		// TRUE when working
+	bError		: BOOL;		// TRUE if error
+	nErrorID	: DWORD;	// Error ID from OPC comm. FB's
+END_VAR
+VAR
+	eState					: E_OPCUA_Client_Seq;
+	(* Declarations for UA_Connect *)
+	fbUA_Connect			: Tc3_PLCopen_OpcUa.UA_Connect;
+	SessionConnectInfo		: Tc3_PLCopen_OpcUa.ST_UASessionConnectInfo;
+	nConnectionHdl			: DWORD;
+	(* Declarations for UA_GetNamespaceIndex *)
+	fbUA_GetNamespaceIndex 	: Tc3_PLCopen_OpcUa.UA_GetNamespaceIndex;
+	nNamespaceIndex			: UINT;
+	(* Declarations for UA_NodeGetHandle *)
+	fbUA_NodeGetHandle		: Tc3_PLCopen_OpcUa.UA_NodeGetHandle;
+	NodeID					: Tc3_PLCopen_OpcUa.ST_UANodeID;
+	nNodeHdl				: DWORD;
+	(* Declarations for UA_NodeReleaseHandle *)
+	fbUA_NodeReleaseHandle	: Tc3_PLCopen_OpcUa.UA_NodeReleaseHandle;
+	(* Declarations for UA_Disconnect *)
+	fbUA_Disconnect			: Tc3_PLCopen_OpcUa.UA_Disconnect;
+END_VAR
+VAR PERSISTENT
+	sOpcUaServerUrl		: STRING(MAX_STRING_LENGTH) := 'opc.tcp://localhost:4840';
+	sNamespaceUri		: STRING(MAX_STRING_LENGTH) := 'urn:BeckhoffAutomation:Ua:PLC1'; // TF6100 setup version 4.x default
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="M_CloseSession" Id="{24fea4b7-57c4-4e60-9c30-a2554e08e323}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CloseSession : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	fbUA_Disconnect(Execute := TRUE,
+					ConnectionHdl := nConnectionHdl	);
+
+	IF (fbUA_Disconnect.Busy) THEN
+		M_CloseSession := E_Method.Busy;
+	ELSIF (fbUA_Disconnect.Error) THEN
+		fbUA_Disconnect(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_Disconnect.ErrorID;
+		nConnectionHdl := 0;
+		M_CloseSession := E_Method.Error;
+	ELSIF (fbUA_Disconnect.Done) THEN		
+		fbUA_Disconnect(Execute := FALSE);
+		IF (NOT bError) THEN 
+			bDone := TRUE;
+		END_IF
+		M_CloseSession := E_Method.Done;
+	ELSE
+		M_CloseSession := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_GetNameSpace" Id="{cdb897e0-bdc6-4726-8912-c89a062de69d}">
+      <Declaration><![CDATA[/// Get namespace index -  1: Busy, 2: Done, 5: Error
+METHOD PROTECTED M_GetNameSpace : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	fbUA_GetNamespaceIndex(	Execute := TRUE,
+							ConnectionHdl := nConnectionHdl,
+							NamespaceUri := sNamespaceUri,
+							NamespaceIndex => nNamespaceIndex	);
+
+	IF (fbUA_GetNamespaceIndex.Busy) THEN
+		M_GetNameSpace := E_Method.Busy;			
+	ELSIF (fbUA_GetNamespaceIndex.Error) THEN
+		// Get namespace index failed
+		fbUA_GetNamespaceIndex(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_GetNamespaceIndex.ErrorID;
+		M_GetNameSpace := E_Method.Error;
+	ELSIF (fbUA_GetNamespaceIndex.Done) THEN
+		// Namespace index obtained
+		fbUA_GetNamespaceIndex(Execute := FALSE);
+		M_GetNameSpace := E_Method.Done;
+	ELSE
+		M_GetNameSpace := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_GetNode" Id="{229e4d1e-f998-4d66-b6c3-af695e8342c3}">
+      <Declaration><![CDATA[/// Open session -  1: Busy, 2: Done, 5: Error
+METHOD PROTECTED M_GetNode : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	NodeID.eIdentifierType := eUAIdentifierType;
+	NodeID.nNamespaceIndex := nNamespaceIndex;
+	NodeID.sIdentifier := sVarName;
+	fbUA_NodeGetHandle(	Execute := TRUE,
+						ConnectionHdl := nConnectionHdl,
+						NodeID := NodeID,
+						NodeHdl => nNodeHdl	);
+
+	IF (fbUA_NodeGetHandle.Busy) THEN
+		// Obtaining handle
+		M_GetNode := E_Method.Busy;
+	ELSIF (fbUA_NodeGetHandle.Error) THEN
+		// Error ontaining handle
+		fbUA_NodeGetHandle(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_NodeGetHandle.ErrorID;
+		M_GetNode := E_Method.Error;
+	ELSIF (fbUA_NodeGetHandle.Done) THEN
+		// Handle obtained
+		fbUA_NodeGetHandle(Execute := FALSE);
+		M_GetNode := E_Method.Done;
+	ELSE
+		M_GetNode := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{dce992d5-d052-49f2-aaa3-31db10cb2a86}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	bError := FALSE;
+	nErrorID := 0;
+	bBusy := TRUE;
+
+	SessionConnectInfo.tConnectTimeout := T#1M;
+	SessionConnectInfo.tSessionTimeout := T#1M;
+	SessionConnectInfo.sApplicationName := '';
+	SessionConnectInfo.eSecurityMode := eUASecurityMsgMode_None;
+	SessionConnectInfo.eSecurityPolicyUri := eUASecurityPolicy_None;
+	SessionConnectInfo.eTransportProfileUri := eUATransportProfileUri_UATcp;
+
+	M_Init := E_Method.Done;
+	]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_OpenSession" Id="{0a25cbbf-65e3-4fe2-a8d7-b1c6376e48fa}">
+      <Declaration><![CDATA[/// Open session -  1: Busy, 2: Done, 5: Error
+METHOD PROTECTED M_OpenSession : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	fbUA_Connect(	Execute := TRUE,
+					ServerURL := sOpcUaServerUrl,
+					SessionConnectInfo := SessionConnectInfo,
+					Timeout := T#5S,
+					ConnectionHdl => nConnectionHdl	);
+
+	IF (fbUA_Connect.Busy) THEN
+		// Session opening
+		M_OpenSession := E_Method.Busy;
+	ELSIF (fbUA_Connect.Error) THEN
+		// Error opening session
+		fbUA_Connect(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_Connect.ErrorID;
+		nConnectionHdl := 0;
+		M_OpenSession := E_Method.Error;
+	ELSIF (fbUA_Connect.Done) THEN
+		// session opened
+		fbUA_Connect(Execute := FALSE);
+		M_OpenSession := E_Method.Done;
+	ELSE
+		M_OpenSession := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ReleaseNode" Id="{520a6791-d9f1-4d2b-b4bb-39a8235ea900}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ReleaseNode : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	fbUA_NodeReleaseHandle(	Execute := TRUE,
+							ConnectionHdl := nConnectionHdl,
+							NodeHdl := nNodeHdl	);
+
+	IF (fbUA_NodeReleaseHandle.Busy) THEN
+		// Working
+		M_ReleaseNode := E_Method.Busy;
+	ELSIF (fbUA_NodeReleaseHandle.Error) THEN
+		// Error releasing node handle
+		fbUA_NodeReleaseHandle(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_NodeReleaseHandle.ErrorID;
+		M_ReleaseNode := E_Method.Error;		
+	ELSIF (fbUA_NodeReleaseHandle.Done) THEN
+		// Node handle released
+		fbUA_NodeReleaseHandle(Execute := FALSE);
+		M_ReleaseNode := E_Method.Done;
+	ELSE
+		M_ReleaseNode := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="P_sNamespaceUri" Id="{73de9367-dfb5-4af3-9995-71b70eb1085a}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sNamespaceUri : STRING(MAX_STRING_LENGTH)]]></Declaration>
+      <Get Name="Get" Id="{3946f55b-0998-439e-a97e-4d817338c4cd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sNamespaceUri := sNamespaceUri;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{6876fadd-cbd3-4e43-bbb3-ffb1447d4d7f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sNamespaceUri := P_sNamespaceUri;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="P_sOpcUaServerUrl" Id="{108b438d-bf91-410b-8034-8c12678dd849}">
+      <Declaration><![CDATA[PROPERTY PUBLIC P_sOpcUaServerUrl : STRING(MAX_STRING_LENGTH)]]></Declaration>
+      <Get Name="Get" Id="{8d97b0dd-c6e8-44f5-9153-e2237d762459}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[P_sOpcUaServerUrl := sOpcUaServerUrl;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{6537bf15-bcb6-4344-bbfa-e0d77803c2ce}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sOpcUaServerUrl := P_sOpcUaServerUrl;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="FB_OPCUA_Client_Basic">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_CloseSession">
+      <LineId Id="6" Count="1" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="39" Count="1" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="30" Count="1" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="47" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_GetNameSpace">
+      <LineId Id="6" Count="5" />
+      <LineId Id="23" Count="1" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="36" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_GetNode">
+      <LineId Id="45" Count="0" />
+      <LineId Id="57" Count="6" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="69" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="76" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="34" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_Init">
+      <LineId Id="6" Count="10" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_OpenSession">
+      <LineId Id="6" Count="4" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="29" Count="1" />
+      <LineId Id="26" Count="2" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="34" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.M_ReleaseNode">
+      <LineId Id="6" Count="5" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="39" Count="1" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.P_sNamespaceUri.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.P_sNamespaceUri.Set">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.P_sOpcUaServerUrl.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_Basic.P_sOpcUaServerUrl.Set">
+      <LineId Id="5" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ReadStationData" Id="{cb95ef48-d8f4-4142-ae3c-741fc5232c3a}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_ReadStationData :
+STRUCT
+	stReadListReturnInfo		: ARRAY [1..1] OF ST_UAReadListReturnInfo;
+	stStationData				: ST_StatusStation;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

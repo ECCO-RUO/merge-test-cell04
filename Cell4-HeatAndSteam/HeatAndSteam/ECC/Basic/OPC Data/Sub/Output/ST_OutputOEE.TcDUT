@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputOEE" Id="{f2fa7310-dd94-4b8e-909e-7de58cd509a2}">
+    <Declaration><![CDATA[TYPE ST_OutputOEE :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge	: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus		: UINT;
+
+// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Data has changed (0-65536)'}
+	DataChange			: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Date and time'}
+	DateTime	 		: DT;
+	
+	{attribute 'OPC.UA.DA.Description' := ''}
+	EventID		 		: UDINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Counter for all processed products'}
+	ProcessedProduct	: UDINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Counter for all processed good products'}
+	GoodProduct			: UDINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Counter for all processed rejected products'}
+	RejectedProduct		: UDINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

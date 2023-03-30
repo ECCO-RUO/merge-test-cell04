@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <GVL Name="GVL" Id="{1fcf3933-9bda-4fd9-b80d-c34e829aaa79}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'SW Version'}
+	sSWVersion			: STRING := '0.1';
+
+	iNoOfRecipeData		: UINT := 100;
+END_VAR
+VAR_GLOBAL
+	bLogToOutputWindow	: BOOL;		// if TRUE it will log all logs to file AND to output window
+	
+	// vars for JSON & HTTP GET response
+	sString						:ARRAY[0..15] OF STRING(255);
+	//	jsonFileResult 				:STRING(501);
+	sVars						:DUT_STRUCT_VARIABLES;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

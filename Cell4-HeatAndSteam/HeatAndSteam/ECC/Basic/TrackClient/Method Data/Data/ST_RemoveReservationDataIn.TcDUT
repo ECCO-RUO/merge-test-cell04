@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_RemoveReservationDataIn" Id="{9f3dd26e-5832-4269-999d-f9583499d4a4}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_RemoveReservationDataIn :
+STRUCT
+	sStationID					: STRING(30);								(* The ID of the station that will be moved to. *)
+	nTicket						: UINT;										(* Ticket number *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

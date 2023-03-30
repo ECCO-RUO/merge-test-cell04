@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputStationHSControlGeneral" Id="{7ab40af7-8934-4ce8-b315-c3d82c9ebb77}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSControlGeneral :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'TRUE to enable Simulation mode for HS device'}
+	{attribute 'TcIgnorePersistent'}
+	SimulationMode				: BOOL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Station idle time in minutes'}
+	StationIdleTime				: UDINT;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

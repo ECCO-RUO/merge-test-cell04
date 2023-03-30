@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="F_Array_Sort" Id="{18d0e8ec-e601-4d44-ac3c-83e8305b7be6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_Array_Sort : BOOL
+VAR_INPUT
+	PT: POINTER TO ARRAY[1..32000] OF REAL;
+	SIZE:UINT;
+END_VAR
+VAR
+	stack_count: UINT;					(* Stack counter*)
+	stack: ARRAY[1..32] OF UINT;		(* Stack - size 1,6*Log(n)/log(2) *)
+										(* 32 => ~1 Mio Elements *)
+	start: UINT;						(* Start of the array *)
+	end: UINT;							(* End of the array *)
+	pivot: REAL;						
+	i: UINT;							
+	j: UINT;							
+	end_inner: BOOL;					
+	end_outer: BOOL;					
+	tmp: REAL;							
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[start := 1;					
+end := SHR(size,2);		
+stack_count := 1;			
+
+WHILE NOT end_outer DO						
+	IF start < end THEN
+		pivot := PT^[SHR(end+start,1)];			
+		i := start -1;
+		j := end +1;
+
+		(* inner loop *)
+		end_inner := FALSE;
+		REPEAT
+
+			(* rising sort *)
+//			REPEAT	i := i+1;	UNTIL (PT^[i] >= pivot) OR NOT (i < end)	END_REPEAT;
+//			REPEAT	j := j-1;	UNTIL (PT^[j] <= pivot) OR NOT (j > start)	END_REPEAT;
+
+
+			(* falling sort *)
+			REPEAT	i := i+1;	UNTIL (PT^[i] <= pivot) OR NOT (i < end)	END_REPEAT
+			REPEAT	j := j-1;	UNTIL (PT^[j] >= pivot) OR NOT (j > start)	END_REPEAT
+
+			IF i >= j THEN
+				end_inner := TRUE;
+			ELSE
+				   tmp := PT^[j];
+				PT^[j] := PT^[i];
+				PT^[i] := tmp;
+			END_IF;
+
+		UNTIL end_inner END_REPEAT;
+
+		(* Push stack *)
+		stack[stack_count] := end;		
+		IF Stack_count < 32 THEN
+			stack_count := stack_count +1;
+		ELSE
+			end_outer := TRUE;
+			F_Array_Sort := FALSE;					(* Error: Stack to small *)
+		END_IF;
+
+		
+		end := MAX(start, i-1);
+
+	ELSE
+
+		IF stack_count = 1 THEN
+			end_outer := TRUE;
+		ELSE
+
+			start := end+1;
+
+			
+			stack_count := stack_count -1;		
+			start:= stack[stack_count];
+		END_IF;
+
+	END_IF;
+
+END_WHILE;
+
+F_Array_Sort := TRUE;				]]></ST>
+    </Implementation>
+    <LineIds Name="F_Array_Sort">
+      <LineId Id="21" Count="61" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

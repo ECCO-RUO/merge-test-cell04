@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToBufferData" Id="{e3f5e86e-4fc0-4c12-aa46-9974bd87bc45}">
+    <Declaration><![CDATA[TYPE ST_MoveToBufferData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_MoveVehicleToStationBuffer2';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 9;
+	iNoOfOutputArgs				: BYTE := 3;
+	stInput						: ST_MoveToBufferDataIn;
+	stOutput					: ST_MoveToBufferDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

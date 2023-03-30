@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToScannerDataIn" Id="{25181157-6f1d-47e7-b4cb-9f5d4b95d744}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_MoveToScannerDataIn :
+STRUCT
+	eInputType					: UINT;										(* The vehicle/vehicles that will be moved. *)
+	sInput						: STRING(30);								(* Depending on the input type, the input can be the ID of a vehicle, last, article, last type, cell or station. *)
+	eDirection					: BYTE;										(* 0: BiDirectional, 1: Forward, 2: Backward *)
+	nFollowID					: UINT := 0;
+	fVelocity					: REAL;
+	fAcceleration				: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

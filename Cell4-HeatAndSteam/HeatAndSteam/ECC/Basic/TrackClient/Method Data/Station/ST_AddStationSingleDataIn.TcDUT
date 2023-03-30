@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddStationSingleDataIn" Id="{36e2e0b9-bb5e-4bff-b476-47310fbaf24c}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_AddStationSingleDataIn :
+STRUCT
+	sCellID						: STRING(30);
+	sID							: STRING(30);
+	iPath						: UINT;
+	rPosition					: REAL;
+	iDecisionPath				: UINT;
+	rDecisionPosition			: REAL;
+	nPreBufferSize				: UINT;
+	nPostBufferSize				: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

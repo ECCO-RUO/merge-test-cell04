@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddStationDoubleDataIn" Id="{8acc8cca-1b85-451b-8dc8-593b75adbfce}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_AddStationDoubleDataIn :
+STRUCT
+	sCellID						: STRING(30);
+	sID							: STRING(30);
+	iInPath						: UINT;
+	rInPosition					: REAL;
+	iOutPath					: UINT;
+	rOutPosition				: REAL;
+	iDecisionPath				: UINT;
+	rDecisionPosition			: REAL;
+	nPreBufferSize				: UINT;
+	nPostBufferSize				: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

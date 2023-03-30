@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_CarrierStatus" Id="{53659b3d-8cf5-4199-aa0c-76a6ddbb163f}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_CarrierStatus :
+(
+	Undefined := 0,			// Recently discovered, not scanned or assigned to anything
+	Initiating,				// On the way to scanning
+	NotBusy,				// Not assigned to a job
+	Busy,					// Assigned to a job
+	MontageReserved			// Reserved for a tool, but tool is removed temporarily (must be free to mount same tool again)
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

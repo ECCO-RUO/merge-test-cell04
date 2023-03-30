@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <EnumerationTextList Name="E_MMPathState" Id="{bf6e63a2-0301-4f17-8ce6-78c906f70abd}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE E_MMPathState :
+(
+	eMMPathState_Initialization 		:= 0,																		(**)
+	eMMPathState_Startup				:= 1,																		(**)
+	eMMPathState_Operational			:= 2,																		(**)
+	eMMPathState_ResetInProgress		:= 3,																		(**)
+	eMMPathState_ProgrammingInProgress	:= 4																		(**)
+) BYTE;
+END_TYPE
+]]></Declaration>
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="TextListEnumerationTextListObject">
+          <l n="TextList" t="ArrayList" cet="TextListRow">
+            <o>
+              <v n="TextID">"eMMPathState_Initialization"</v>
+              <v n="TextDefault">"0"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathState_Startup"</v>
+              <v n="TextDefault">"1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathState_Operational"</v>
+              <v n="TextDefault">"2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathState_ResetInProgress"</v>
+              <v n="TextDefault">"3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathState_ProgrammingInProgress"</v>
+              <v n="TextDefault">"4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">""</v>
+              <v n="TextDefault">""</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+          </l>
+          <l n="Languages" t="ArrayList" />
+          <v n="GuidInit">{141a8ca1-4fb8-42e8-81df-cc87149e9245}</v>
+          <v n="GuidReInit">{152deee0-14bc-4cc7-a398-a10a8a6415ff}</v>
+          <v n="GuidExitX">{c517ed62-ec5a-4a60-af66-528afef3a911}</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="String">System.String</Type>
+        <Type n="TextListEnumerationTextListObject">{4b60233c-f940-4beb-b331-82133b520151}</Type>
+        <Type n="TextListRow">{53da1be7-ad25-47c3-b0e8-e26286dad2e0}</Type>
+      </TypeList>
+    </XmlArchive>
+  </EnumerationTextList>
+</TcPlcObject>

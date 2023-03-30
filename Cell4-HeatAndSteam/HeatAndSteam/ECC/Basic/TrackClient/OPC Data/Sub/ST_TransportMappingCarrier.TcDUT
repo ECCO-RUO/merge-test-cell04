@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_TransportMappingCarrier" Id="{f51a1006-c687-4c48-b54a-9b525f78af62}">
+    <Declaration><![CDATA[TYPE ST_TransportMappingCarrier :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Carrier ID'}
+	CarrierID					: STRING(30);			// Unique ID of the Carrier which the change is aimed towards. If CarrierID is 0 there is no Mapping information to update
+
+	{attribute 'OPC.UA.DA.Description' := 'Tool ?'}
+	Tool						: BOOL;					// Indicates if there is a Tool or not on the carrirer, 0 = No tool, 1 = Tool
+	
+	{attribute 'OPC.UA.DA.Description' := 'Tool ID'}
+	ToolID						: STRING(30);			// Mandatory if Tool = 1. Unique ID(UUID) of the tool to be mapped with defined CarrierID
+	
+	{attribute 'OPC.UA.DA.Description' := 'Material ?'}
+	Material					: BOOL;					// Indicates if there is a Material or not related to the carrirer, 0 = No material, 1 = Material
+	
+	{attribute 'OPC.UA.DA.Description' := 'Material ID'}
+	MaterialID					: STRING(30);			// Mandatory if Material = 1. Unique ID(UUID) of the Material to be mapped with defined CarrierID
+	
+	{attribute 'OPC.UA.DA.Description' := 'Not OK'}
+	NOK							: BOOL;					// “0” = No change to Carrier Status. “1” = Carrier must be flagged with “NOK” and the “NOK” procedure gets triggered.
+	
+	{attribute 'OPC.UA.DA.Description' := 'Data is valid'}
+	ValidData					: BOOL;					// Indicator that the variables for carrier can be considered valid.
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_ADS_Comm_State" Id="{b9473f19-fb6c-4702-9880-fbf0f2ceadfe}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_ADS_Comm_State :
+(
+	Disabled := 0,
+	Idle,
+	Wait_Write,
+	Writing,
+	Write_Error,
+	Wait_Read,
+	Reading,
+	Read_Error
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_RemovePathDataIn" Id="{2abe18e3-caa8-4e88-9503-489e3547b806}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_RemovePathDataIn :
+STRUCT
+	sCellID						: STRING(30);	// 
+	iPath						: UINT;			// MM path ID (1-65536)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

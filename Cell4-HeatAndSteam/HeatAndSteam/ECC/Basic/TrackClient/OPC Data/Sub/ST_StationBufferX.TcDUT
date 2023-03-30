@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StationBufferX" Id="{a13f7569-61c7-4406-9896-d21d40be19eb}">
+    <Declaration><![CDATA[TYPE ST_StationBufferX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station ID'}
+	StationID					: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Pre buffer'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	PreBuffer					: ST_StationBufferStatus;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Post buffer'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	PostBuffer					: ST_StationBufferStatus;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

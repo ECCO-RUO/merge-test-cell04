@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <EnumerationTextList Name="E_MMPathMotionStatus" Id="{db46d0c4-62c5-4f6a-8cf2-afd32a662f37}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+TYPE E_MMPathMotionStatus :
+(
+	eMMPathMotionStatus_Enabled				:= 0,																	(**)
+	eMMPathMotionStatus_SuspendedByCommand	:= 1,																	(**)
+	eMMPathMotionStatus_EStopActive			:= 2,																	(**)
+	eMMPathMotionStatus_InterlockActive		:= 3																	(**)
+) BYTE;
+END_TYPE
+]]></Declaration>
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="TextListEnumerationTextListObject">
+          <l n="TextList" t="ArrayList" cet="TextListRow">
+            <o>
+              <v n="TextID">"eMMPathMotionStatus_Enabled"</v>
+              <v n="TextDefault">"0"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathMotionStatus_SuspendedByCommand"</v>
+              <v n="TextDefault">"1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathMotionStatus_EStopActive"</v>
+              <v n="TextDefault">"2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"eMMPathMotionStatus_InterlockActive"</v>
+              <v n="TextDefault">"3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">""</v>
+              <v n="TextDefault">""</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+          </l>
+          <l n="Languages" t="ArrayList" />
+          <v n="GuidInit">{fac6a613-4e77-458e-a613-cc02d4a87880}</v>
+          <v n="GuidReInit">{29efa0d4-546d-4914-9baa-495571f6c436}</v>
+          <v n="GuidExitX">{772dff76-875e-4cf1-96a7-8507f55c5e5a}</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="String">System.String</Type>
+        <Type n="TextListEnumerationTextListObject">{4b60233c-f940-4beb-b331-82133b520151}</Type>
+        <Type n="TextListRow">{53da1be7-ad25-47c3-b0e8-e26286dad2e0}</Type>
+      </TypeList>
+    </XmlArchive>
+  </EnumerationTextList>
+</TcPlcObject>

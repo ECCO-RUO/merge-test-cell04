@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="MaterialXMapping" Id="{89746586-44f3-4e4a-bd15-5d415c421946}">
+    <Declaration><![CDATA[TYPE MaterialXMapping :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Type ID of material'}
+	MaterialTypeID				: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Location material is configured on'}
+	Location					: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

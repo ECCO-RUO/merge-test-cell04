@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_RemovePathSegmentDataIn" Id="{9057ef90-1ff6-4bf3-af2b-dc5aa0488913}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_RemovePathSegmentDataIn :
+STRUCT
+	sCellID						: STRING(30);	// 
+	sSegmentID					: STRING(30);	// 
+												// position, the segment will cover until the end of the path!)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

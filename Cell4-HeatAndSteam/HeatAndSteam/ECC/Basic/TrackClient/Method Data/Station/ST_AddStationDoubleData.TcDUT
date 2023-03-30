@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_AddStationDoubleData" Id="{0fa124af-a801-4715-8b48-81f0ee51f21d}">
+    <Declaration><![CDATA[TYPE ST_AddStationDoubleData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_AddStationDouble';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 10;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_AddStationDoubleDataIn;
+	stOutput					: ST_AddStationDoubleDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

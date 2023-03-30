@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_StationState" Id="{2c4051ec-58b1-476e-8d29-00c162abaf7f}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_StationState :
+(
+	Idle := 0,
+	CheckStations,
+	MoveToPostBuf,
+	MoveToNextCell,
+	ExtraVehicleRemove,	
+	WaitMoveNextCell,
+	AddReservation,			// Speciel handling for this cell - find and addReservation for this vehicle based on command data in buffer
+	Done
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

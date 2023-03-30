@@ -1,0 +1,1362 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{a697c302-c0a0-48a5-9315-ecf9cca0c791}</ProjectGuid>
+    <SubObjectsSortedByName>True</SubObjectsSortedByName>
+    <DownloadApplicationInfo>true</DownloadApplicationInfo>
+    <WriteProductVersion>true</WriteProductVersion>
+    <GenerateTpy>false</GenerateTpy>
+    <Name>HeatAndSteam</Name>
+    <ProgramVersion>3.1.4023.0</ProgramVersion>
+    <Application>{1bcfe1c5-0dc3-4ba2-ac4c-054cb1b31dba}</Application>
+    <TypeSystem>{4807f800-7785-4580-835a-a2e158acbb62}</TypeSystem>
+    <Implicit_Task_Info>{72a1e10d-6838-420d-9d3f-c1d5f00cf037}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{38515276-f0d5-4b79-a7ab-f70b65d7e898}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{30715315-4e91-4130-8341-a1823d32e5a0}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{c0429a7e-de14-407d-8cde-96b30a086259}</LibraryReferences>
+    <Released>false</Released>
+  </PropertyGroup>
+  <ItemGroup>
+    <PinnedGlobalDataType Include="AMSADDR" />
+    <PinnedGlobalDataType Include="AMSNETID" />
+    <PinnedGlobalDataType Include="PVOID" />
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderReference Include="Tc2_DataExchange">
+      <DefaultResolution>Tc2_DataExchange, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_DataExchange</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_EtherCAT">
+      <DefaultResolution>Tc2_EtherCAT, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_EtherCAT</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_MDP">
+      <DefaultResolution>Tc2_MDP, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_MDP</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_ModbusSrv">
+      <DefaultResolution>Tc2_ModbusSrv, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_ModbusSrv</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Standard">
+      <DefaultResolution>Tc2_Standard, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Standard</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_SUPS">
+      <DefaultResolution>Tc2_SUPS, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_SUPS</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_System">
+      <DefaultResolution>Tc2_System, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_System</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Utilities">
+      <DefaultResolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Utilities</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_DynamicMemory">
+      <DefaultResolution>Tc3_DynamicMemory, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_DynamicMemory</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_EventLogger">
+      <DefaultResolution>Tc3_EventLogger, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_EventLogger</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_Module">
+      <DefaultResolution>Tc3_Module, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_Module</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_PackML_V2">
+      <DefaultResolution>Tc3_PackML_V2, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_PackML_V2</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_PLCopen_OpcUa">
+      <DefaultResolution>Tc3_PLCopen_OpcUa, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_PLCopen_OpcUa</Namespace>
+    </PlaceholderReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DUTs" />
+    <Folder Include="ECC" />
+    <Folder Include="ECC\Basic" />
+    <Folder Include="ECC\Basic\ADS Comm" />
+    <Folder Include="ECC\Basic\Cell" />
+    <Folder Include="ECC\Basic\Cell\OPC Data" />
+    <Folder Include="ECC\Basic\Common Units" />
+    <Folder Include="ECC\Basic\OPC Data" />
+    <Folder Include="ECC\Basic\OPC Data\Sub" />
+    <Folder Include="ECC\Basic\OPC Data\Sub\Input" />
+    <Folder Include="ECC\Basic\OPC Data\Sub\Output" />
+    <Folder Include="ECC\Basic\Station" />
+    <Folder Include="ECC\Basic\Station\OPC Data" />
+    <Folder Include="ECC\Basic\TrackClient" />
+    <Folder Include="ECC\Basic\TrackClient\DUT" />
+    <Folder Include="ECC\Basic\TrackClient\Enums" />
+    <Folder Include="ECC\Basic\TrackClient\GVLs" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\Cell" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\Data" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\MoveVehicle" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\Path" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\Segment" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\Station" />
+    <Folder Include="ECC\Basic\TrackClient\Method Data\TrafficLight" />
+    <Folder Include="ECC\Basic\TrackClient\Node Data" />
+    <Folder Include="ECC\Basic\TrackClient\Node Data\SUB" />
+    <Folder Include="ECC\Basic\TrackClient\OPC Data" />
+    <Folder Include="ECC\Basic\TrackClient\OPC Data\Sub" />
+    <Folder Include="ECC\Cell_Unit_4" />
+    <Folder Include="ECC\Cell_Unit_4\OPC Data" />
+    <Folder Include="ECC\Cell_Unit_4\OPC Data\Sub" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Control" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Information" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\OperationalData" />
+    <Folder Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Sustainability" />
+    <Folder Include="ECC\Components" />
+    <Folder Include="ECC\Components\TwinSAFE" />
+    <Folder Include="ECC\Tools" />
+    <Folder Include="ECC\Tools\LogToFile" />
+    <Folder Include="ECC\TrackClient" />
+    <Folder Include="ECC\TrackClient\Buffer Control" />
+    <Folder Include="ECC\TrackClient\DUT" />
+    <Folder Include="ECC\TrackClient\Enums" />
+    <Folder Include="ECC\TrackClient\Station Control" />
+    <Folder Include="GVLs" />
+    <Folder Include="POUs" />
+    <Folder Include="VISUs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DUTs\DUT_STRUCT_VARIABLES.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\ADS Comm\E_ADS_Comm_State.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\ADS Comm\E_ADS_Comm_Type.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\ADS Comm\FB_ADS_Comm.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\Cell\FB_Cell_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\Cell\FB_PLC_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\Common Units\E_Units.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\Common Units\FB_Units.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\GVL_BASIC.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\E_StationJobData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\F_NewDeviceDataX.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\ST_InputHeader.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\ST_OutputHeaderCellInformationX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\ST_OutputHeaderMetaInformationX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\E_AlarmCategory.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\E_PML_Command.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\E_PML_Mode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\E_PML_State.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Input\ST_InputModeState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\MaterialDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\MaterialXMapping.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_Energy.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_Exhaust.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_Fluid.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_JobDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_OperationalDataOPxxxxx.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_OutputErrorWarning.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_OutputModeState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\Output\ST_OutputOEE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_DataPointX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_DeviceDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_ErrorWarningDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_ManipulateMLX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_MaterialDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_OutputHeaderCellInformationStationInformationOperationInformationX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_OutputHeaderCellInformationStationX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_OutputHeaderTransportInformationX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_SKURestriction.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ST_ToolDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ToolDataX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ToolX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\OPC Data\Sub\ToolXMapping.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\Station\FB_Station_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_CellType.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_MMDirection.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_MMStationBuffer.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_MMTrafficLightColor.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_MMVehicleCommand.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\E_MMVehicleInputType.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MethodArgumentData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MMBuffer.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MMLocation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MMStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MMVehicleFlagData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_MMVehicleStatusData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\DUT\ST_OPCUA_MethodData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_CarrierStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_MMPathMotionStatus.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_MMPathState.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_MMServerStatus.TcTLEO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_OPC_UA_Errors.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_TrackClientState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_TrackState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Enums\E_VehicleMoveState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\E_CommandDataState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\E_MappingDataState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\E_ReworkDataState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\FB_TrackClient_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\GVLs\GlobalConstants.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Cell\ST_GetCellIndexData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Cell\ST_GetCellIndexDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Cell\ST_GetCellIndexDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\E_MaterialType.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\E_ToolType.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_AddReservationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_AddReservationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_AddReservationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_RemoveReservationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_RemoveReservationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_RemoveReservationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateStationBufferData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateStationBufferDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateStationBufferDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleDataData.TcDUT">
+      <SubType>Code</SubType>
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleDataDataIn.TcDUT">
+      <SubType>Code</SubType>
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleDataDataOut.TcDUT">
+      <SubType>Code</SubType>
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMappingDataData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMappingDataDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMappingDataDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMontageData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMontageDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleMontageDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleOwnerData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleOwnerDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleOwnerDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReservationDataData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReservationDataDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReservationDataDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReworkDataData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReworkDataDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Data\ST_UpdateVehicleReworkDataDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToBufferData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToBufferDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToBufferDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToDecisionPointData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToDecisionPointDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToDecisionPointDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToPositionData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToPositionDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToPositionDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToScannerData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToScannerDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToScannerDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToStationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToStationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToStationInData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveToStationOutData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveVehicleStatusData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveVehicleStatusDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\MoveVehicle\ST_MoveVehicleStatusDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_AddPathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_AddPathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_AddPathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_RemovePathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_RemovePathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_RemovePathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResetPathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResetPathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResetPathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResumePathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResumePathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_ResumePathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_StartPathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_StartPathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_StartPathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_SuspendPathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_SuspendPathDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Path\ST_SuspendPathDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_AddPathSegmentData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_AddPathSegmentDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_AddPathSegmentDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_GetPathSegmentVehicleCountData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_GetPathSegmentVehicleCountDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_GetPathSegmentVehicleCountDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_RemovePathSegmentData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_RemovePathSegmentDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Segment\ST_RemovePathSegmentDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationDoubleData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationDoubleDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationDoubleDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationSingleData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationSingleDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AddStationSingleDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AdjustBufferPosData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AdjustBufferPosDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_AdjustBufferPosDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_EnableStationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_EnableStationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_EnableStationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_RemoveStationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_RemoveStationDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\Station\ST_RemoveStationDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_AddTrafficLightData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_AddTrafficLightDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_AddTrafficLightDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_RemoveTrafficLightData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_RemoveTrafficLightDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_RemoveTrafficLightDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_SetTrafficLightColorData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_SetTrafficLightColorDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_SetTrafficLightColorDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_TrafficLightColorData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_TrafficLightColorDataIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Method Data\TrafficLight\ST_TrafficLightColorDataOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\E_OPC_NodeType.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadCellData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadNodeData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadPathData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadPathData_OLD.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadStationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadVehicleData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_ReadVehicleData_OLD.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_StatusCell.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_StatusNode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_StatusPath.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_StatusStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\ST_StatusVehicle.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\Node Data\SUB\ST_ReservationData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\ST_InputTransport.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\ST_OutputTransport.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_BufferIndexX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_CarrierX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportAdditionalDataMESHandShake.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportAdditionalDataSettings.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_InputTransportMapping.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_OutputTransportAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_OutputTransportConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_OutputTransportMapping.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_OutputTransportStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_StationBufferStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_StationBufferX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_StationConfigX.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_StatusBuffer.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_TrackLocation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_TransportMappingCarrier.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Basic\TrackClient\OPC Data\Sub\ST_TransportMappingStationBuffer.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\E_VehicleOnStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\FB_Cell_Unit_4.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\FB_OPC_Cell_Unit_4.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\FB_EMS_HS.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\E_EMS_HS_Status.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\ST_EMS_HS_Alarms.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\ST_EMS_HS_Command.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\ST_EMS_HS_Read.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\ST_EMS_HS_States.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\Sub\ST_EMS_HS_Write.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\U_EMS_HS_Read.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteamDeviceDriver\U_EMS_HS_Write.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\FB_HeatAndSteamOUT.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\F_CalcValuesHeatSteam.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalDataOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalDataOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalDataMESHandShake.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalDataSettings.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_OuputStationHSAdditionalDataOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_OuputStationHSAdditionalDataOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSConfigurationOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSUpcomingConfigurationOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSConfigurationOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSCurrentConfigurationOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSUpcomingConfigurationOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Control\ST_InputStationHSControlOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_OutputStationHSJobDataOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_InputStationHSJobDataOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_OutputStationHSJobDataOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\OperationalData\ST_OutputStationHSOperationalDataOP11601.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\stStationVehicleCmdOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\ST_Input.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\ST_Output.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCell.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellAdditionalDataMESHandShake.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellAdditionalDataSettings.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellConfigurationGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputCellControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_InputStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCell.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellConfigurationGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellOperationalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellSustainabilityData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputHeader.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputHeaderCellInformation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputHeaderCellInformationStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputHeaderCellInformationStationInformationOperationInformation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputStation.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\E_HSStationINSeq.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\FB_HeatAndSteamIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\ST_InputStationStationHS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\ST_OutputStationStationHS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_InputStationHSAdditionalDataGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_OutputStationHSAdditionalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\AdditionalData\ST_OutputStationHSAdditionalDataGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSConfigurationGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSUpcomingConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_InputStationHSUpcomingConfigurationOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSConfigurationOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSCurrentConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSCurrentConfigurationGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSCurrentConfigurationOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSUpcomingConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Configuration\ST_OutputStationHSUpcomingConfigurationOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Control\ST_InputStationHSControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Control\ST_InputStationHSControlGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Control\ST_InputStationHSControlOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Information\ST_OutputHeaderCellInformationStationHS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_InputStationHSJobData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_InputStationHSJobDataOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\JobData\ST_OutputStationHSJobData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\OperationalData\ST_OutputStationHSOperationalData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\OperationalData\ST_OutputStationHSOperationalDataGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\OperationalData\ST_OutputStationHSOperationalDataOP11600.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\HeatAndSteam\OPC Data\Sub\Sustainability\ST_OutputStationHSSustainabilityData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\OPC Data\Sub\ST_OutputCellOperationalDataGeneral.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Cell_Unit_4\ST_VehicleInHS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\E_ComponentErrors.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\E_Cylinder_Cmd.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\E_Cylinder_Sta.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_AI.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_AO.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_Blink.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_Cylinder.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_DI.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_DO.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\FB_LIN_TRAFO.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\F_ECat_OK.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\GVL_Components.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\TwinSAFE\E_TwinSAFE_Group_Diag.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\TwinSAFE\E_TwinSAFE_Group_State.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\TwinSAFE\E_TwinSAFE_Logic_State.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Components\TwinSAFE\FB_TwinSAFE_Group.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\E_Method.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\E_OPCUA_Client_Seq.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_CheckHeartBeat.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GenerateHeartBeat.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetCPULoad.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetCPULoadPLC.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetCPUTemp.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetIPCSerial.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetSafetyTemp.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_GetTimePML.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_OPCUA_Client_Basic.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_OPCUA_Client_CallMethod.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_OPCUA_Client_ReadVar.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_OPCUA_GetRecipe.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\FB_OPCUA_ReadVar_BAK.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\F_Array_Sort.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\F_LogLine.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\F_StringCompNoCase.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\FB_GetFifo.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\FB_LogToFile.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\FB_SetFifo.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\F_LogFile.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\F_PadWith.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\GVL_Log.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="ECC\Tools\LogToFile\ST_String_FIFO.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\ST_OPC_Client_Data.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\ST_OutputArgInfoAndData_Basis.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\Tools\ST_Test.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Buffer Control\FB_BufferControl.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Buffer Control\ST_BufferControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_BufferState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_BufferStates.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_PostBufferInState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_DecisionPointState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_ExitPointState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_StationState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Enums\E_PostBufferOutState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\FB_TrackClient.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Station Control\E_StationBufferState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Station Control\E_StationInOutState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Station Control\FB_StationControl.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ECC\TrackClient\Station Control\ST_StationControlData.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GVLs\GVL.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PlcTask.TcTTO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\FB_ReadFile.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <SubObject Include="FB_HeatAndSteamIN.M_SetVelocity_OLD">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_LogToFile.A_SystemMonitor">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_eCurrentPMLMode" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_eCurrentPMLState" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_ePMLCommand" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_ePMLMode" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_eRequestedPMLMode" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_eRequestedPMLState" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_stCommandData" />
+    <SubObject Include="FB_OPC_Cell_Unit_0.P_stCommandTrack" />
+    <SubObject Include="FB_StationControl.M_AddVehicle">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_StationControl.M_Buffers">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_StationControl.M_PostBufferEmpty">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_StationControl.M_PreBufferEmpty">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_StationControl.M_RemoveVehicle">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_StationControl.M_ShiftForward">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CommandData_OLD">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CTL_Buffer">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CTL_Buffers">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CTL_CheckStationsPostBuffer">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CTL_CheckStationsPreBuffer">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.M_CTL_ExitPoint">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient.P_eTrafficLightColor">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+    <SubObject Include="FB_TrackClient_Basic.M_InitNodeData_OPCUA">
+      <ExcludeFromBuild>true</ExcludeFromBuild>
+    </SubObject>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HeatAndSteam.tmc">
+      <SubType>Content</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderResolution Include="Tc2_DataExchange">
+      <Resolution>Tc2_DataExchange, 3.3.5.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_EtherCAT">
+      <Resolution>Tc2_EtherCAT, 3.3.15.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_MDP">
+      <Resolution>Tc2_MDP, 3.3.7.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_ModbusSrv">
+      <Resolution>Tc2_ModbusSrv, 3.3.2.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_Standard">
+      <Resolution>Tc2_Standard, 3.3.3.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_SUPS">
+      <Resolution>Tc2_SUPS, 3.3.7.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_System">
+      <Resolution>Tc2_System, 3.4.24.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc2_Utilities">
+      <Resolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc3_DynamicMemory">
+      <Resolution>Tc3_DynamicMemory, 1.0.2.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc3_EventLogger">
+      <Resolution>Tc3_EventLogger, 3.1.24.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc3_Module">
+      <Resolution>Tc3_Module, 3.3.21.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc3_PackML_V2">
+      <Resolution>Tc3_PackML_V2, 3.3.14.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="Tc3_PLCopen_OpcUa">
+      <Resolution>Tc3_PLCopen_OpcUa, 3.2.9.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+  </ItemGroup>
+  <ProjectExtensions>
+    <PlcProjectOptions>
+      <XmlArchive>
+        <Data>
+          <o xml:space="preserve" t="OptionKey">
+      <v n="Name">"&lt;ProjectRoot&gt;"</v>
+      <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+        <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
+        <o>
+          <v n="Name">"{192FAD59-8248-4824-A8DE-9177C94C195A}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" />
+        </o>
+        <v>{8F99A816-E488-41E4-9FA3-846536012284}</v>
+        <o>
+          <v n="Name">"{8F99A816-E488-41E4-9FA3-846536012284}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" />
+        </o>
+        <v>{40450F57-0AA3-4216-96F3-5444ECB29763}</v>
+        <o>
+          <v n="Name">"{40450F57-0AA3-4216-96F3-5444ECB29763}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String" cvt="String">
+            <v>ActiveVisuProfile</v>
+            <v>IR0whWr8bwfwBwAAhiaVXgAAAABVAgAAWdTSaQAAAAABAAAAAAAAAAEaUwB5AHMAdABlAG0ALgBTAHQAcgBpAG4AZwACTHsAZgA5ADUAYgBiADQAMgA2AC0ANQA1ADIANAAtADQAYgA0ADUALQA5ADQAMAAwAC0AZgBiADAAZgAyAGUANwA3AGUANQAxAGIAfQADCE4AYQBtAGUABDBUAHcAaQBuAEMAQQBUACAAMwAuADEAIABCAHUAaQBsAGQAIAA0ADAAMgA0AC4AMAAFFlAAcgBvAGYAaQBsAGUARABhAHQAYQAGTHsAMQA2AGUANQA1AGIANgAwAC0ANwAwADQAMwAtADQAYQA2ADMALQBiADYANQBiAC0ANgAxADQANwAxADMAOAA3ADgAZAA0ADIAfQAHEkwAaQBiAHIAYQByAGkAZQBzAAhMewAzAGIAZgBkADUANAA1ADkALQBiADAANwBmAC0ANABkADYAZQAtAGEAZQAxAGEALQBhADgAMwAzADUANgBhADUANQAxADQAMgB9AAlMewA5AGMAOQA1ADgAOQA2ADgALQAyAGMAOAA1AC0ANAAxAGIAYgAtADgAOAA3ADEALQA4ADkANQBmAGYAMQBmAGUAZABlADEAYQB9AAoOVgBlAHIAcwBpAG8AbgALBmkAbgB0AAwKVQBzAGEAZwBlAA0KVABpAHQAbABlAA4aVgBpAHMAdQBFAGwAZQBtAE0AZQB0AGUAcgAPDkMAbwBtAHAAYQBuAHkAEAxTAHkAcwB0AGUAbQARElYAaQBzAHUARQBsAGUAbQBzABIwVgBpAHMAdQBFAGwAZQBtAHMAUwBwAGUAYwBpAGEAbABDAG8AbgB0AHIAbwBsAHMAEyhWAGkAcwB1AEUAbABlAG0AcwBXAGkAbgBDAG8AbgB0AHIAbwBsAHMAFCRWAGkAcwB1AEUAbABlAG0AVABlAHgAdABFAGQAaQB0AG8AcgAVIlYAaQBzAHUATgBhAHQAaQB2AGUAQwBvAG4AdAByAG8AbAAWFHYAaQBzAHUAaQBuAHAAdQB0AHMAFwxzAHkAcwB0AGUAbQAYGFYAaQBzAHUARQBsAGUAbQBCAGEAcwBlABkmRABlAHYAUABsAGEAYwBlAGgAbwBsAGQAZQByAHMAVQBzAGUAZAAaCGIAbwBvAGwAGyJQAGwAdQBnAGkAbgBDAG8AbgBzAHQAcgBhAGkAbgB0AHMAHEx7ADQAMwBkADUAMgBiAGMAZQAtADkANAAyAGMALQA0ADQAZAA3AC0AOQBlADkANAAtADEAYgBmAGQAZgAzADEAMABlADYAMwBjAH0AHRxBAHQATABlAGEAcwB0AFYAZQByAHMAaQBvAG4AHhRQAGwAdQBnAGkAbgBHAHUAaQBkAB8WUwB5AHMAdABlAG0ALgBHAHUAaQBkACBIYQBmAGMAZAA1ADQANAA2AC0ANAA5ADEANAAtADQAZgBlADcALQBiAGIANwA4AC0AOQBiAGYAZgBlAGIANwAwAGYAZAAxADcAIRRVAHAAZABhAHQAZQBJAG4AZgBvACJMewBiADAAMwAzADYANgBhADgALQBiADUAYwAwAC0ANABiADkAYQAtAGEAMAAwAGUALQBlAGIAOAA2ADAAMQAxADEAMAA0AGMAMwB9ACMOVQBwAGQAYQB0AGUAcwAkTHsAMQA4ADYAOABmAGYAYwA5AC0AZQA0AGYAYwAtADQANQAzADIALQBhAGMAMAA2AC0AMQBlADMAOQBiAGIANQA1ADcAYgA2ADkAfQAlTHsAYQA1AGIAZAA0ADgAYwAzAC0AMABkADEANwAtADQAMQBiADUALQBiADEANgA0AC0ANQBmAGMANgBhAGQAMgBiADkANgBiADcAfQAmFk8AYgBqAGUAYwB0AHMAVAB5AHAAZQAnVFUAcABkAGEAdABlAEwAYQBuAGcAdQBhAGcAZQBNAG8AZABlAGwARgBvAHIAQwBvAG4AdgBlAHIAdABpAGIAbABlAEwAaQBiAHIAYQByAGkAZQBzACgQTABpAGIAVABpAHQAbABlACkUTABpAGIAQwBvAG0AcABhAG4AeQAqHlUAcABkAGEAdABlAFAAcgBvAHYAaQBkAGUAcgBzACs4UwB5AHMAdABlAG0ALgBDAG8AbABsAGUAYwB0AGkAbwBuAHMALgBIAGEAcwBoAHQAYQBiAGwAZQAsEnYAaQBzAHUAZQBsAGUAbQBzAC1INgBjAGIAMQBjAGQAZQAxAC0AZAA1AGQAYwAtADQAYQAzAGIALQA5ADAANQA0AC0AMgAxAGYAYQA3ADUANgBhADMAZgBhADQALihJAG4AdABlAHIAZgBhAGMAZQBWAGUAcgBzAGkAbwBuAEkAbgBmAG8AL0x7AGMANgAxADEAZQA0ADAAMAAtADcAZgBiADkALQA0AGMAMwA1AC0AYgA5AGEAYwAtADQAZQAzADEANABiADUAOQA5ADYANAAzAH0AMBhNAGEAagBvAHIAVgBlAHIAcwBpAG8AbgAxGE0AaQBuAG8AcgBWAGUAcgBzAGkAbwBuADIMTABlAGcAYQBjAHkAMzBMAGEAbgBnAHUAYQBnAGUATQBvAGQAZQBsAFYAZQByAHMAaQBvAG4ASQBuAGYAbwA0MEwAbwBhAGQATABpAGIAcgBhAHIAaQBlAHMASQBuAHQAbwBQAHIAbwBqAGUAYwB0ADUaQwBvAG0AcABhAHQAaQBiAGkAbABpAHQAeQDQAAIaA9ADAS0E0AUGGgfQBwgaAUUHCQjQAAkaBEUKCwQDAAAABQAAAA0AAAAAAAAA0AwLrQIAAADQDQEtDtAPAS0Q0AAJGgRFCgsEAwAAAAUAAAANAAAAFQAAANAMC60BAAAA0A0BLRHQDwEtENAACRoERQoLBAMAAAAFAAAADQAAAAAAAADQDAutAgAAANANAS0S0A8BLRDQAAkaBEUKCwQDAAAABQAAAA0AAAAUAAAA0AwLrQIAAADQDQEtE9APAS0Q0AAJGgRFCgsEAwAAAAUAAAANAAAAAAAAANAMC60CAAAA0A0BLRTQDwEtENAACRoERQoLBAMAAAAFAAAADQAAAAAAAADQDAutAgAAANANAS0V0A8BLRDQAAkaBEUKCwQDAAAABQAAAA0AAAAAAAAA0AwLrQIAAADQDQEtFtAPAS0X0AAJGgRFCgsEAwAAAAUAAAANAAAAFQAAANAMC60EAAAA0A0BLRjQDwEtENAZGq0BRRscAdAAHBoCRR0LBAMAAAAFAAAADQAAAAAAAADQHh8tINAhIhoCRSMkAtAAJRoFRQoLBAMAAAADAAAAAAAAAAoAAADQJgutAAAAANADAS0n0CgBLRHQKQEtENAAJRoFRQoLBAMAAAADAAAAAAAAAAoAAADQJgutAQAAANADAS0n0CgBLRHQKQEtEJoqKwFFAAEC0AABLSzQAAEtF9AAHy0t0C4vGgPQMAutAQAAANAxC60XAAAA0DIarQDQMy8aA9AwC60CAAAA0DELrQMAAADQMhqtANA0Gq0A0DUarQA=</v>
+          </d>
+        </o>
+      </d>
+      <d n="Values" t="Hashtable" />
+    </o>
+        </Data>
+        <TypeList>
+          <Type n="Hashtable">System.Collections.Hashtable</Type>
+          <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
+          <Type n="String">System.String</Type>
+        </TypeList>
+      </XmlArchive>
+    </PlcProjectOptions>
+  </ProjectExtensions>
+</Project>

@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_ComponentErrors" Id="{cfcc9028-d820-4e94-b604-3eac016f390a}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_ComponentErrors :
+(
+	OK := 0,
+	
+	// Hardware
+	HW_ECat_Not_OP,
+	HW_UnderRange,
+	HW_OverRange,
+	HW_Limit1,
+	HW_Limit2,
+	HW_Error,
+	HW_Internal_Error,
+	HW_Watchdog,
+	
+	// Software
+	SW_HiHi,
+	SW_Hi,
+	SW_LoLo,
+	SW_Lo,
+	SW_Internal_Error,
+	
+	// TwinsAFE
+	TS_Stop,
+	TS_Error,
+	TS_FBError,
+	TS_ComError,
+	TS_ModuleError,
+	TS_CMPError,
+	TS_DeactivateError,
+	TS_RestartError,
+	TS_StopError,
+	TS_Deactivated,
+	TS_WaitCommError,
+	
+	Last
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

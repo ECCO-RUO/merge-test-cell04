@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_DeviceDataX" Id="{1d84c99d-b102-4cf6-862c-2b9e07db78bc}">
+    <Declaration><![CDATA[TYPE ST_DeviceDataX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'The ID of the specific device'}
+	DeviceID			: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'The descriptive name of the device'}
+	DeviceName			: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'The ID of the operational data'}
+	DataID				: UDINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'The descriptive name of the operational data'}
+	DataName			: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'The value of the operational data'}
+	Value				: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'The ID code for the measuring unit'}
+	UnitID				: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'The symbolic description of the measuring unit'}
+	Unit				: STRING(30);
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

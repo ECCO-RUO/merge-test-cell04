@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputErrorWarning" Id="{0923729c-c975-4fa4-97c1-fb25c575d7ab}">
+    <Declaration><![CDATA[TYPE ST_OutputErrorWarning :
+STRUCT
+// Handshake part
+	{attribute 'OPC.UA.DA.Description' := 'Change acknowledged (0-255)'}
+	ChangeAcknowledge		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Change status (0-255)'}
+	ChangeStatus			: UINT;
+
+// Data part	
+	{attribute 'OPC.UA.DA.Description' := 'Data has changed (0-65536)'}
+	DataChange				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Current number of warnings'}
+	NumberOfWarnings		: UINT;
+		
+	{attribute 'OPC.UA.DA.Description' := 'Current number of errors'}
+	NumberOfErrors			: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Current types of error/warnings'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ErrorWarningData		: ARRAY [1..255] OF ST_ErrorWarningDataX;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

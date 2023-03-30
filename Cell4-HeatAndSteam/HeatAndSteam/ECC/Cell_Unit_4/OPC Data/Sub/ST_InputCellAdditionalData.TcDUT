@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputCellAdditionalData" Id="{76a01e90-2d0e-4104-aaea-af5d9e3676b2}">
+    <Declaration><![CDATA[/// Standard Additional Data for cells
+TYPE ST_InputCellAdditionalData :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Cell MES Handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	{attribute 'TcIgnorePersistent'}
+	MESHandShakes				: ST_InputCellAdditionalDataMESHandShake;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell MES Handshakes'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	Settings					: ST_InputCellAdditionalDataSettings;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Clear all ticket data on cell'}
+	ClearAll					: BOOL;			
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateStationBufferData" Id="{79daa10b-8e83-4a24-b56f-99a165892153}">
+    <Declaration><![CDATA[TYPE ST_UpdateStationBufferData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_UpdateStationBuffer';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 7;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_UpdateStationBufferDataIn;
+	stOutput					: ST_UpdateStationBufferDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

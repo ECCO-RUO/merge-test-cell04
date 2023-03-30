@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="F_StringCompNoCase" Id="{82af8c89-0c04-4ee4-b4d5-2be87f00b8e8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_StringCompNoCase : BOOL
+VAR_INPUT
+	s1		: STRING;
+	s2		: STRING;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+F_StringCompNoCase := ( F_ToUCase(s1) = F_ToUCase(s2) );
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_StringCompNoCase">
+      <LineId Id="10" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

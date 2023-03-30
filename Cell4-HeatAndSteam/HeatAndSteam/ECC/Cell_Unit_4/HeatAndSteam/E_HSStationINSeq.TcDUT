@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_HSStationINSeq" Id="{9a6eb1d6-7fb8-4039-98bd-304d05be11e5}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_HSStationINSeq :
+(
+	Idle := 0,
+	NewJob,
+	CheckVehiclesVelocity,
+	CheckVehiclesSettings,
+	SetSettingsOnDevice,
+	WaitForDeviceReady,
+	ReceiveNextVehicle,
+	Running,
+	WaitBeforeEmpty,
+	Done
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

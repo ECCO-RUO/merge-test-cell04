@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ResetPathDataIn" Id="{0d8a08cd-0875-48e8-9f0d-792f8c4efd6f}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_ResetPathDataIn :
+STRUCT
+	iPath						: UINT;			// MM path ID (1-65536)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputStationHSJobDataOP11600" Id="{1a653ead-6a40-40b4-b4ff-8c476c9ee8d0}">
+    <Declaration><![CDATA[TYPE ST_InputStationHSJobDataOP11600 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Dynamic Tool'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	DynamicTool						: ARRAY [1..1] OF ToolX;
+
+	{attribute 'OPC.UA.DA.Description' := 'Dynamic Material'}
+	DynamicMaterial					: ARRAY [1..1] OF STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Temperature Target C°'}
+	TemperatureTarget				: REAL;
+
+	{attribute 'OPC.UA.DA.Description' := 'Temperature Max C°'}
+	TemperatureMax					: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Temperature Min C°'}
+	TemperatureMin					: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Time Max S'}
+	TimeMax							: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Time Min S'}
+	TimeMin							: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Steam Max'}
+	SteamMax						: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Steam Min'}
+	SteamMin						: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Air Max'}
+	AirMax							: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Air Min'}
+	AirMin							: REAL;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Profile'}
+	Profile							: ARRAY [ 1..10] OF REAL;
+	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_TwinSAFE_Group" Id="{5eaacf22-cdca-402b-abbd-4ad90ad8a32f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_TwinSAFE_Group EXTENDS FB_Basic
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	State AT %I* : UINT := 8;	// State from Ethercat module
+	// Map to TwinSAFE group State (Remember to activate Map State in TwinSAFE group infodata)
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'TwinSAFE group state'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	GroupState AT %I*			: E_TwinSAFE_Group_State;
+	// Map to TwinSAFE group State (Remember to activate Map Diag in TwinSAFE group infodata)
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'TwinSAFE group diag'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	GroupDiag AT %I*			: E_TwinSAFE_Group_Diag;
+	// Map to TwinSAFE FSLOGICS inputs
+	SafeLogicState AT %I*		: E_TwinSAFE_Logic_State;
+	// Map to TwinSAFE FSLOGICS inputs
+	CycleCounter AT %I*			: USINT;
+	// Map to ErrorAcknowledgement in TwinSAFE group
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'TwinSAFE group acknowledgment'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	ErrorAcknowledgement AT %Q*	: BOOL;
+	// Map to Run in TwinSAFE group
+	{attribute 'OPC.UA.DA':='1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.Description' := 'TwinSAFE group run'}
+	{attribute 'OPC.UA.DA.StructuredType' := '0'}
+	Run AT %Q*					: BOOL;
+	tpReset: TP;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Run parent FB
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="M_ErrorHandling" Id="{79709f7b-2965-4dd6-b015-9dc3fc2dcccc}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ErrorHandling : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Error handling
+IF (bCmdEnable) THEN
+	IF (State < 8) THEN
+		// EtherCAT state
+		bStaError := TRUE;
+		eStaErrorID := E_ComponentErrors.HW_ECat_Not_OP;
+	ELSE
+		CASE GroupState OF
+			E_TwinSAFE_Group_State.RUN:
+				bStaError := FALSE;
+				eStaErrorID := E_ComponentErrors.OK;
+			
+			E_TwinSAFE_Group_State.STOP:
+				bStaError := TRUE;
+				eStaErrorID := E_ComponentErrors.TS_Stop;
+			
+			E_TwinSAFE_Group_State.ERROR:
+				bStaError := TRUE;
+				CASE GroupDiag OF
+					E_TwinSAFE_Group_Diag.NO_ERROR:
+						eStaErrorID := E_ComponentErrors.TS_Error;
+						
+					E_TwinSAFE_Group_Diag.FBERROR:
+						eStaErrorID := E_ComponentErrors.TS_FBError;
+	
+					E_TwinSAFE_Group_Diag.COMERROR:
+						eStaErrorID := E_ComponentErrors.TS_ComError;
+	
+					E_TwinSAFE_Group_Diag.MODULEERROR:
+						eStaErrorID := E_ComponentErrors.TS_ModuleError;
+	
+					E_TwinSAFE_Group_Diag.CMPERROR:
+						eStaErrorID := E_ComponentErrors.TS_CMPError;
+	
+					E_TwinSAFE_Group_Diag.DEACTIVATEERROR:
+						eStaErrorID := E_ComponentErrors.TS_DeactivateError;
+	
+					E_TwinSAFE_Group_Diag.RESTARTERROR:
+						eStaErrorID := E_ComponentErrors.TS_RestartError;
+	
+				END_CASE
+	
+			E_TwinSAFE_Group_State.START:
+				bStaError := FALSE;
+				eStaErrorID := E_ComponentErrors.OK;
+			
+			E_TwinSAFE_Group_State.STOPERROR:
+				bStaError := TRUE;
+				eStaErrorID := E_ComponentErrors.TS_StopError;
+	
+			E_TwinSAFE_Group_State.DEACTIVE:
+				bStaError := TRUE;
+				eStaErrorID := E_ComponentErrors.TS_Deactivated;
+	
+			E_TwinSAFE_Group_State.WAITCOMERROR:
+				bStaError := TRUE;
+				eStaErrorID := E_ComponentErrors.TS_WaitCommError;
+	
+		END_CASE
+	END_IF
+
+ELSE
+	bStaError := FALSE;
+	bStaWarning := FALSE;
+	eStaErrorID := E_ComponentErrors.OK;
+
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{4c9b2533-9a73-4385-9cd0-fafe9351095c}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Init
+
+bCmdEnable := TRUE;
+bInitDone := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Run" Id="{7681eafd-562b-45f3-92b9-c697345f0530}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Run : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Analog outputs run
+// Executed from parent FB_Basic
+
+// Enable TwinSAFE group
+IF (P_bEnable) THEN
+	Run := TRUE;
+ELSE
+	Run := FALSE;
+END_IF
+
+// Reset TwinSAFE group
+tpReset(IN := bCmdReset, PT := T#500MS, Q => ErrorAcknowledgement);
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_TwinSAFE_Group">
+      <LineId Id="21" Count="2" />
+      <LineId Id="20" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TwinSAFE_Group.M_ErrorHandling">
+      <LineId Id="6" Count="1" />
+      <LineId Id="126" Count="3" />
+      <LineId Id="131" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="11" Count="1" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="76" Count="2" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="93" Count="15" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="109" Count="3" />
+      <LineId Id="114" Count="11" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="132" Count="1" />
+      <LineId Id="53" Count="5" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TwinSAFE_Group.M_Init">
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_TwinSAFE_Group.M_Run">
+      <LineId Id="6" Count="1" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="43" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

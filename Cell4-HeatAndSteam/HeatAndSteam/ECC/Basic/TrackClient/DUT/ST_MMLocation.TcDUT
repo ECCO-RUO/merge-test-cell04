@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MMLocation" Id="{5c4aa305-cfb8-4cdb-b9a8-7ea552751306}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA.StructuredType':='1'}
+TYPE ST_MMLocation :
+STRUCT
+	nPathID						: UINT	:= 0;		(* The path the position is related to. *)
+	fPosition					: REAL	:= 0;		(* [M] The position on the path. *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

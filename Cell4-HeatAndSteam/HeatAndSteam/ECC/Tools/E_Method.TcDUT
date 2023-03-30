@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_Method" Id="{6ad8a695-5d93-42d5-aa98-725e5ae84bdd}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_Method :
+(
+	Idle := 0,
+	Busy,
+	Error,
+	Done
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

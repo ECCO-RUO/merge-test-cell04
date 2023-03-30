@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_TwinSAFE_Group_Diag" Id="{bacd4b03-1df4-4486-a568-05e453be9d50}">
+    <Declaration><![CDATA[/// TwinCAT Group Diag definitions
+{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TwinSAFE_Group_Diag :
+(
+	NO_ERROR		:= 0,
+	FBERROR			:= 1,
+	COMERROR		:= 2,
+	MODULEERROR		:= 3,
+	CMPERROR		:= 4,
+	DEACTIVATEERROR	:= 5,
+	RESTARTERROR	:= 6
+
+) USINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

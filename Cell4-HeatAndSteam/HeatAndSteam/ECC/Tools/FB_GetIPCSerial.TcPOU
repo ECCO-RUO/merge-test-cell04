@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_GetIPCSerial" Id="{2840b9f8-e4fb-4510-9aa1-d0c22806a4ff}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetIPCSerial
+VAR_INPUT
+	bExecute			: BOOL;				// TRUE to start
+END_VAR
+VAR_OUTPUT
+	sSerialIPC			: STRING;			// Serial no of IPC
+	sSerialMainBoard	: STRING;			// Serial no of Mainboard
+	bError				: BOOL;				// error flag (indicator: error occured)
+	nErrID				: UDINT;			// last error ID 
+END_VAR
+VAR
+	// internal use
+	sAmsNetId			: STRING := '';		// ADS Net ID (local = '')    
+	iState				: INT;
+	sData				: STRING;
+	stMDP_Addr			: Tc2_MDP.ST_MDP_Addr;
+	// FB instances
+	fbReadMDPElement	: Tc2_MDP.FB_MDP_ReadElement;  
+	fbReadMDPIndex		: Tc2_MDP.FB_MDP_ReadIndex;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+CASE iState OF
+	0: // Initiate program parameters (if required)
+		fbReadMDPElement(bExecute := FALSE);
+		fbReadMDPIndex(bExecute := FALSE);
+		IF (bExecute) THEN
+			iState := 10;
+		END_IF
+
+	10:	// Trigger FB: request mainboard data
+		sData := '';
+		stMDP_Addr.nArea := INT_TO_BYTE(Tc2_MDP.eMDP_Area_ConfigArea);
+		stMDP_Addr.nTableId := 1;
+		stMDP_Addr.nSubIdx := 2;
+		fbReadMDPElement(	bExecute := TRUE,
+							eModuleType := Tc2_MDP.eMDP_ModT_Mainboard,
+							stMDP_Addr := stMDP_Addr,
+							iModIdx := 0,
+							pDstBuf := ADR(sData),
+							cbDstBufLen := SIZEOF(sData),
+							sAmsNetId := sAmsNetId	);
+		iState := 20;
+
+	20:	// Process FB: Request mainboard serial
+		fbReadMDPElement(bExecute := FALSE); 
+		IF (NOT fbReadMDPElement.bBusy) THEN
+			IF (fbReadMDPElement.bError) THEN
+				bError := TRUE;
+				nErrID := fbReadMDPElement.nErrID; 
+				iState := 0;
+			ELSE
+				bError := FALSE;
+				sSerialMainBoard := sData;
+				iState := 30;
+			END_IF                                               
+		END_IF
+  
+	30:	// trigger FB: request single index in MDP Device Area, IPC serial number
+		sData           := '';
+		fbReadMDPIndex(	bExecute := TRUE,
+						nIndex := 16#F9F0,
+						nSubIndex := 0,
+						pDstBuf := ADR(sData),
+						cbDstBufLen := SIZEOF(sData),
+						sAmsNetId := sAmsNetId 	);
+		iState := 40;
+            
+	40:	// Process FB: request single index in MDP Device Area, IPC serial number
+		fbReadMDPIndex(bExecute := FALSE); 
+		IF (NOT fbReadMDPIndex.bBusy) THEN
+			IF (fbReadMDPIndex.bError) THEN
+				bError := TRUE;
+				nErrID := fbReadMDPIndex.nErrID; 
+			ELSE
+				bError := FALSE;
+				sSerialIPC := sData;
+			END_IF
+			iState := 90;
+		END_IF		
+  
+     90: // Done
+		IF (NOT bExecute) THEN
+			iState := 0;
+		END_IF
+
+	ELSE
+		iState := 0; 
+
+END_CASE
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetIPCSerial">
+      <LineId Id="94" Count="0" />
+      <LineId Id="18" Count="2" />
+      <LineId Id="134" Count="3" />
+      <LineId Id="22" Count="1" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="87" Count="2" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="85" Count="1" />
+      <LineId Id="90" Count="2" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="29" Count="3" />
+      <LineId Id="34" Count="7" />
+      <LineId Id="43" Count="3" />
+      <LineId Id="144" Count="1" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="150" Count="4" />
+      <LineId Id="157" Count="2" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="163" Count="3" />
+      <LineId Id="169" Count="2" />
+      <LineId Id="173" Count="1" />
+      <LineId Id="142" Count="0" />
+      <LineId Id="140" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="75" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

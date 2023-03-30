@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_InputModeState" Id="{bead6d28-c2b5-47cf-a73c-712594f0e690}">
+    <Declaration><![CDATA[TYPE ST_InputModeState :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	ChangeRequest				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Requested mode (0-6)'}
+	Mode						: UINT := E_PML_Mode.Production;
+
+	{attribute 'OPC.UA.DA.Description' := 'Requested state (0-3,6,7,9'}
+	State						: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

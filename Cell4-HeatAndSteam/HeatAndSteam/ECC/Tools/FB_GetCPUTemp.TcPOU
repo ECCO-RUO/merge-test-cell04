@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_GetCPUTemp" Id="{07df4ad7-a000-41e9-baec-9c9601f89979}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_GetCPUTemp
+VAR_INPUT
+	rInterval			: REAL := 10.0;		// [sec]
+END_VAR
+VAR_OUTPUT
+	rCPUTemp			: REAL;				// [deg]
+	bError				: BOOL;				// error flag (indicator: error occured)
+	nErrID				: UDINT;			// last error ID 
+END_VAR
+VAR
+	// internal use
+	sAmsNetId			: STRING := '';		// ADS Net ID (local = '')    
+	iState				: INT;
+	uData				: UINT;
+	stMDP_Addr			: Tc2_MDP.ST_MDP_Addr;
+	// FB instances
+	fbReadMDPElement	: Tc2_MDP.FB_MDP_ReadElement;  
+	tonInterval			: Tc2_Standard.TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// Interval timer
+tonInterval(IN := NOT tonInterval.Q, PT := REAL_TO_TIME(rInterval * 1000.0));
+
+CASE iState OF
+	0: // Initiate program parameters (if required)
+		fbReadMDPElement(bExecute := FALSE);
+		IF (tonInterval.Q) THEN
+			iState := 10;
+		END_IF
+
+	10:	// Trigger FB: request CPU data
+		stMDP_Addr.nArea := INT_TO_BYTE(Tc2_MDP.eMDP_Area_ConfigArea);
+		stMDP_Addr.nTableId := 1;
+		stMDP_Addr.nSubIdx := 3;
+		fbReadMDPElement(	bExecute := TRUE,
+							eModuleType := Tc2_MDP.eMDP_ModT_CPU,
+							stMDP_Addr := stMDP_Addr,
+							iModIdx := 0,
+							pDstBuf := ADR(uData),
+							cbDstBufLen := SIZEOF(uData),
+							sAmsNetId := sAmsNetId	);
+		iState := 20;
+
+	20:	// Process FB: Request CPU temp
+		fbReadMDPElement(bExecute := FALSE); 
+		IF (NOT fbReadMDPElement.bBusy) THEN
+			IF (fbReadMDPElement.bError) THEN
+				bError := TRUE;
+				nErrID := fbReadMDPElement.nErrID; 
+				iState := 0;
+			ELSE
+				bError := FALSE;
+				rCPUTemp := UINT_TO_REAL(uData);
+				iState := 30;
+			END_IF                                               
+		END_IF
+    
+     30: // Done 
+		iState := 0;
+
+	ELSE
+		iState := 0; 
+
+END_CASE
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_GetCPUTemp">
+      <LineId Id="94" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="18" Count="2" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="22" Count="1" />
+      <LineId Id="87" Count="2" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="85" Count="1" />
+      <LineId Id="90" Count="2" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="29" Count="3" />
+      <LineId Id="34" Count="7" />
+      <LineId Id="43" Count="4" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="75" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

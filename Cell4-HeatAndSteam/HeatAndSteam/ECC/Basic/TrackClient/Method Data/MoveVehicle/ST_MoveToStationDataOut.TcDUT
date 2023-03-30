@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MoveToStationDataOut" Id="{64c5b6ad-33d7-44ee-9015-b30ddccd0a9a}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_MoveToStationDataOut :
+STRUCT
+	// Fixed data for all methods
+	nNumberOfOutputArguments	: UDINT;								// determined amount of output parameters
+	nReserved					: ARRAY[1..4] OF BYTE;					// Reserved padding
+	
+	// Method specific data
+	stOutputArgInfo				: ARRAY[1..3] OF ST_UAMethodArgInfo; 	// 
+	eStatus						: E_MMServerStatus;						// Status from remote method (succes/fail)
+	sMessage					: STRING;								// Debugging message
+	iCommandID					: UINT;									// Command ID assigned by TrackServer to this command
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

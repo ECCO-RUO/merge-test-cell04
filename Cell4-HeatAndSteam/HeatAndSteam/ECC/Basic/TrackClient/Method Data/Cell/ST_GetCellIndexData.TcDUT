@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_GetCellIndexData" Id="{46881b5a-eebd-454f-8512-43b92956fda6}">
+    <Declaration><![CDATA[TYPE ST_GetCellIndexData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_GetCellIndex';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 1;
+	iNoOfOutputArgs				: BYTE := 3;
+	stInput						: ST_GetCellIndexDataIn;
+	stOutput					: ST_GetCellIndexDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

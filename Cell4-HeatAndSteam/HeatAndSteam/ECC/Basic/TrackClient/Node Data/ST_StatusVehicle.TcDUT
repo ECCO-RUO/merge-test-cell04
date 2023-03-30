@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StatusVehicle" Id="{c2fe897e-0f84-43e8-8e19-a1b76b46d873}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_StatusVehicle :
+STRUCT
+	nVehicleID					: UINT;
+	sOwnerCell					: STRING(30);				// Cell which controls this vehicle
+	nState						: UINT;						// E_CarrierStatus: 0: Undefined, 1: Initiating, 2: Not Busy(No Ticket), 3: Busy(Ticket), 4: Montage Reserved
+	bVehiclePresent				: BOOL;
+	bDataValid					: BOOL;
+	sLastScan					: STRING(30);				// Timestamp for last scan of this vehicle
+	sCarrierID					: STRING(30);				// Scanned (from Carrier RFID scan)
+	bTool						: BOOL;						// TRUE if tool is mounted on carrier
+	sToolID						: STRING(30);				// Tool ID (if mounted) (from Tool RFID scan)
+	bMaterial					: BOOL;						// TRUE if material is mounted on Tray (tool)
+	sMaterialID					: STRING(30);				// Optional, Mterial ID (from material RFID scan)
+	sJobID						: STRING(30);				// Job ID assigned to this vehicle/carrier
+	nTicket						: UINT;						// Ticket for item on this vehicle
+	nTicketSize					: UINT;						// Size of ticket (carriers in package)
+	nPriority					: UINT;						// Priority within ticket
+	nPathID						: UINT;						// Current path
+	fPosition					: REAL;						// Current location on the path
+	nTargetPathID				: UINT;						// Target path
+	fTargetPosition				: REAL;						// Target location on target path
+	fVelocity					: REAL;						// Actual velocity
+	sTargetStationID			: STRING(30);				// Target station
+	sCurrentStationID			: STRING(30);				// Actual station
+	bNOK						: BOOL;						// TRUE of rework is required
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

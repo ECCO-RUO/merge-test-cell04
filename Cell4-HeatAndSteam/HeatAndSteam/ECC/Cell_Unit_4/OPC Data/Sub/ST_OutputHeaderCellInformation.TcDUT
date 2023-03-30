@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputHeaderCellInformation" Id="{fe748ec6-e6d7-46c3-9389-bd77a7d5f9aa}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderCellInformation:// EXTENDS ST_OutputHeaderCellInformationX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station information'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationInformation		: ARRAY [1..2] OF ST_OutputHeaderCellInformationStationHS;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Cell name'}
+	CellName				: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'CellID'}
+	CellID					: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Number of stations'}
+	NumberOfStations		: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station information'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	TransportInformation	: ST_OutputHeaderTransportInformationX;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <POU Name="F_LogLine" Id="{9b6886d1-6c40-4c6a-a2c9-2815288d3356}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_LogLine : DINT
+VAR_INPUT
+	sLogString	: STRING(250);
+	iValue		: DINT;
+END_VAR
+VAR
+	iReplacePos	: INT;
+	sLogFile	: STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[	// Log to output window as info message
+	IF (bLogToOutputWindow) THEN
+		F_LogLine:= ADSLOGDINT(ADSLOG_MSGTYPE_HINT OR ADSLOG_MSGTYPE_LOG,sLogString, iValue);
+	END_IF
+	
+	// Replace the '%d' in the log string with the stinr-value of the iValue input 
+	iReplacePos := FIND(sLogString, '%d');
+	IF (iReplacePos > 0) THEN
+		// '%d' found in string
+		sLogFile := REPLACE(sLogString, DINT_TO_STRING(iValue), 2, iReplacePos);
+	ELSE
+		sLogFile := sLogString;
+	END_IF
+
+	// Log to file
+	F_LogFile(sLogFile);
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_LogLine">
+      <LineId Id="22" Count="1" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="15" Count="1" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="19" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

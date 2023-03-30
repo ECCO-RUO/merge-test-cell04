@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="E_ExitPointState" Id="{d25626e6-0f4e-403c-b008-5ce2397bbbf3}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_ExitPointState :
+(
+	Idle := 0,				// Wait state
+	CheckBuffer,			// Check if there is vehicles ready for exit in post-buffer
+	SetTrafficLightRd,		// 
+	MoveVehicles,			// 
+	SetTrafficLightGr		// 
+
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

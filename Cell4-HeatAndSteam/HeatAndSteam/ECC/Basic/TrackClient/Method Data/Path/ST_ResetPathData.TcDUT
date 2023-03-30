@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_ResetPathData" Id="{a4e2b57b-89ce-4fed-bd72-d107560cf994}">
+    <Declaration><![CDATA[TYPE ST_ResetPathData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_ResetPath';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 1;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_ResetPathDataIn;
+	stOutput					: ST_ResetPathDataOut;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

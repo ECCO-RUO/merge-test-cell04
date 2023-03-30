@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_EMS_HS_Command" Id="{763dd481-d9bd-47b4-8d1f-51b90e360623}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_EMS_HS_Command :
+STRUCT
+	REMOTE_START			: BIT;	// BIT 0
+	REMOTE_STOP				: BIT;	// BIT 1
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_2					: BIT;	// BIT 2
+	RESET_RUNNING_HRS		: BIT;	// BIT 3
+	RESET_ENERGY_CONS		: BIT;	// BIT 4
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_5					: BIT;	// BIT 5
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_6					: BIT;	// BIT 6
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_7					: BIT;	// BIT 7	
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_8					: BIT;	// BIT 8
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_9					: BIT;	// BIT 9
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_10					: BIT;	// BIT 10
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_11					: BIT;	// BIT 11
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_12					: BIT;	// BIT 12
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_13					: BIT;	// BIT 13	
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_14					: BIT;	// BIT 14	
+	{attribute 'OPC.UA.DA':='0'}
+	DISP_15					: BIT;	// BIT 15	
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

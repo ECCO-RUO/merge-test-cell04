@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_StationConfigX" Id="{05dbfbc5-40b1-4f0c-8519-ae369539dd81}">
+    <Declaration><![CDATA[TYPE ST_StationConfigX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station ID'}
+	StationID					: STRING(30);
+
+	{attribute 'OPC.UA.DA.Description' := 'Station location'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationLocation1			: ST_TrackLocation;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station location'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	StationLocation2			: ST_TrackLocation;
+
+	{attribute 'OPC.UA.DA.Description' := 'Decision Point location'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	DecisionPointLocation		: ST_TrackLocation;
+
+	{attribute 'OPC.UA.DA.Description' := 'Pre buffer size (0-10)'}
+	PreBufferSize				: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Post buffer size (0-10)'}
+	PostBufferSize				: UINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

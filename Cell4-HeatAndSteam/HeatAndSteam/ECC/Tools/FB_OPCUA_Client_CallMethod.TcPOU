@@ -1,0 +1,405 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_OPCUA_Client_CallMethod" Id="{0cf51fe9-851a-41fd-aad2-1b24630163d5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_OPCUA_Client_CallMethod EXTENDS FB_OPCUA_Client_Basic
+VAR_INPUT
+	iTargetSize	: UDINT;	// Size of local target variable
+	pTarget		: pVoid;	// Address of local target variable
+	sObjectName	: STRING(MAX_STRING_LENGTH);	// program/FB name
+	sMethodName	: STRING(MAX_STRING_LENGTH);	// Method name
+	iNoOfInArgs	: UINT;		// Number of input arguments
+	iInputArgs	: ARRAY [0..10] OF INT;			// input Arguments for method
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	(* Declarations for UA_MethodGetHandle *)
+	fbUA_MethodGetHandle: UA_MethodGetHandle;
+	ObjectNodeID: ST_UANodeID;
+	MethodNodeID: ST_UANodeID;
+	nMethodHdl: DWORD;
+	(* Declarations for UA_MethodCall *)
+	fbUA_MethodCall: UA_MethodCall;
+	nAdrWriteData: PVOID;
+	cbWriteData: UDINT; // calculated automatically by M_Init()
+	InputArguments: ARRAY[1..10] OF ST_UAMethodArgInfo; // change according to input parameters - M_Mul has 2 input parameters 
+	stOutputArgInfo: ARRAY[1..1] OF ST_UAMethodArgInfo; // change according to output parameters - M_Mul has 1 output parameters
+	stOutputArgInfoAndData: ST_OutputArgInfoAndData_Recipe;
+	nInputData: ARRAY[1..20] OF BYTE; // numberIn1(INT16)(2) + numberIn2(INT16)(2)
+	nOffset: UDINT; // calculated by M_Init()
+	nArg: INT; // used by M_Init()
+	(* Declarations for UA_MethodReleaseHandle *)
+	fbUA_MethodReleaseHandle: UA_MethodReleaseHandle;
+	
+	nNumberOfInputArguments: DINT := 2; // change to number of input parameters - M_Mul has 2 input parameters
+	nInputArgSize: INT := 20; // numberIn1(INT16)(2) + numberIn2(INT16)(2)
+	bHandleInited : BOOL;
+END_VAR
+VAR CONSTANT
+//	nInputArgSize: INT := 4; // numberIn1(INT16)(2) + numberIn2(INT16)(2)
+//	nNumberOfInputArguments: DINT := 2; // change to number of input parameters - M_Mul has 2 input parameters
+	nNumberOfOutputArguments: DINT := 1; // change to number of output parameters - M_Mul has 1 output parameters
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE eState OF
+	E_OPCUA_Client_Seq.Idle:
+		IF (bExecute) THEN
+			M_Init();
+			eState := E_OPCUA_Client_Seq.CheckData;
+		END_IF
+
+	E_OPCUA_Client_Seq.CheckData:
+		IF ((sMethodName <> '') AND (sObjectName <> '') AND (pTarget <> 0) AND (iTargetSize > 0)) THEN
+			eState := E_OPCUA_Client_Seq.OpenSession;
+		ELSE
+			bError := TRUE;
+			bBusy := FALSE;
+			eState := E_OPCUA_Client_Seq.Done;
+		END_IF
+
+	E_OPCUA_Client_Seq.OpenSession:
+		CASE M_OpenSession() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.GetNameSpace;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.Done;
+		END_CASE
+
+	E_OPCUA_Client_Seq.GetNameSpace:
+		CASE M_GetNameSpace() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.GetMethod;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.CloseSession;			
+		END_CASE
+
+	E_OPCUA_Client_Seq.GetMethod:
+		CASE M_GetMethodHandle() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.CallMethod;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.ReleaseMethod;
+		END_CASE
+		
+	E_OPCUA_Client_Seq.CallMethod:
+		CASE M_CallMethod() OF
+			E_Method.Done:	// Done
+				MEMCPY(	pTarget, ADR(stOutputArgInfoAndData.stRecipe), iTargetSize);
+				eState := E_OPCUA_Client_Seq.ReleaseMethod;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.ReleaseMethod;
+		END_CASE
+
+	E_OPCUA_Client_Seq.ReleaseMethod:
+		CASE M_ReleaseMethodHandle() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.CloseSession;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.CloseSession;
+		END_CASE
+
+	E_OPCUA_Client_Seq.CloseSession:
+		CASE M_CloseSession() OF
+			E_Method.Done:	// Done
+				eState := E_OPCUA_Client_Seq.Done;
+			E_Method.Error:	// Error
+				eState := E_OPCUA_Client_Seq.Done;
+		END_CASE
+		
+	E_OPCUA_Client_Seq.Done:
+		bBusy := FALSE;
+		IF (NOT bExecute) THEN
+			bDone := FALSE;
+			bError := FALSE;
+			eState := E_OPCUA_Client_Seq.Idle;
+		END_IF
+
+	ELSE
+		eState := E_OPCUA_Client_Seq.Idle;
+
+END_CASE
+]]></ST>
+    </Implementation>
+    <Method Name="M_CallMethod" Id="{8f8042df-a721-4f67-9522-2845757e70cc}">
+      <Declaration><![CDATA[METHOD PROTECTED M_CallMethod : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	stOutputArgInfo[1].nLenData := SIZEOF(stOutputArgInfoAndData.stRecipe);
+(*	stOutputArgInfo[1].ArrayDimensions[1] := 0;
+	stOutputArgInfo[1].DataType := Tc3_PLCopen_OpcUa.eUAType_Variant;
+	stOutputArgInfo[1].ValueRank := -1;
+	stOutputArgInfo[1].nLenData := iTargetSize;
+	stOutputArgInfoAndData.nNumberOfOutputArguments := 1;
+	stOutputArgInfoAndData.stOutputArgInfo[1] := stOutputArgInfo[1];
+*)
+	fbUA_MethodCall(Execute := TRUE,
+					ConnectionHdl := nConnectionHdl,
+					MethodHdl := nMethodHdl,
+					nNumberOfInputArguments := nNumberOfInputArguments,	
+					pInputArgInfo := ADR(InputArguments),
+					cbInputArgInfo := SIZEOF(InputArguments[1]) * nNumberOfInputArguments,
+					pInputArgData := ADR(nInputData),
+					cbInputArgData := cbWriteData,
+					pInputWriteData := 0,
+					cbInputWriteData := 0,
+					nNumberOfOutputArguments := nNumberOfOutputArguments,
+					pOutputArgInfo := ADR(stOutputArgInfo),
+					cbOutputArgInfo := SIZEOF(stOutputArgInfo),
+					pOutputArgInfoAndData := ADR(stOutputArgInfoAndData),
+					cbOutputArgInfoAndData := SIZEOF(stOutputArgInfoAndData)	);
+	
+	IF (fbUA_MethodCall.Busy) THEN
+		M_CallMethod := E_Method.Busy;
+	ELSIF (fbUA_MethodCall.Error) THEN
+		fbUA_MethodCall(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_MethodCall.ErrorID;
+		M_CallMethod := E_Method.Error;
+	ELSIF (fbUA_MethodCall.Done) THEN
+		fbUA_MethodCall(Execute := FALSE);
+		M_CallMethod := E_Method.Done;
+	ELSE
+		M_CallMethod := E_Method.Idle;
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_GetMethodHandle" Id="{7e841681-6c2d-461b-95d7-c16178c9e557}">
+      <Declaration><![CDATA[METHOD PROTECTED M_GetMethodHandle : E_Method
+VAR_INPUT
+END_VAR
+VAR
+	iCnt : UINT;
+	iMaxCnt : UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (NOT bHandleInited) THEN
+	ObjectNodeID.eIdentifierType := eUAIdentifierType_String;
+	ObjectNodeID.nNamespaceIndex := nNamespaceIndex;
+	ObjectNodeID.sIdentifier	 := sObjectName;
+
+	MethodNodeID.eIdentifierType := eUAIdentifierType_String;
+	MethodNodeID.nNamespaceIndex := nNamespaceIndex;
+	MethodNodeID.sIdentifier	 := CONCAT(sObjectName, CONCAT('#', sMethodName));
+
+	// Clear memory
+	MEMSET(ADR(InputArguments), 0, SIZEOF(InputArguments));
+	MEMSET(ADR(nInputData), 0, SIZEOF(nInputData));
+
+	// Input arguments
+	nOffset := 0;
+	iMaxCnt := MIN(10, iNoOfInArgs);
+	nNumberOfInputArguments := iMaxCnt;
+	IF (iMaxCnt > 0) THEN
+		FOR iCnt := 0 TO (iMaxCnt-1) BY 1 DO
+			InputArguments[iCnt+1].DataType := Tc3_PLCopen_OpcUa.eUAType_Int16;
+			InputArguments[iCnt+1].ValueRank := -1; 							(* Scalar = -1 or Array *)
+			InputArguments[iCnt+1].ArrayDimensions[1] := 0; 					(* Number of Dimension in case its an array *)
+			InputArguments[iCnt+1].nLenData := SIZEOF(iInputArgs[iCnt]);		(* Length if its a STRING *)
+			IF (nOffset + SIZEOF(iInputArgs[iCnt]) > nInputArgSize) THEN 
+				M_GetMethodHandle := E_Method.Error;
+				RETURN;
+			ELSE
+				MEMCPY(ADR(nInputData)+nOffset,ADR(iInputArgs[iCnt]),SIZEOF(iInputArgs[iCnt]));	(* VALUE in BYTES FORM *)
+				nOffset := nOffset + SIZEOF(iInputArgs[iCnt]);
+			END_IF		
+		END_FOR
+	END_IF
+	cbWriteData := nOffset;
+	bHandleInited := TRUE;
+END_IF
+
+	// Get method handle	
+	fbUA_MethodGetHandle(	Execute := TRUE,
+							ConnectionHdl := nConnectionHdl,
+							ObjectNodeID := ObjectNodeID,
+							MethodNodeID := MethodNodeID,
+							MethodHdl => nMethodHdl	);
+	IF (fbUA_MethodGetHandle.Busy) THEN
+		M_GetMethodHandle := E_Method.Busy;
+	ELSIF (fbUA_MethodGetHandle.Error) THEN
+		fbUA_MethodGetHandle(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_MethodGetHandle.ErrorID;
+		M_GetMethodHandle := E_Method.Error;
+	ELSIF (fbUA_MethodGetHandle.Done) THEN
+		fbUA_MethodGetHandle(Execute := FALSE);
+		M_GetMethodHandle := E_Method.Done;
+	ELSE
+		M_GetMethodHandle := E_Method.Idle;		
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_Init" Id="{f9405ccc-0418-48fc-a6ab-dfe08d29de93}">
+      <Declaration><![CDATA[METHOD PROTECTED M_Init : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	
+	SUPER^.M_Init();
+	
+	bHandleInited := FALSE;
+
+	M_Init := E_Method.Done;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_ReleaseMethodHandle" Id="{50bc6f9e-8e02-4df2-a6f5-07daf0634166}">
+      <Declaration><![CDATA[METHOD PROTECTED M_ReleaseMethodHandle : E_Method
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+	fbUA_MethodReleaseHandle(	Execute			:= TRUE,
+								ConnectionHdl	:= nConnectionHdl,
+								MethodHdl		:= nMethodHdl	);
+
+	IF (fbUA_MethodReleaseHandle.Busy) THEN
+		// Working
+		M_ReleaseMethodHandle := E_Method.Busy;
+	ELSIF (fbUA_MethodReleaseHandle.Error) THEN
+		// Error releasing node handle
+		fbUA_MethodReleaseHandle(Execute := FALSE);
+		bError := TRUE;
+		nErrorID := fbUA_MethodReleaseHandle.ErrorID;
+		M_ReleaseMethodHandle := E_Method.Error;		
+	ELSIF (fbUA_MethodReleaseHandle.Done) THEN
+		// Node handle released
+		fbUA_MethodReleaseHandle(Execute := FALSE);
+		M_ReleaseMethodHandle := E_Method.Done;
+	ELSE
+		M_ReleaseMethodHandle := E_Method.Idle;			
+	END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_OPCUA_Client_CallMethod">
+      <LineId Id="14" Count="1" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="358" Count="0" />
+      <LineId Id="33" Count="1" />
+      <LineId Id="287" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="289" Count="0" />
+      <LineId Id="291" Count="0" />
+      <LineId Id="294" Count="2" />
+      <LineId Id="298" Count="0" />
+      <LineId Id="290" Count="0" />
+      <LineId Id="288" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="343" Count="0" />
+      <LineId Id="346" Count="1" />
+      <LineId Id="349" Count="0" />
+      <LineId Id="344" Count="0" />
+      <LineId Id="341" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="352" Count="5" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="538" Count="5" />
+      <LineId Id="536" Count="0" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="368" Count="0" />
+      <LineId Id="548" Count="0" />
+      <LineId Id="369" Count="2" />
+      <LineId Id="366" Count="0" />
+      <LineId Id="125" Count="1" />
+      <LineId Id="372" Count="5" />
+      <LineId Id="145" Count="1" />
+      <LineId Id="378" Count="5" />
+      <LineId Id="226" Count="1" />
+      <LineId Id="510" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="384" Count="0" />
+      <LineId Id="386" Count="0" />
+      <LineId Id="229" Count="1" />
+      <LineId Id="214" Count="1" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_CallMethod.M_CallMethod">
+      <LineId Id="35" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="61" Count="2" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="3" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="14" Count="8" />
+      <LineId Id="37" Count="1" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="2" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="39" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_CallMethod.M_GetMethodHandle">
+      <LineId Id="92" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="6" Count="7" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="109" Count="1" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="129" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="130" Count="1" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="112" Count="10" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="61" Count="3" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="77" Count="1" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="79" Count="1" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="88" Count="1" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="58" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_CallMethod.M_Init">
+      <LineId Id="27" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_OPCUA_Client_CallMethod.M_ReleaseMethodHandle">
+      <LineId Id="6" Count="0" />
+      <LineId Id="27" Count="1" />
+      <LineId Id="9" Count="17" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

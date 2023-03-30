@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_OutputHeaderCellInformationStationX" Id="{ebb0fbab-b10f-423e-8608-a039fbec0b4b}">
+    <Declaration><![CDATA[TYPE ST_OutputHeaderCellInformationStationX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Station name'}
+	StationName				: STRING;
+
+	{attribute 'OPC.UA.DA.Description' := 'Station ID'}
+	StationID				: STRING;
+	
+	{attribute 'OPC.UA.DA.Description' := 'PLC version'}
+	NumberOfOperations		: UINT;
+	
+	{attribute 'OPC.UA.DA.Description' := 'Rework possible on this station'}
+	Rework					: BOOL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

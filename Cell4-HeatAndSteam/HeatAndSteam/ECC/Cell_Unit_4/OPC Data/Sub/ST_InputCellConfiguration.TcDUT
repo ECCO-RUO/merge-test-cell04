@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_InputCellConfiguration" Id="{ff2776cd-3789-4f5c-a914-fa41c6354a61}">
+    <Declaration><![CDATA[/// Specialized Config for SOR cell
+TYPE ST_InputCellConfiguration :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Change Request (0-255)'}
+	ChangeRequest				: UINT;
+
+	{attribute 'OPC.UA.DA.Description' := 'Cell general configuration'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	General						: ST_InputCellConfigurationGeneral;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

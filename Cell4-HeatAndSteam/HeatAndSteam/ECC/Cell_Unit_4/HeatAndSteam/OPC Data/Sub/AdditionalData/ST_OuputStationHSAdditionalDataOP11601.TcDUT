@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <DUT Name="ST_OuputStationHSAdditionalDataOP11601" Id="{1ae666c4-2a83-4601-88e1-791e3dd2e1c3}">
+    <Declaration><![CDATA[TYPE ST_OuputStationHSAdditionalDataOP11601 :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Dummy (for making struct visible on OPC UA'}
+	Dummy						: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

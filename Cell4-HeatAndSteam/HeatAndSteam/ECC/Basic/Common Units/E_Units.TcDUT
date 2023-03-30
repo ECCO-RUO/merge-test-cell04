@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="E_Units" Id="{aa75c5aa-be89-403f-9a3e-66d9ffc3121c}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+// NOTE: Must match the array in FB_CommonUnits
+TYPE E_Units :
+(
+	None := 0,	// 
+
+	_m,			// Meter
+	_cm,		// Centimeter
+	_mm,		// Millimeter
+	_um,		// Micrometer
+	_nm,		// Nanometer
+	
+	_kg,		// Kilogram
+	_g,			// Gram
+	
+	_RPM,		// RPM
+	_mm_s,		// Millimeter pr. second
+	_mm_min,	// Millimeter pr. minute
+	_m_s,		// Meter pr. second
+	_m_min,		// Meter pr. minute
+	
+	_mm_s_s,	// Millimeter pr second squared
+	
+	_pct,		// percent
+	
+	_deg,		// Degrees (angle)
+	_degC,		// Degrees celcius
+	_degF,		// Degrees fahrenheit
+	
+	_bar,		// Bar
+	
+	_day,		// day
+	_hour,		// Hour
+	_min,		// minute
+	_s,			// Second
+	_ms,		// Millisecond
+	_us,		// Microsecond
+	_ns,		// Nanosecond
+
+	_Vac,		// Volt AC
+	_Vdc,		// Volt DC
+	_mV,		// Millivolt
+	_a,			// Ampere
+	_mA,		// Milliampere
+	_uA,		// Microampere
+	_KWh,		// Kilowatt hour
+	_KW,		// Kilowatt
+	_W,			// Watt
+	_mW,		// Milliwatt
+	_uW,		// Microwatt
+	
+	_MHz,		// Megahertz
+	_kHz,		// Kilehertz
+	_Hz,		// Hertz
+	
+	last
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

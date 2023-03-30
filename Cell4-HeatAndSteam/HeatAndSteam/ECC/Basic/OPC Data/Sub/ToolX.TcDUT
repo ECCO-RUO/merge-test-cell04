@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ToolX" Id="{30f5f978-bf0d-4d0d-a33a-2effd82c6074}">
+    <Declaration><![CDATA[TYPE ToolX :
+STRUCT
+	{attribute 'OPC.UA.DA.Description' := 'Unique ID of tool'}
+	ToolID					: STRING(30);
+	
+	{attribute 'OPC.UA.DA.Description' := 'ID for type of tool'}
+	ToolTypeID				: STRING(30);
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

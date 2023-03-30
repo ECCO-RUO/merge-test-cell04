@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_UpdateVehicleReservationDataData" Id="{f054530d-0288-45a1-b798-4ebf95d03599}">
+    <Declaration><![CDATA[TYPE ST_UpdateVehicleReservationDataData :
+STRUCT
+	sObjectID					: STRING := 'MAIN.fbMMServer';
+	sMethodID					: STRING := 'MAIN.fbMMServer#M_UpdateVehicleReservationData';
+	iStatus						: INT;
+	iNoOfInputArgs				: BYTE := 6;
+	iNoOfOutputArgs				: BYTE := 2;
+	stInput						: ST_UpdateVehicleReservationDataDataIn;
+	stOutput					: ST_UpdateVehicleReservationDataDataOut;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,301 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.2">
+  <POU Name="FB_ADS_Comm" Id="{bbf34da6-337f-4ae0-9a1f-743a6b51d4fb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ADS_Comm
+VAR_INPUT
+	bEnable				: BOOL;			// TRUE to run communication
+	eType				: E_ADS_Comm_Type;// Read or write
+	rInterval			: REAL;			// Update interval [s]
+	pLocalVar			: PVOID;		// Pointer to local variable to link to remote device
+	nLocalSize			: UINT;			// Size of local variable
+	sNetID				: T_AmsNetId;	// ADS address on remote ADS device
+	nPort				: T_AmsPort;	// ADS port on remote ADS device
+	sVarName			: STRING;		// Remote symbol name to read/write
+END_VAR
+VAR_OUTPUT
+	bWriteError			: BOOL;			// Writing error
+	bReadError			: BOOL;			// Reading error
+	bParameterError		: BOOL;			// Parameter error
+END_VAR
+VAR
+	fbReadAds			: FB_ReadAdsSymByName;	// FB to read symbols via. ADS
+	fbWriteAds 			: FB_WriteAdsSymByName;	// FB to write symbols via. ADS
+	nState				: E_ADS_Comm_State;		// State
+	tonExecute			: TON;					// Execute timer
+	tonInterval			: TON;					// For calculating actual read/write interval
+	rActInterval		: REAL;					// [s] Measured read/write interval
+	bSendRecv			: BOOL;					// TRUE to read or write data
+	bSendRecvDone		: BOOL;					// TRUE when completed
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF (bEnable) THEN
+	// Check parameters
+	IF (sNetID = '') THEN
+		bParameterError := TRUE;
+	ELSIF (nPort = 0) THEN
+		bParameterError := TRUE;
+	ELSIF (pLocalVar = 0) THEN
+		bParameterError := TRUE;
+	ELSIF (nLocalSize <= 0) THEN
+		bParameterError := TRUE;
+	ELSE
+		bParameterError := FALSE;
+	END_IF
+ELSE
+	bParameterError := FALSE;
+	bReadError := FALSE;
+	bWriteError := FALSE;
+	bSendRecvDone := FALSE;
+END_IF
+
+// Check interval
+IF (rInterval < 0) THEN
+	rInterval := 0;
+END_IF
+
+// Run read FB
+IF (bEnable) THEN
+	// ADS communication
+	CASE nState OF
+		E_ADS_Comm_State.Disabled:
+			bWriteError := FALSE;
+			bReadError := FALSE;
+			bParameterError := FALSE;
+			tonExecute.IN := FALSE;
+			fbReadAds.bRead := FALSE;
+			fbWriteAds.bWrite := FALSE;
+			IF (bEnable) THEN
+				nState := E_ADS_Comm_State.Idle;
+			END_IF
+
+		E_ADS_Comm_State.Idle:
+			tonExecute.IN := TRUE;
+			IF (NOT bEnable) THEN
+				nState := E_ADS_Comm_State.Disabled;
+			ELSIF (eType = ADS_RD_FAST) THEN
+				nState := E_ADS_Comm_State.Wait_Read;
+			ELSIF (eType = ADS_WR_FAST) THEN
+				nState := E_ADS_Comm_State.Wait_Write;
+			ELSIF (eType = ADS_RD_SLOW) THEN
+				nState := E_ADS_Comm_State.Wait_Read;
+			ELSIF (eType = ADS_WR_SLOW) THEN
+				nState := E_ADS_Comm_State.Wait_Write;
+			ELSIF (eType = ADS_WR_TRIG1) THEN
+				nState := E_ADS_Comm_State.Wait_Write;
+			ELSIF (eType = ADS_WR_TRIG2) THEN
+				nState := E_ADS_Comm_State.Wait_Write;
+			ELSIF (eType = ADS_WR_TRIG3) THEN
+				nState := E_ADS_Comm_State.Wait_Write;
+			END_IF
+
+		E_ADS_Comm_State.Wait_Write:
+			IF (tonExecute.Q OR bSendRecv) THEN
+				tonExecute.IN := FALSE;
+				fbWriteAds.bWrite := TRUE;
+				fbWriteAds.sNetID := sNetID; 
+				fbWriteAds.nPort := nPort; 
+				fbWriteAds.sVarName := sVarName; 
+				fbWriteAds.nSrcAddr := pLocalVar;
+				fbWriteAds.nLen := nLocalSize;
+//				fbWriteAds.eComMode := eAdsComModeFastCom;
+				fbWriteAds.eComMode := eAdsComModeSecureCom;
+				nState := E_ADS_Comm_State.Writing;		
+			END_IF
+
+		E_ADS_Comm_State.Writing:
+			IF (fbWriteAds.bBusy) THEN
+				tonExecute.IN := TRUE;
+			ELSE
+				fbWriteAds.bWrite := FALSE;
+				IF (fbWriteAds.bError) THEN
+					nState := E_ADS_Comm_State.Write_Error;
+				ELSE
+					rActInterval := (TIME_TO_REAL(tonInterval.ET) / 1000.0);
+					tonInterval(IN := FALSE);
+					bWriteError := FALSE;
+					bSendRecvDone := TRUE;
+					nState := E_ADS_Comm_State.Idle;
+				END_IF
+			END_IF
+
+		E_ADS_Comm_State.Write_Error:
+			bWriteError := TRUE;		
+			nState := E_ADS_Comm_State.Idle;
+
+		E_ADS_Comm_State.Wait_Read:
+			IF (tonExecute.Q OR bSendRecv) THEN
+				tonExecute.IN := FALSE;
+				fbReadAds.bRead := TRUE;
+				fbReadAds.sNetID := sNetID;
+				fbReadAds.nPort := nPort; 
+				fbReadAds.sVarName := sVarName; 
+				fbReadAds.nDestAddr := pLocalVar;
+				fbReadAds.nLen := nLocalSize;
+//				fbReadAds.eComMode := eAdsComModeFastCom;
+				fbReadAds.eComMode := eAdsComModeSecureCom;
+				nState := E_ADS_Comm_State.Reading;	
+			END_IF
+
+		E_ADS_Comm_State.Reading:
+			IF (fbReadAds.bBusy) THEN
+				tonExecute.IN := TRUE;
+			ELSE
+				fbReadAds.bRead := FALSE;
+				IF (fbReadAds.bError) THEN
+					nState := E_ADS_Comm_State.Read_Error;
+				ELSE
+					rActInterval := (TIME_TO_REAL(tonInterval.ET) / 1000.0);
+					tonInterval(IN := FALSE);
+					bReadError := FALSE;
+					bSendRecvDone := TRUE;
+					nState := E_ADS_Comm_State.Idle;
+				END_IF
+			END_IF
+		
+		E_ADS_Comm_State.Read_Error:
+			bReadError := TRUE;		
+			nState := E_ADS_Comm_State.Idle;
+
+		ELSE
+			nState := E_ADS_Comm_State.Disabled;
+	END_CASE
+
+	IF ((eType = ADS_WR_TRIG1) OR (eType = ADS_WR_TRIG2) OR (eType = ADS_WR_TRIG3) OR
+		(eType = ADS_RD_TRIG1) OR (eType = ADS_RD_TRIG2) OR (eType = ADS_RD_TRIG3)) THEN
+		// No cyclic reading/writing
+		tonExecute.IN := FALSE;
+	END_IF
+	tonExecute.PT := REAL_TO_TIME(rInterval * 1000.0);
+	tonExecute();
+	tonInterval(IN := TRUE, PT := T#60S);
+	fbReadAds.tTimeout := DEFAULT_ADS_TIMEOUT;
+	fbReadAds();
+	fbWriteAds();
+	fbWriteAds.tTimeout := DEFAULT_ADS_TIMEOUT;
+
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="M_SendRecv" Id="{009253eb-80af-48d0-ba2c-2cc257cb53b8}">
+      <Declaration><![CDATA[METHOD PUBLIC M_SendRecv : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF ((eType = E_ADS_Comm_Type.ADS_WR_TRIG1) OR (eType = E_ADS_Comm_Type.ADS_RD_TRIG1) OR
+	(eType = E_ADS_Comm_Type.ADS_WR_TRIG2) OR (eType = E_ADS_Comm_Type.ADS_RD_TRIG2) OR
+	(eType = E_ADS_Comm_Type.ADS_WR_TRIG3) OR (eType = E_ADS_Comm_Type.ADS_RD_TRIG3)) THEN
+	
+	IF (NOT bSendRecv) THEN
+		bSendRecvDone := FALSE;	
+	END_IF
+	bSendRecv := TRUE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_SendRecvCompleted" Id="{ea8cecad-8b25-47cf-8a5b-b80c4b123c02}">
+      <Declaration><![CDATA[METHOD PUBLIC M_SendRecvCompleted : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[M_SendRecvCompleted := bSendRecvDone;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_SendRecvStop" Id="{831511df-6d2a-4548-8ab4-b6c88da194a6}">
+      <Declaration><![CDATA[METHOD PUBLIC M_SendRecvStop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bSendRecv := FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_ADS_Comm">
+      <LineId Id="85" Count="3" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="93" Count="1" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="99" Count="2" />
+      <LineId Id="103" Count="3" />
+      <LineId Id="376" Count="0" />
+      <LineId Id="108" Count="1" />
+      <LineId Id="119" Count="9" />
+      <LineId Id="257" Count="2" />
+      <LineId Id="133" Count="4" />
+      <LineId Id="142" Count="2" />
+      <LineId Id="146" Count="3" />
+      <LineId Id="298" Count="0" />
+      <LineId Id="300" Count="0" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="421" Count="3" />
+      <LineId Id="303" Count="1" />
+      <LineId Id="417" Count="3" />
+      <LineId Id="153" Count="2" />
+      <LineId Id="157" Count="1" />
+      <LineId Id="329" Count="6" />
+      <LineId Id="452" Count="0" />
+      <LineId Id="336" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="305" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="295" Count="0" />
+      <LineId Id="293" Count="0" />
+      <LineId Id="173" Count="3" />
+      <LineId Id="290" Count="1" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="385" Count="0" />
+      <LineId Id="178" Count="4" />
+      <LineId Id="185" Count="3" />
+      <LineId Id="190" Count="1" />
+      <LineId Id="337" Count="6" />
+      <LineId Id="453" Count="0" />
+      <LineId Id="344" Count="0" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="317" Count="0" />
+      <LineId Id="203" Count="0" />
+      <LineId Id="205" Count="0" />
+      <LineId Id="296" Count="1" />
+      <LineId Id="206" Count="3" />
+      <LineId Id="288" Count="1" />
+      <LineId Id="210" Count="0" />
+      <LineId Id="386" Count="0" />
+      <LineId Id="211" Count="4" />
+      <LineId Id="218" Count="4" />
+      <LineId Id="224" Count="0" />
+      <LineId Id="370" Count="0" />
+      <LineId Id="225" Count="0" />
+      <LineId Id="425" Count="0" />
+      <LineId Id="373" Count="0" />
+      <LineId Id="371" Count="1" />
+      <LineId Id="226" Count="1" />
+      <LineId Id="285" Count="0" />
+      <LineId Id="254" Count="0" />
+      <LineId Id="228" Count="1" />
+      <LineId Id="256" Count="0" />
+      <LineId Id="230" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ADS_Comm.M_SendRecv">
+      <LineId Id="8" Count="0" />
+      <LineId Id="20" Count="2" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ADS_Comm.M_SendRecvCompleted">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_ADS_Comm.M_SendRecvStop">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.5">
+  <DUT Name="ST_MMVehicleStatusData" Id="{f16d7184-48b9-4fd3-b06e-51ce85fc5718}">
+    <Declaration><![CDATA[TYPE ST_MMVehicleStatusData :
+STRUCT
+	nVehicleID					: UINT;
+	bVehiclePresent				: BOOL;
+	nPathID						: UINT;
+	nDestinationPathID			: UINT;
+	fVehiclePosition			: REAL;
+	fVelocity					: REAL;
+	eVehicleCommandType			: E_MMVehicleCommand;
+	stVehicleFlags				: ST_MMVehicleFlagData;
+	fVehicleCommandedPosition	: REAL;
+	nVehicleCommandedStation	: USINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
